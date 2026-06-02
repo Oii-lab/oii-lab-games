@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Connect Four — 演算法互動遊戲集</title>
+<link rel="stylesheet" href="../shared/style.css">
+<style>
+  .c4-wrap{text-align:center;margin:14px 0;}
+  .c4-col-area{display:inline-flex;gap:6px;margin-bottom:4px;}
+  .c4-drop-btn{width:48px;height:30px;border-radius:8px 8px 4px 4px;border:1px solid var(--border);background:transparent;color:var(--text-dim);font-size:16px;cursor:pointer;transition:all 0.18s;}
+  .c4-drop-btn:hover:not(:disabled){color:var(--accent);border-color:var(--accent);background:rgba(0,229,255,0.08);}
+  .c4-drop-btn:disabled{opacity:0.15;cursor:not-allowed;}
+  .c4-grid{display:inline-grid;gap:6px;padding:14px;background:var(--surface2);border:1px solid var(--border);border-radius:16px;}
+  .c4-cell{width:48px;height:48px;border-radius:50%;background:var(--surface);border:2px solid var(--border);transition:background 0.2s,box-shadow 0.2s;}
+  .c4-cell.p1{background:radial-gradient(circle at 35% 35%,#ff8a65,#c62828);border-color:#ef5350;box-shadow:0 0 10px rgba(198,40,40,0.5);}
+  .c4-cell.p2{background:radial-gradient(circle at 35% 35%,#fff176,#f57f17);border-color:#ffb300;box-shadow:0 0 10px rgba(245,127,23,0.5);}
+  .c4-cell.win-cell{animation:winPulse 0.5s ease infinite alternate;}
+  @keyframes winPulse{from{filter:brightness(1)}to{filter:brightness(1.7)saturate(1.5)}}
+  @media(max-width:600px){.c4-cell{width:40px;height:40px;}.c4-drop-btn{width:40px;}.c4-grid{gap:4px;padding:10px;}}
+</style>
+</head>
+<body>
+<canvas id="confetti-canvas"></canvas>
+<div class="container">
+
+<header>
+  <div class="title">🔴 Connect Four</div>
+  <div class="subtitle">四子連線 &nbsp;·&nbsp; Alpha-Beta Pruning &nbsp;·&nbsp; Minimax</div>
+</header>
+
+<div style="text-align:center;margin-bottom:20px">
+  <a href="../index.html" style="font-size:12px;color:var(--text-dim);text-decoration:none;letter-spacing:0.1em;text-transform:uppercase;padding:8px 14px;border:1px solid var(--border);border-radius:8px;transition:all 0.2s;display:inline-block;"
+    onmouseover="this.style.color='var(--accent)';this.style.borderColor='var(--accent)'"
+    onmouseout="this.style.color='var(--text-dim)';this.style.borderColor='var(--border)'">← 返回選單</a>
+</div>
+
+<!-- 遊戲規則 -->
+<div class="rules-block">
+  <div class="rules-title">📖 遊戲規則</div>
+  <div class="rules-body">
+    <div class="rules-item move">
+      <div class="ri-label">每回合</div>
+      <div class="ri-text">選一列，棋子<strong>落到該列最低的空格</strong>（重力下落）</div>
+    </div>
+    <div class="rules-item win">
+      <div class="ri-label">贏的條件</div>
+      <div class="ri-text">讓自己的棋子在<strong>橫、縱、斜</strong>任一方向連成四個</div>
+    </div>
+    <div class="rules-item lose">
+      <div class="ri-label">平局</div>
+      <div class="ri-text">棋盤全滿且無人連四，則平局</div>
+    </div>
+    <div class="rules-item tip">
+      <div class="ri-label">電腦策略</div>
+      <div class="ri-text"><strong>Alpha-Beta Pruning</strong> 搜尋，困難模式看 7 步，幾乎不會犯錯</div>
+    </div>
+  </div>
+</div>
+
+<!-- 設定 -->
+<div class="panel active" id="panel-setup">
+  <div class="panel-title">⚙️ 遊戲設定</div>
+  <div class="mode-tabs">
+    <div class="mode-tab active" id="f4tab-cpu" onclick="setModeTab('f4','cpu')">🖥️ 單人對戰（電腦）</div>
+    <div class="mode-tab" id="f4tab-create" onclick="setModeTab('f4','create')">🏠 開房間</div>
+    <div class="mode-tab" id="f4tab-join" onclick="setModeTab('f4','join')">🔗 加入房間</div>
+  </div>
+  <div id="f4mode-cpu">
+    <div class="input-group"><label>你的名稱</label><input id="f4-cpu-name" placeholder="玩家" maxlength="16"></div>
+    <div class="input-group"><label>棋盤大小</label>
+      <select id="f4-board-size"><option value="6x5">6列×5行（小）</option><option value="7x6" selected>7列×6行（標準）</option></select></div>
+    <div class="input-group"><label>電腦難度</label>
+      <select id="f4-cpu-diff">
+        <option value="easy">😊 簡單（搜尋深度 3）</option>
+        <option value="medium">🤔 普通（搜尋深度 5）</option>
+        <option value="hard" selected>😈 困難（搜尋深度 7）</option>
+      </select></div>
+    <div class="input-group"><label>先手</label>
+      <select id="f4-cpu-first"><option value="player">玩家先手（紅）</option><option value="cpu">電腦先手（紅）</option><option value="random">隨機</option></select></div>
+    <div class="btn-row"><button class="btn btn-primary btn-lg" onclick="f4BeginCpu()">🚀 開始遊戲</button></div>
+  </div>
+  <div id="f4mode-create" style="display:none">
+    <div class="step active" id="f4create-s1">
+      <div class="input-group"><label>你的名稱</label><input id="f4-host-name" placeholder="房主" maxlength="16"></div>
+      <div class="input-group"><label>棋盤大小</label>
+        <select id="f4-room-size"><option value="6x5">6列×5行</option><option value="7x6" selected>7列×6行（標準）</option></select></div>
+      <div class="input-group"><label>先手</label>
+        <select id="f4-room-first"><option value="host">房主先手（紅）</option><option value="guest">訪客先手（紅）</option><option value="random">隨機</option></select></div>
+      <div class="btn-row"><button class="btn btn-primary" onclick="f4CreateRoom()">🏠 建立房間</button></div>
+    </div>
+    <div class="step" id="f4create-s2">
+      <div class="room-code-box"><div class="code-label">房間代碼</div><div class="code-val" id="f4-room-code-display">----</div><div class="code-hint">分享給朋友</div></div>
+      <div class="status-bar" style="margin-top:8px"><span class="spinner"></span><span class="status-text">等待對手加入…</span></div>
+      <div class="btn-row">
+        <button class="btn btn-outline btn-sm" onclick="copyCode('f4-room-code-display')">📋 複製</button>
+        <button class="btn btn-sm" onclick="f4CancelRoom()">❌ 取消</button>
+      </div>
+    </div>
+  </div>
+  <div id="f4mode-join" style="display:none">
+    <div class="input-group"><label>你的名稱</label><input id="f4-guest-name" placeholder="玩家" maxlength="16"></div>
+    <div class="input-group"><label>房間代碼</label><input id="f4-join-code" placeholder="XXXX" maxlength="4" style="letter-spacing:0.3em;font-family:'Orbitron',monospace;font-size:20px;" oninput="this.value=this.value.toUpperCase()"></div>
+    <div id="f4-join-err" style="color:var(--accent2);font-size:12px;display:none;margin-bottom:8px;"></div>
+    <div class="btn-row"><button class="btn btn-primary" onclick="f4JoinRoom()">🔗 加入</button></div>
+  </div>
+</div>
+
+<!-- 遊戲 -->
+<div class="panel" id="panel-game">
+  <div class="panel-title" id="f4-game-label">🔴 Connect Four</div>
+  <div class="players-row">
+    <div class="player-tag" id="f4-p1-tag">
+      <div class="p-name" id="f4-p1-name">—</div>
+      <div class="p-label" style="color:#ef5350">● 紅方</div>
+    </div>
+    <div style="display:flex;align-items:center;color:var(--text-dim);font-size:11px;font-family:'Orbitron',monospace;">VS</div>
+    <div class="player-tag" id="f4-p2-tag">
+      <div class="p-name" id="f4-p2-name">—</div>
+      <div class="p-label" style="color:#ffb300">● 黃方</div>
+    </div>
+  </div>
+  <div class="status-bar">
+    <div class="status-dot" id="f4-status-dot"></div>
+    <div style="flex:1"><div class="status-text" id="f4-status-text">準備中</div><div class="status-sub" id="f4-status-sub"></div></div>
+  </div>
+  <div class="c4-wrap">
+    <div class="c4-col-area" id="f4-drop-btns"></div>
+    <div class="c4-grid" id="f4-grid"></div>
+  </div>
+  <div class="game-log" id="f4-log"></div>
+  <div class="btn-row" style="margin-top:14px">
+    <button class="btn btn-sm" onclick="goHome()">⚙️ 重新設定</button>
+  </div>
+</div>
+
+<!-- 演算法解析 -->
+<div class="algo-accordion">
+  <button class="algo-accordion-trigger" onclick="toggleAlgo(this)">
+    <span>🧠 演算法解析 — Alpha-Beta Pruning</span>
+    <span class="acc-arrow">▼</span>
+  </button>
+  <div class="algo-accordion-body">
+    <div class="acc-h2">Minimax 是什麼？</div>
+    <div class="acc-p">
+      電腦把所有可能的棋步展開成<strong>博弈樹</strong>：
+      自己的回合選分數最高的走法（Max），對手的回合選分數最低的走法（Min），
+      遞迴到底後回傳最佳選擇。
+    </div>
+    <div class="acc-h2">Alpha-Beta 如何剪枝？</div>
+    <div class="acc-insight">
+      <span class="ins-label">💡 核心思想</span>
+      維護兩個界限：<strong>α（我能保證的最低分）</strong>和<strong>β（對手允許的最高分）</strong>。
+      一旦 <code>α ≥ β</code>，這個分支<strong>絕對不會被選到</strong>，直接跳過。<br><br>
+      最好情況：搜尋量從 O(b<sup>d</sup>) 降到 O(b<sup>d/2</sup>)——<strong>等於深度翻倍</strong>。
+    </div>
+    <div class="acc-code">
+      <span class="lang-tag">Python</span>
+      <pre><span class="kw">def</span> <span class="fn">alpha_beta</span>(board, depth, alpha, beta, maximizing):
+    <span class="kw">if</span> depth == <span class="num">0</span> <span class="kw">or</span> <span class="fn">is_terminal</span>(board):
+        <span class="kw">return</span> <span class="fn">evaluate</span>(board)
+
+    <span class="kw">if</span> maximizing:
+        value = -<span class="fn">float</span>(<span class="str">'inf'</span>)
+        <span class="kw">for</span> col <span class="kw">in</span> <span class="fn">valid_columns</span>(board):
+            value = <span class="fn">max</span>(value, <span class="fn">alpha_beta</span>(
+                <span class="fn">drop</span>(board, col, CPU), depth-<span class="num">1</span>, alpha, beta, False))
+            alpha = <span class="fn">max</span>(alpha, value)
+            <span class="kw">if</span> alpha >= beta: <span class="kw">break</span>  <span class="cmt"># β 剪枝：對手不會讓我到這</span>
+        <span class="kw">return</span> value
+    <span class="kw">else</span>:
+        value = <span class="fn">float</span>(<span class="str">'inf'</span>)
+        <span class="kw">for</span> col <span class="kw">in</span> <span class="fn">valid_columns</span>(board):
+            value = <span class="fn">min</span>(value, <span class="fn">alpha_beta</span>(
+                <span class="fn">drop</span>(board, col, HUMAN), depth-<span class="num">1</span>, alpha, beta, True))
+            beta = <span class="fn">min</span>(beta, value)
+            <span class="kw">if</span> alpha >= beta: <span class="kw">break</span>  <span class="cmt"># α 剪枝：我已有更好選擇</span>
+        <span class="kw">return</span> value</pre>
+    </div>
+    <div class="acc-h2">啟發式評估（heuristic）</div>
+    <div class="acc-p">
+      搜尋不可能到終局，所以在 depth=0 時用<strong>評估函數</strong>打分：
+      每個「四格視窗」中，己方棋子越多分越高，對手棋子越多分越低。
+      中間列加權更高（中心控制）。
+    </div>
+    <a href="../algo.html#minimax" class="acc-more" target="_blank">→ 完整解析（含 Chomp Minimax 比較）</a>
+  </div>
+</div>
+
+</div>
+
+<div id="disconnect-overlay" style="display:none;position:fixed;inset:0;background:rgba(10,10,15,0.92);z-index:150;backdrop-filter:blur(6px);align-items:center;justify-content:center;">
+  <div style="background:var(--surface);border:1px solid var(--accent2);border-radius:20px;padding:36px;text-align:center;max-width:320px;width:90%;">
+    <div style="font-size:48px;margin-bottom:12px;">😔</div>
+    <div style="font-family:'Orbitron',monospace;font-size:16px;font-weight:900;color:var(--accent2);margin-bottom:10px;">對手已離開</div>
+    <div style="font-size:13px;color:var(--text-dim);margin-bottom:24px;">房間已關閉。</div>
+    <button class="btn btn-primary" onclick="dismissDisconnect()" style="width:100%">⚙️ 回設定</button>
+  </div>
+</div>
+<div class="result-overlay" id="result-overlay">
+  <div class="result-box">
+    <span class="result-emoji" id="result-emoji">🏆</span>
+    <div class="result-title" id="result-title">勝利！</div>
+    <div class="result-msg" id="result-msg"></div>
+    <div class="btn-row" style="justify-content:center">
+      <button class="btn btn-primary" onclick="playAgain()">🔄 再玩一局</button>
+      <button class="btn btn-outline" onclick="goHome()">⚙️ 重新設定</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="../shared/firebase.js"></script>
+<script src="../shared/ui.js"></script>
+<script>
+function toggleAlgo(btn){btn.classList.toggle('open');btn.nextElementSibling.classList.toggle('open');}
+function goHome(){document.getElementById('result-overlay').classList.remove('show');stopPolling();if(CUR.roomCode){cleanupRoom(CUR.roomCode);CUR.roomCode=null;}document.getElementById('f4create-s1').classList.add('active');document.getElementById('f4create-s2').classList.remove('active');CUR.game=null;showPanel('panel-setup');}
+function playAgain(){document.getElementById('result-overlay').classList.remove('show');stopPolling();if(CUR.roomCode){cleanupRoom(CUR.roomCode);CUR.roomCode=null;}if(CUR.lastSettings)_f4Start(CUR.lastSettings);else goHome();}
+
+const F4={rows:6,cols:7,board:null,currentPlayer:1,p1Name:'玩家',p2Name:'電腦',mode:null,myPlayer:1,cpuDiff:'hard',roomCode:null,lastSeen:0,gameOver:false,draw:false};
+
+function f4BeginCpu(){const sz=document.getElementById('f4-board-size').value.split('x');_f4Start({game:'connect4',mode:'cpu',name:document.getElementById('f4-cpu-name').value.trim()||'玩家',cols:+sz[0],rows:+sz[1],diff:document.getElementById('f4-cpu-diff').value,firstSel:document.getElementById('f4-cpu-first').value});}
+function _f4Start(s){
+  stopPolling();CUR.game='connect4';CUR.lastSettings=s;
+  F4.mode=s.mode;F4.cols=s.cols;F4.rows=s.rows;F4.cpuDiff=s.diff||'hard';
+  F4.p1Name=s.name||s.hostName||'玩家';F4.p2Name=F4.mode==='cpu'?`電腦（${{'easy':'深度3','medium':'深度5','hard':'深度7'}[F4.cpuDiff]}）`:(s.guestName||'訪客');
+  F4.myPlayer=s.myPlayer||1;F4.gameOver=false;F4.draw=false;F4.roomCode=s.roomCode||null;F4.lastSeen=0;
+  F4.board=Array.from({length:F4.rows},()=>Array(F4.cols).fill(0));
+  F4.currentPlayer=s.firstPlayer||resolveFirst(s.firstSel||'player');
+  _f4InitUI();showPanel('panel-game');
+  document.getElementById('f4-game-label').textContent='🔴 Connect Four'+(F4.mode!=='cpu'?(F4.myPlayer===1?' (房主)':' (訪客)'):'');
+  if(F4.mode==='cpu'&&F4.currentPlayer===2){f4UpdateStatus();setTimeout(f4CpuTurn,900);}else f4UpdateStatus();
+  if(F4.mode!=='cpu'&&F4.currentPlayer!==F4.myPlayer)startRoomPolling(F4.roomCode,room=>{const mv=Object.values(room.moves||{});if(mv.length>F4.lastSeen){const m=mv[F4.lastSeen];F4.lastSeen=mv.length;stopPolling();f4ApplyMove(m.player,m.col,true);}});
+}
+function _f4InitUI(){document.getElementById('f4-p1-name').textContent=F4.p1Name;document.getElementById('f4-p2-name').textContent=F4.p2Name;document.getElementById('f4-log').innerHTML='';addLog('f4-log','sys',`開始！${F4.cols}×${F4.rows} 棋盤，四子連線獲勝。`);f4RenderBoard();f4UpdateStatus();}
+function f4RenderBoard(winCells){
+  const btnsEl=document.getElementById('f4-drop-btns');btnsEl.innerHTML='';
+  const isMyTurn=F4.mode==='cpu'?F4.currentPlayer===1:F4.currentPlayer===F4.myPlayer;
+  for(let c=0;c<F4.cols;c++){const btn=document.createElement('button');btn.className='c4-drop-btn';btn.textContent='▼';btn.id='f4btn-'+c;btn.disabled=!isMyTurn||F4.gameOver||F4.board[F4.rows-1][c]!==0;btn.onclick=()=>f4PlayerDrop(c);btnsEl.appendChild(btn);}
+  const grid=document.getElementById('f4-grid');grid.style.gridTemplateColumns=`repeat(${F4.cols},48px)`;
+  const cells=grid.querySelectorAll('.c4-cell');
+  if(cells.length===F4.rows*F4.cols){for(let r=F4.rows-1;r>=0;r--){for(let c=0;c<F4.cols;c++){const idx=(F4.rows-1-r)*F4.cols+c,cell=cells[idx],v=F4.board[r][c];cell.className='c4-cell'+(v===1?' p1':v===2?' p2':'');if(winCells&&winCells.some(([wr,wc])=>wr===r&&wc===c))cell.classList.add('win-cell');}}}
+  else{grid.innerHTML='';for(let r=F4.rows-1;r>=0;r--){for(let c=0;c<F4.cols;c++){const cell=document.createElement('div'),v=F4.board[r][c];cell.className='c4-cell'+(v===1?' p1':v===2?' p2':'');if(winCells&&winCells.some(([wr,wc])=>wr===r&&wc===c))cell.classList.add('win-cell');grid.appendChild(cell);}}}
+}
+function f4UpdateStatus(){
+  const isMyTurn=F4.mode==='cpu'?F4.currentPlayer===1:F4.currentPlayer===F4.myPlayer;
+  updatePlayerTags('f4-p1-tag','f4-p2-tag',F4.currentPlayer);
+  if(F4.gameOver){setStatusDot('f4-status-dot','over');document.getElementById('f4-status-text').textContent=F4.draw?'平局':'遊戲結束';document.getElementById('f4-status-sub').textContent='';f4RenderBoard();return;}
+  if(isMyTurn){setStatusDot('f4-status-dot','your-turn');document.getElementById('f4-status-text').textContent='你的回合';document.getElementById('f4-status-sub').textContent=`點擊 ▼ 投入棋子（${F4.currentPlayer===1?'紅':'黃'}方）`;}
+  else{setStatusDot('f4-status-dot','waiting');document.getElementById('f4-status-text').textContent=`${F4.currentPlayer===1?F4.p1Name:F4.p2Name} 的回合`;document.getElementById('f4-status-sub').textContent=F4.mode==='cpu'?'電腦計算中…':'等待對手…';}
+  f4RenderBoard();
+}
+async function f4PlayerDrop(col){
+  if(F4.gameOver)return;if(F4.mode==='cpu'&&F4.currentPlayer!==1)return;if(F4.mode!=='cpu'&&F4.currentPlayer!==F4.myPlayer)return;if(F4.board[F4.rows-1][col]!==0)return;
+  if(F4.mode!=='cpu'){const _r=await getRoom(F4.roomCode);if(!_r)return;await pushMove(F4.roomCode,{player:F4.myPlayer,col});F4.lastSeen++;}
+  f4ApplyMove(F4.myPlayer,col,true);
+}
+function f4ApplyMove(player,col,animate){
+  let row=-1;for(let r=0;r<F4.rows;r++){if(F4.board[r][col]===0){row=r;break;}}if(row===-1)return;
+  F4.board[row][col]=player;const name=player===1?F4.p1Name:F4.p2Name;addLog('f4-log',player===1?'p1':'p2',`${name} 投入第 ${col+1} 列`);
+  const winCells=f4CheckWin(row,col,player);
+  if(winCells){F4.gameOver=true;const winnerIdx=player,winner=name,loserIdx=player===1?2:1,loser=loserIdx===1?F4.p1Name:F4.p2Name;addLog('f4-log','sys',`${winner} 四子連線！獲勝🎉`);const isMe=(F4.mode==='cpu'&&winnerIdx===1)||(F4.mode!=='cpu'&&winnerIdx===F4.myPlayer);f4RenderBoard(winCells);updatePlayerTags('f4-p1-tag','f4-p2-tag',F4.currentPlayer);setStatusDot('f4-status-dot','over');document.getElementById('f4-status-text').textContent='遊戲結束';document.getElementById('f4-status-sub').textContent='';setTimeout(()=>showResult(winnerIdx,winner,loser,isMe,`${winner} 完成了四子連線！`),800);return;}
+  if(F4.board[F4.rows-1].every(v=>v!==0)){F4.gameOver=true;F4.draw=true;addLog('f4-log','sys','棋盤已滿，平局！');f4RenderBoard();setStatusDot('f4-status-dot','over');document.getElementById('f4-status-text').textContent='平局';document.getElementById('f4-status-sub').textContent='';setTimeout(()=>{document.getElementById('result-emoji').textContent='🤝';document.getElementById('result-title').textContent='平局！';document.getElementById('result-title').style.color='var(--accent4)';document.getElementById('result-msg').textContent='棋盤已滿，勢均力敵！';document.getElementById('result-overlay').classList.add('show');},800);return;}
+  F4.currentPlayer=F4.currentPlayer===1?2:1;f4UpdateStatus();
+  if(F4.mode==='cpu'&&F4.currentPlayer===2)setTimeout(f4CpuTurn,400+Math.random()*400);
+  else if(F4.mode!=='cpu'&&F4.currentPlayer!==F4.myPlayer)startRoomPolling(F4.roomCode,room=>{const mv=Object.values(room.moves||{});if(mv.length>F4.lastSeen){const m=mv[F4.lastSeen];F4.lastSeen=mv.length;stopPolling();f4ApplyMove(m.player,m.col,true);}});
+}
+function f4CheckWin(row,col,player){const dirs=[[0,1],[1,0],[1,1],[1,-1]];for(const[dr,dc]of dirs){const cells=[[row,col]];for(let d=1;d<4;d++){const r=row+dr*d,c=col+dc*d;if(r>=0&&r<F4.rows&&c>=0&&c<F4.cols&&F4.board[r][c]===player)cells.push([r,c]);else break;}for(let d=1;d<4;d++){const r=row-dr*d,c=col-dc*d;if(r>=0&&r<F4.rows&&c>=0&&c<F4.cols&&F4.board[r][c]===player)cells.push([r,c]);else break;}if(cells.length>=4)return cells;}return null;}
+function f4CpuTurn(){if(F4.gameOver)return;const depth={'easy':3,'medium':5,'hard':7}[F4.cpuDiff]||7;setTimeout(()=>{const col=f4AlphaBeta(depth);f4ApplyMove(2,col,true);},100);}
+function f4AlphaBeta(maxDepth){const board=F4.board.map(r=>[...r]);let bestCol=f4GetValidCols(board)[0],bestScore=-Infinity;const center=Math.floor(F4.cols/2);const cols=f4GetValidCols(board).sort((a,b)=>Math.abs(a-center)-Math.abs(b-center));for(const col of cols){const row=f4DropPiece(board,col,2);if(row===-1)continue;const score=alphaBeta(board,maxDepth-1,-Infinity,Infinity,false);board[row][col]=0;if(score>bestScore){bestScore=score;bestCol=col;}}return bestCol;}
+function alphaBeta(board,depth,alpha,beta,maximizing){if(f4BoardWin(board,2))return 100000+depth;if(f4BoardWin(board,1))return-100000-depth;if(f4GetValidCols(board).length===0)return 0;if(depth===0)return f4Evaluate(board,2);if(maximizing){let val=-Infinity;for(const col of f4GetValidColsOrdered(board)){const row=f4DropPiece(board,col,2);if(row===-1)continue;val=Math.max(val,alphaBeta(board,depth-1,alpha,beta,false));board[row][col]=0;alpha=Math.max(alpha,val);if(alpha>=beta)break;}return val;}else{let val=Infinity;for(const col of f4GetValidColsOrdered(board)){const row=f4DropPiece(board,col,1);if(row===-1)continue;val=Math.min(val,alphaBeta(board,depth-1,alpha,beta,true));board[row][col]=0;beta=Math.min(beta,val);if(alpha>=beta)break;}return val;}}
+function f4GetValidCols(board){const cols=[];for(let c=0;c<F4.cols;c++)if(board[F4.rows-1][c]===0)cols.push(c);return cols;}
+function f4GetValidColsOrdered(board){const center=Math.floor(F4.cols/2);return f4GetValidCols(board).sort((a,b)=>Math.abs(a-center)-Math.abs(b-center));}
+function f4DropPiece(board,col,player){for(let r=0;r<F4.rows;r++){if(board[r][col]===0){board[r][col]=player;return r;}}return -1;}
+function f4BoardWin(board,player){const rows=board.length,cols=board[0].length;for(let r=0;r<rows;r++){for(let c=0;c<cols;c++){if(board[r][c]!==player)continue;if(c+3<cols&&board[r][c+1]===player&&board[r][c+2]===player&&board[r][c+3]===player)return true;if(r+3<rows&&board[r+1][c]===player&&board[r+2][c]===player&&board[r+3][c]===player)return true;if(r+3<rows&&c+3<cols&&board[r+1][c+1]===player&&board[r+2][c+2]===player&&board[r+3][c+3]===player)return true;if(r+3<rows&&c-3>=0&&board[r+1][c-1]===player&&board[r+2][c-2]===player&&board[r+3][c-3]===player)return true;}}return false;}
+function f4Evaluate(board,cpuPlayer){const humanPlayer=cpuPlayer===1?2:1;let score=0;const rows=board.length,cols=board[0].length,center=Math.floor(cols/2);for(let r=0;r<rows;r++)if(board[r][center]===cpuPlayer)score+=3;const dirs=[[0,1],[1,0],[1,1],[1,-1]];for(let r=0;r<rows;r++){for(let c=0;c<cols;c++){for(const[dr,dc]of dirs){const window=[];for(let i=0;i<4;i++){const nr=r+dr*i,nc=c+dc*i;if(nr>=0&&nr<rows&&nc>=0&&nc<cols)window.push(board[nr][nc]);else{window.push(-1);break;}}if(window.length===4&&!window.includes(-1))score+=f4ScoreWindow(window,cpuPlayer,humanPlayer);}}}return score;}
+function f4ScoreWindow(window,cpu,human){const cpuCount=window.filter(v=>v===cpu).length,humanCount=window.filter(v=>v===human).length,empty=window.filter(v=>v===0).length;if(cpuCount===4)return 100;if(cpuCount===3&&empty===1)return 5;if(cpuCount===2&&empty===2)return 2;if(humanCount===3&&empty===1)return-4;return 0;}
+async function f4CreateRoom(){const hostName=document.getElementById('f4-host-name').value.trim()||'房主';const sz=document.getElementById('f4-room-size').value.split('x');const cols=+sz[0],rows=+sz[1];const firstPlayer=resolveFirst(document.getElementById('f4-room-first').value);const code=await uniqueCode();await setRoom(code,{code,game:'connect4',hostName,cols,rows,firstPlayer,guest:false,guestName:null,started:false,moves:[],created:Date.now()});CUR.roomCode=code;F4.roomCode=code;document.getElementById('f4-room-code-display').textContent=code;registerHostDisconnect(code);document.getElementById('f4create-s1').classList.remove('active');document.getElementById('f4create-s2').classList.add('active');startRoomPolling(code,room=>{if(room.guest){stopPolling();_f4Start({game:'connect4',mode:'host',hostName,guestName:room.guestName,cols,rows,myPlayer:1,roomCode:code,firstPlayer});}});}
+async function f4CancelRoom(){stopPolling();if(CUR.roomCode){cleanupRoom(CUR.roomCode);CUR.roomCode=null;}document.getElementById('f4create-s1').classList.add('active');document.getElementById('f4create-s2').classList.remove('active');}
+async function f4JoinRoom(){const guestName=document.getElementById('f4-guest-name').value.trim()||'訪客';const code=document.getElementById('f4-join-code').value.trim().toUpperCase();const err=document.getElementById('f4-join-err');err.style.display='none';if(code.length!==4){err.textContent='請輸入4位代碼';err.style.display='block';return;}const room=await getRoom(code);if(!room||room.game!=='connect4'){err.textContent='找不到此Connect Four房間';err.style.display='block';return;}if(room.guest||room.started){err.textContent='房間已滿';err.style.display='block';return;}await updateRoom(code,{guest:true,guestName,started:true});CUR.roomCode=code;_f4Start({game:'connect4',mode:'guest',hostName:room.hostName,guestName,name:guestName,cols:room.cols,rows:room.rows,myPlayer:2,roomCode:code,firstPlayer:room.firstPlayer});}
+</script>
+</body>
+</html>

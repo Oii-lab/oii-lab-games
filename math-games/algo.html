@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>演算法解析 — 演算法互動遊戲集</title>
+<link rel="stylesheet" href="shared/style.css">
+<style>
+  /* Algo-specific styles */
+  .algo-nav{display:flex;border-bottom:1px solid var(--border);overflow-x:auto;background:var(--surface2);border-radius:12px 12px 0 0;}
+  .algo-nav-tab{padding:14px 20px;font-family:'Orbitron',monospace;font-size:11px;letter-spacing:0.12em;
+    text-transform:uppercase;color:var(--text-dim);cursor:pointer;white-space:nowrap;transition:all 0.2s;
+    border-bottom:2px solid transparent;margin-bottom:-1px;}
+  .algo-nav-tab:hover{color:var(--text);}
+  .algo-nav-tab.active{color:var(--accent5);border-bottom-color:var(--accent5);}
+  .algo-content{padding:28px;background:var(--surface);border:1px solid var(--border);border-radius:0 0 16px 16px;margin-bottom:20px;}
+  .algo-section{display:none;animation:fadeIn 0.25s ease;}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+  .algo-section.active{display:block;}
+  .complexity-row{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0;}
+  .badge{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:20px;font-size:11px;font-weight:700;border:1px solid;}
+  .badge-time{color:var(--accent);border-color:var(--accent);background:rgba(0,229,255,0.08);}
+  .badge-space{color:var(--accent4);border-color:var(--accent4);background:rgba(255,215,64,0.08);}
+  .badge-type{color:var(--accent5);border-color:var(--accent5);background:rgba(234,128,252,0.08);}
+  .code-block{background:#0d0d16;border:1px solid var(--border);border-radius:12px;padding:18px;margin:14px 0;overflow-x:auto;position:relative;}
+  .code-block pre{font-family:'Fira Code',monospace;font-size:13px;line-height:1.7;color:#cdd6f4;}
+  .code-block .lang-tag{position:absolute;top:10px;right:14px;font-size:10px;color:var(--text-dim);font-family:'Orbitron',monospace;letter-spacing:0.1em;}
+  .kw{color:#cba6f7;} .fn{color:#89b4fa;} .str{color:#a6e3a1;} .num{color:#fab387;}
+  .cmt{color:#585b70;font-style:italic;} .op{color:#89dceb;} .cls{color:#f9e2af;}
+  .dp-table-wrap{overflow-x:auto;margin:14px 0;}
+  .dp-table{border-collapse:collapse;font-family:'Fira Code',monospace;font-size:12px;}
+  .dp-table th{background:var(--surface2);color:var(--text-dim);padding:6px 12px;border:1px solid var(--border);font-weight:400;}
+  .dp-table td{padding:6px 12px;border:1px solid var(--border);text-align:center;transition:background 0.3s;}
+  .dp-table td.win{color:var(--accent3);background:rgba(105,255,71,0.08);}
+  .dp-table td.lose{color:var(--accent2);background:rgba(255,64,129,0.08);}
+  .dp-table td.highlight{background:rgba(234,128,252,0.2)!important;outline:2px solid var(--accent5);}
+  .dp-stepper{background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:18px;margin:14px 0;}
+  .dp-stepper-title{font-size:12px;color:var(--text-dim);margin-bottom:12px;letter-spacing:0.05em;}
+  .dp-step-controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+  .dp-step-info{flex:1;font-size:13px;color:var(--text);min-width:160px;}
+  .dp-step-info span{color:var(--accent5);font-family:'Fira Code',monospace;}
+  .lc-list{display:flex;flex-direction:column;gap:8px;margin:14px 0;}
+  .lc-item{display:flex;align-items:center;gap:12px;background:var(--surface2);border:1px solid var(--border);
+    border-radius:10px;padding:12px 16px;transition:all 0.2s;text-decoration:none;}
+  .lc-item:hover{border-color:var(--accent5);background:rgba(234,128,252,0.05);transform:translateX(4px);}
+  .lc-num{font-family:'Orbitron',monospace;font-size:11px;color:var(--text-dim);min-width:36px;}
+  .lc-title{flex:1;font-size:13px;color:var(--text);font-weight:700;}
+  .lc-diff{font-size:10px;padding:2px 8px;border-radius:10px;font-weight:700;}
+  .lc-easy{color:#6bcb77;background:rgba(107,203,119,0.15);}
+  .lc-medium{color:#ffa94d;background:rgba(255,169,77,0.15);}
+  .lc-hard{color:#ff6b6b;background:rgba(255,107,107,0.15);}
+  .lc-rel{font-size:10px;color:var(--accent5);}
+  .algo-h2{font-family:'Orbitron',monospace;font-size:13px;font-weight:700;letter-spacing:0.1em;
+    color:var(--accent5);margin:22px 0 10px;display:flex;align-items:center;gap:8px;}
+  .algo-h2::before{content:'//';color:var(--text-dim);font-family:'Fira Code',monospace;}
+  .algo-p{font-size:13px;color:var(--text-dim);line-height:1.9;margin-bottom:10px;}
+  .algo-p strong{color:var(--text);}
+  .algo-p code{font-family:'Fira Code',monospace;font-size:12px;background:var(--surface2);
+    border:1px solid var(--border);border-radius:4px;padding:1px 6px;color:var(--accent4);}
+  .insight-box{background:rgba(234,128,252,0.06);border-left:3px solid var(--accent5);
+    border-radius:0 10px 10px 0;padding:14px 18px;margin:14px 0;}
+  .insight-box .insight-label{font-family:'Orbitron',monospace;font-size:10px;letter-spacing:0.15em;
+    text-transform:uppercase;color:var(--accent5);margin-bottom:6px;}
+  .insight-box p{font-size:13px;color:var(--text-dim);line-height:1.8;}
+  .insight-box p strong{color:var(--text);}
+</style>
+</head>
+<body>
+<div class="container">
+
+<header>
+  <div class="title">🧠 演算法解析</div>
+  <div class="subtitle">Game Theory &nbsp;·&nbsp; DP &nbsp;·&nbsp; XOR &nbsp;·&nbsp; Minimax &nbsp;·&nbsp; Alpha-Beta</div>
+</header>
+
+<div style="text-align:center;margin-bottom:24px">
+  <a href="index.html" style="font-size:12px;color:var(--text-dim);text-decoration:none;letter-spacing:0.1em;text-transform:uppercase;
+    padding:8px 14px;border:1px solid var(--border);border-radius:8px;transition:all 0.2s;display:inline-block;"
+    onmouseover="this.style.color='var(--accent)';this.style.borderColor='var(--accent)'"
+    onmouseout="this.style.color='var(--text-dim)';this.style.borderColor='var(--border)'">← 返回選單</a>
+</div>
+
+<div class="algo-nav" id="algo-nav-bar">
+  <div class="algo-nav-tab active" onclick="algoTab('dp')">DP &amp; 數學</div>
+  <div class="algo-nav-tab" onclick="algoTab('nim')">Nim XOR &amp; Grundy</div>
+  <div class="algo-nav-tab" onclick="algoTab('wythoff')">Wythoff &amp; 黃金比例</div>
+  <div class="algo-nav-tab" onclick="algoTab('minimax')">Minimax &amp; Alpha-Beta</div>
+  <div class="algo-nav-tab" onclick="algoTab('complexity')">複雜度</div>
+  <div class="algo-nav-tab" onclick="algoTab('leetcode')">LeetCode 題目</div>
+</div>
+
+<div class="algo-content">
+
+  <!-- DP Section -->
+  <div class="algo-section active" id="algo-dp">
+    <div class="complexity-row">
+      <span class="badge badge-type">Dynamic Programming</span>
+      <span class="badge badge-type">Game Theory</span>
+      <span class="badge badge-type">Math Optimization</span>
+    </div>
+    <div class="algo-h2">哪些遊戲用到 DP？</div>
+    <div class="algo-p">
+      <strong>Bachet's Game</strong> 和 <strong>21點報數</strong> 的核心都是同一個 DP 問題，只是換了一層外殼。
+      DP 的目的是找出每個「狀態」是必贏（W）還是必輸（L）。
+    </div>
+    <div class="algo-h2">狀態定義與轉移</div>
+    <div class="algo-p">
+      定義 <code>dp[n]</code> = 當剩餘數字（或石頭數）為 <code>n</code> 時，<strong>當前輪到的玩家</strong>是 W 還是 L。
+    </div>
+    <div class="code-block">
+      <span class="lang-tag">Python</span>
+      <pre><span class="cmt"># Bachet's Game / 21點報數 通用 DP 解</span>
+<span class="kw">def</span> <span class="fn">solve_dp</span>(n: <span class="cls">int</span>, max_take: <span class="cls">int</span>) -> <span class="cls">list</span>:
+    <span class="cmt"># dp[i] = True 表示當前玩家「必贏」</span>
+    dp = [<span class="kw">False</span>] * (n + <span class="num">1</span>)
+    dp[<span class="num">0</span>] = <span class="kw">False</span>  <span class="cmt"># 0個石頭 → 上個人已輸</span>
+    dp[<span class="num">1</span>] = <span class="kw">False</span>  <span class="cmt"># Misère: 只剩1顆必須取 → 必輸</span>
+    <span class="kw">for</span> i <span class="kw">in</span> <span class="fn">range</span>(<span class="num">2</span>, n + <span class="num">1</span>):
+        dp[i] = <span class="fn">any</span>(
+            <span class="kw">not</span> dp[i - take]
+            <span class="kw">for</span> take <span class="kw">in</span> <span class="fn">range</span>(<span class="num">1</span>, <span class="fn">min</span>(max_take, i) + <span class="num">1</span>)
+            <span class="kw">if</span> i - take >= <span class="num">1</span>
+        )
+    <span class="kw">return</span> dp
+<span class="cmt"># 觀察 dp 陣列：(n=21, max_take=3)</span>
+<span class="cmt"># dp: L  W  W  W  L  W  W  W  L  ...  ← 每 (max_take+1) 循環一次！</span></pre>
+    </div>
+    <div class="insight-box">
+      <div class="insight-label">💡 關鍵觀察：從 DP 到 O(1)</div>
+      <p>跑完 DP 後會發現<strong>週期性規律</strong>：每隔 <code>K = maxTake + 1</code> 格，必輸位置就重複出現一次。<br><br>
+      <strong><code>n % (maxTake + 1) == 1</code> → 當前玩家必輸</strong><br><br>
+      這個「DP 推導規律 → 數學公式」的過程在演算法競賽裡非常常見。</p>
+    </div>
+    <div class="algo-h2">互動 DP 模擬</div>
+    <div class="dp-stepper">
+      <div class="dp-stepper-title">Bachet's Game｜石頭數 N=12，每次最多取 M=3</div>
+      <div class="dp-table-wrap" id="dp-table-container"></div>
+      <div class="dp-step-controls" style="margin-top:12px">
+        <button class="btn btn-sm" onclick="dpPrev()">← 上一步</button>
+        <div class="dp-step-info" id="dp-step-info">點擊「下一步」開始填表</div>
+        <button class="btn btn-primary btn-sm" onclick="dpNext()">下一步 →</button>
+        <button class="btn btn-sm" onclick="dpReset()">↺ 重置</button>
+      </div>
+    </div>
+    <div class="algo-h2">最優走法公式</div>
+    <div class="code-block">
+      <span class="lang-tag">Python</span>
+      <pre><span class="kw">def</span> <span class="fn">best_move</span>(stones: <span class="cls">int</span>, max_take: <span class="cls">int</span>) -> <span class="cls">int</span>:
+    <span class="kw">if</span> stones == <span class="num">1</span>: <span class="kw">return</span> <span class="num">1</span>  <span class="cmt"># 強制輸，沒得選</span>
+    k = max_take + <span class="num">1</span>
+    remainder = stones % k
+    <span class="kw">if</span> remainder == <span class="num">1</span>: <span class="kw">return</span> <span class="num">1</span>  <span class="cmt"># 敗局，隨便取</span>
+    take = (remainder - <span class="num">1</span>) <span class="kw">if</span> remainder > <span class="num">0</span> <span class="kw">else</span> k - <span class="num">1</span>
+    <span class="kw">return</span> <span class="fn">max</span>(<span class="num">1</span>, <span class="fn">min</span>(take, max_take, stones - <span class="num">1</span>))</pre>
+    </div>
+  </div>
+
+  <!-- Nim XOR Section -->
+  <div class="algo-section" id="algo-nim">
+    <div class="complexity-row">
+      <span class="badge badge-type">Bitwise XOR</span>
+      <span class="badge badge-type">Sprague-Grundy Theorem</span>
+      <span class="badge badge-type">Nim-value</span>
+    </div>
+    <div class="algo-h2">從單堆到多堆：為什麼需要 XOR？</div>
+    <div class="algo-p">
+      Bachet's Game 是<strong>單堆</strong> Nim，策略是 <code>n % (M+1)</code>。
+      當有<strong>多堆石頭</strong>，每次只能從某一堆取時，需要用到<strong>位元互斥或（XOR / Nim-sum）</strong>。
+    </div>
+    <div class="algo-h2">Nim-sum（XOR）策略</div>
+    <div class="insight-box">
+      <div class="insight-label">📐 Bouton 定理（1901年）</div>
+      <p>
+        設各堆石頭數為 <code>a₁, a₂, ..., aₖ</code>，定義 <strong>Nim-sum = a₁ XOR a₂ XOR ... XOR aₖ</strong>。<br><br>
+        <strong>Nim-sum = 0 → 當前玩家必輸（L position）</strong><br>
+        <strong>Nim-sum ≠ 0 → 當前玩家必贏（W position）</strong><br><br>
+        必勝走法：找到一堆，取走若干顆，使取完後所有堆的 XOR 變為 0。
+      </p>
+    </div>
+    <div class="code-block">
+      <span class="lang-tag">Python</span>
+      <pre><span class="kw">def</span> <span class="fn">nim_is_losing</span>(heaps) -> <span class="cls">bool</span>:
+    nim_sum = <span class="num">0</span>
+    <span class="kw">for</span> h <span class="kw">in</span> heaps:
+        nim_sum ^= h
+    <span class="kw">return</span> nim_sum == <span class="num">0</span>
+
+<span class="kw">def</span> <span class="fn">nim_best_move</span>(heaps):
+    nim_sum = <span class="num">0</span>
+    <span class="kw">for</span> h <span class="kw">in</span> heaps: nim_sum ^= h
+    <span class="kw">if</span> nim_sum == <span class="num">0</span>:
+        <span class="kw">for</span> i, h <span class="kw">in</span> <span class="fn">enumerate</span>(heaps):
+            <span class="kw">if</span> h > <span class="num">0</span>: <span class="kw">return</span> (i, <span class="num">1</span>)
+    <span class="kw">for</span> i, h <span class="kw">in</span> <span class="fn">enumerate</span>(heaps):
+        target = h ^ nim_sum
+        <span class="kw">if</span> target < h: <span class="kw">return</span> (i, h - target)</pre>
+    </div>
+    <div class="algo-h2">Sprague-Grundy 定理</div>
+    <div class="algo-p">
+      <strong>Sprague-Grundy 定理</strong>說的是：任何一個「公平賽局（impartial game）」都等價於某個大小的 Nim 單堆。
+      這個「等價大小」叫做 <strong>Grundy value（或 nimber）</strong>，記作 <code>G(s)</code>。
+    </div>
+    <div class="code-block">
+      <span class="lang-tag">Python</span>
+      <pre><span class="kw">from</span> functools <span class="kw">import</span> lru_cache
+
+<span class="kw">def</span> <span class="fn">grundy</span>(n, max_take):
+    @lru_cache(<span class="kw">maxsize</span>=<span class="kw">None</span>)
+    <span class="kw">def</span> <span class="fn">g</span>(state):
+        <span class="kw">if</span> state == <span class="num">0</span>: <span class="kw">return</span> <span class="num">0</span>
+        reachable = {<span class="fn">g</span>(state - t) <span class="kw">for</span> t <span class="kw">in</span> <span class="fn">range</span>(<span class="num">1</span>, <span class="fn">min</span>(max_take, state) + <span class="num">1</span>)}
+        mex = <span class="num">0</span>
+        <span class="kw">while</span> mex <span class="kw">in</span> reachable: mex += <span class="num">1</span>
+        <span class="kw">return</span> mex
+    <span class="kw">return</span> <span class="fn">g</span>(n)
+<span class="cmt"># Grundy value = 0 ↔ 必輸位置</span>
+<span class="cmt"># 多個獨立子遊戲：G(整體) = G(子遊戲1) XOR G(子遊戲2) XOR ...</span></pre>
+    </div>
+  </div>
+
+  <!-- Wythoff Section -->
+  <div class="algo-section" id="algo-wythoff">
+    <div class="complexity-row">
+      <span class="badge badge-type">Golden Ratio</span>
+      <span class="badge badge-type">Beatty's Theorem</span>
+      <span class="badge badge-type">O(1) Formula</span>
+    </div>
+    <div class="algo-h2">必敗位置（Cold positions）</div>
+    <div class="insight-box">
+      <div class="insight-label">φ Wythoff 定理（1907年）</div>
+      <p>
+        所有必敗位置 <code>(a, b)</code>（<code>a ≤ b</code>）：<br><br>
+        <strong><code>aₙ = ⌊n·φ⌋，bₙ = ⌊n·φ²⌋ = aₙ + n</code></strong><br><br>
+        其中 <code>φ = (1+√5)/2 ≈ 1.618</code>，n = 0, 1, 2, 3, ...<br>
+        前幾個必敗位置：(0,0), (1,2), (3,5), (4,7), (6,10), (8,13), ...
+      </p>
+    </div>
+    <div class="code-block">
+      <span class="lang-tag">Python</span>
+      <pre><span class="kw">import</span> math
+PHI = (<span class="num">1</span> + math.<span class="fn">sqrt</span>(<span class="num">5</span>)) / <span class="num">2</span>
+
+<span class="kw">def</span> <span class="fn">wythoff_is_losing</span>(a, b) -> <span class="cls">bool</span>:
+    <span class="kw">if</span> a > b: a, b = b, a
+    n = b - a
+    <span class="kw">return</span> <span class="fn">int</span>(n * PHI) == a  <span class="cmt"># O(1) 判斷</span>
+
+<span class="kw">def</span> <span class="fn">wythoff_best_move</span>(a, b):
+    <span class="kw">if</span> <span class="fn">wythoff_is_losing</span>(a, b): <span class="kw">return</span> <span class="kw">None</span>
+    <span class="kw">for</span> na <span class="kw">in</span> <span class="fn">range</span>(a + <span class="num">1</span>):
+        <span class="kw">if</span> <span class="fn">wythoff_is_losing</span>(na, b): <span class="kw">return</span> (na, b)
+    <span class="kw">for</span> nb <span class="kw">in</span> <span class="fn">range</span>(b + <span class="num">1</span>):
+        <span class="kw">if</span> <span class="fn">wythoff_is_losing</span>(a, nb): <span class="kw">return</span> (a, nb)
+    <span class="kw">for</span> d <span class="kw">in</span> <span class="fn">range</span>(<span class="num">1</span>, <span class="fn">min</span>(a, b) + <span class="num">1</span>):
+        <span class="kw">if</span> <span class="fn">wythoff_is_losing</span>(a - d, b - d): <span class="kw">return</span> (a - d, b - d)</pre>
+    </div>
+    <div class="algo-h2">黃金比例為什麼出現在這裡？</div>
+    <div class="algo-p">
+      關鍵是 <strong>Beatty 定理</strong>：對於無理數 <code>r</code> 和 <code>s</code>，
+      若 <code>1/r + 1/s = 1</code>，則 <code>{⌊n·r⌋}</code> 和 <code>{⌊n·s⌋}</code>
+      恰好把所有正整數<strong>不重複地分成兩組</strong>。
+      由於 <code>1/φ + 1/φ² = 1</code>，序列 <code>⌊n·φ⌋</code> 和 <code>⌊n·φ²⌋</code>
+      就剛好把所有非負整數配成對，完美對應了 Wythoff 的必敗位置。
+    </div>
+  </div>
+
+  <!-- Minimax Section -->
+  <div class="algo-section" id="algo-minimax">
+    <div class="complexity-row">
+      <span class="badge badge-type">Minimax</span>
+      <span class="badge badge-type">Memoization</span>
+      <span class="badge badge-type">Alpha-Beta Pruning</span>
+    </div>
+    <div class="algo-h2">Minimax 遞迴定義</div>
+    <div class="code-block">
+      <span class="lang-tag">Python</span>
+      <pre><span class="kw">from</span> functools <span class="kw">import</span> lru_cache
+
+@lru_cache(<span class="kw">maxsize</span>=<span class="kw">None</span>)
+<span class="kw">def</span> <span class="fn">is_losing</span>(board: frozenset) -> <span class="cls">bool</span>:
+    <span class="cmt">"""當前玩家是否在必輸位置（Chomp）"""</span>
+    non_poison = {(r,c) <span class="kw">for</span> r,c <span class="kw">in</span> board <span class="kw">if</span> (r,c) != (<span class="num">0</span>,<span class="num">0</span>)}
+    <span class="kw">if not</span> non_poison: <span class="kw">return</span> <span class="kw">True</span>
+    <span class="kw">for</span> (r, c) <span class="kw">in</span> non_poison:
+        eaten = frozenset(
+            (rr, cc) <span class="kw">for</span> rr, cc <span class="kw">in</span> board
+            <span class="kw">if not</span> (rr >= r <span class="kw">and</span> cc >= c)
+        )
+        <span class="kw">if</span> <span class="fn">is_losing</span>(eaten): <span class="kw">return</span> <span class="kw">False</span>
+    <span class="kw">return</span> <span class="kw">True</span></pre>
+    </div>
+    <div class="algo-h2">Alpha-Beta Pruning（Connect Four 使用）</div>
+    <div class="algo-p">
+      在大棋盤上，狀態空間仍然太大。Alpha-Beta Pruning 是 Minimax 的優化版本，
+      透過剪掉「不可能被選到的分支」，在<strong>不影響正確性</strong>的情況下大幅加速。
+      最好情況可將搜尋從 O(b<sup>d</sup>) 降至 O(b<sup>d/2</sup>)。
+    </div>
+    <div class="code-block">
+      <span class="lang-tag">Python</span>
+      <pre><span class="kw">def</span> <span class="fn">minimax</span>(state, depth, alpha, beta, is_maximizing):
+    <span class="kw">if</span> <span class="fn">is_terminal</span>(state) <span class="kw">or</span> depth == <span class="num">0</span>:
+        <span class="kw">return</span> <span class="fn">evaluate</span>(state)
+    <span class="kw">if</span> is_maximizing:
+        value = -<span class="fn">float</span>(<span class="str">'inf'</span>)
+        <span class="kw">for</span> move <span class="kw">in</span> <span class="fn">get_moves</span>(state):
+            value = <span class="fn">max</span>(value, <span class="fn">minimax</span>(<span class="fn">apply</span>(state, move), depth-<span class="num">1</span>, alpha, beta, <span class="kw">False</span>))
+            alpha = <span class="fn">max</span>(alpha, value)
+            <span class="kw">if</span> beta <= alpha: <span class="kw">break</span>  <span class="cmt"># β 剪枝</span>
+        <span class="kw">return</span> value
+    <span class="kw">else</span>:
+        value = <span class="fn">float</span>(<span class="str">'inf'</span>)
+        <span class="kw">for</span> move <span class="kw">in</span> <span class="fn">get_moves</span>(state):
+            value = <span class="fn">min</span>(value, <span class="fn">minimax</span>(<span class="fn">apply</span>(state, move), depth-<span class="num">1</span>, alpha, beta, <span class="kw">True</span>))
+            beta = <span class="fn">min</span>(beta, value)
+            <span class="kw">if</span> beta <= alpha: <span class="kw">break</span>  <span class="cmt"># α 剪枝</span>
+        <span class="kw">return</span> value</pre>
+    </div>
+    <div class="insight-box">
+      <div class="insight-label">🔬 記憶化的關鍵</div>
+      <p>
+        不同走法序列可能產生<strong>相同的棋盤狀態</strong>。
+        用 <code>dict</code> 或 <code>@lru_cache</code> 把已算過的狀態存起來，
+        可以讓時間從 <strong>O(moves!)</strong> 降到 <strong>O(唯一狀態數 × 合法移動數)</strong>。
+      </p>
+    </div>
+    <div class="insight-box">
+      <div class="insight-label">🤯 Chomp 的特殊地位</div>
+      <p>
+        Chomp 在數學上<strong>已被證明先手必勝</strong>（Zermelo 定理），
+        但目前<strong>沒有人知道具體策略是什麼</strong>（除少數特殊棋盤大小）。
+        這是組合賽局理論中的著名開放問題之一。
+      </p>
+    </div>
+  </div>
+
+  <!-- Complexity Section -->
+  <div class="algo-section" id="algo-complexity">
+    <div class="algo-h2">各遊戲複雜度比較</div>
+    <div style="overflow-x:auto;margin:14px 0;">
+      <table style="width:100%;border-collapse:collapse;font-size:12px;">
+        <thead>
+          <tr style="border-bottom:1px solid var(--border);">
+            <th style="padding:9px 12px;text-align:left;color:var(--text-dim);font-weight:400;font-family:'Orbitron',monospace;font-size:10px;">遊戲</th>
+            <th style="padding:9px 12px;text-align:left;color:var(--text-dim);font-weight:400;font-family:'Orbitron',monospace;font-size:10px;">演算法</th>
+            <th style="padding:9px 12px;text-align:left;color:var(--text-dim);font-weight:400;font-family:'Orbitron',monospace;font-size:10px;">判斷勝負</th>
+            <th style="padding:9px 12px;text-align:left;color:var(--text-dim);font-weight:400;font-family:'Orbitron',monospace;font-size:10px;">最佳走法</th>
+            <th style="padding:9px 12px;text-align:left;color:var(--text-dim);font-weight:400;font-family:'Orbitron',monospace;font-size:10px;">核心數學</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr style="border-bottom:1px solid var(--border);">
+            <td style="padding:9px 12px;color:var(--accent);">🪨 Bachet</td>
+            <td style="padding:9px 12px;">DP → 公式</td>
+            <td style="padding:9px 12px;font-family:'Fira Code',monospace;color:var(--accent3);">O(1)</td>
+            <td style="padding:9px 12px;font-family:'Fira Code',monospace;color:var(--accent3);">O(1)</td>
+            <td style="padding:9px 12px;font-size:11px;color:var(--text-dim);">模運算</td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border);">
+            <td style="padding:9px 12px;color:var(--accent4);">🔢 21點</td>
+            <td style="padding:9px 12px;">DP → 公式</td>
+            <td style="padding:9px 12px;font-family:'Fira Code',monospace;color:var(--accent3);">O(1)</td>
+            <td style="padding:9px 12px;font-family:'Fira Code',monospace;color:var(--accent3);">O(1)</td>
+            <td style="padding:9px 12px;font-size:11px;color:var(--text-dim);">模運算（同Bachet）</td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border);">
+            <td style="padding:9px 12px;color:var(--accent3);">⚡ Nim多堆</td>
+            <td style="padding:9px 12px;">Bitwise XOR</td>
+            <td style="padding:9px 12px;font-family:'Fira Code',monospace;color:var(--accent3);">O(k)</td>
+            <td style="padding:9px 12px;font-family:'Fira Code',monospace;color:var(--accent3);">O(k)</td>
+            <td style="padding:9px 12px;font-size:11px;color:var(--text-dim);">位元運算 / Grundy</td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border);">
+            <td style="padding:9px 12px;color:var(--accent5);">φ Wythoff</td>
+            <td style="padding:9px 12px;">黃金比例公式</td>
+            <td style="padding:9px 12px;font-family:'Fira Code',monospace;color:var(--accent3);">O(1)</td>
+            <td style="padding:9px 12px;font-family:'Fira Code',monospace;color:var(--accent4);">O(max(a,b))</td>
+            <td style="padding:9px 12px;font-size:11px;color:var(--text-dim);">黃金比例 / Beatty</td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border);">
+            <td style="padding:9px 12px;color:var(--accent2);">🍫 Chomp</td>
+            <td style="padding:9px 12px;">Minimax + Memo</td>
+            <td style="padding:9px 12px;font-family:'Fira Code',monospace;color:var(--accent4);">O(S·MN)</td>
+            <td style="padding:9px 12px;font-family:'Fira Code',monospace;color:var(--accent4);">O(S·MN)</td>
+            <td style="padding:9px 12px;font-size:11px;color:var(--accent2);">未知 ❓ 開放問題</td>
+          </tr>
+          <tr>
+            <td style="padding:9px 12px;color:var(--accent);">🔴 Connect Four</td>
+            <td style="padding:9px 12px;">Alpha-Beta</td>
+            <td style="padding:9px 12px;font-family:'Fira Code',monospace;color:var(--accent4);">O(b<sup>d/2</sup>)</td>
+            <td style="padding:9px 12px;font-family:'Fira Code',monospace;color:var(--accent4);">O(b<sup>d/2</sup>)</td>
+            <td style="padding:9px 12px;font-size:11px;color:var(--text-dim);">剪枝 / 啟發式評估</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div style="font-size:11px;color:var(--text-dim);margin-top:8px;">k = 堆數，S = Chomp 唯一棋盤狀態數，b = 分支因子，d = 搜尋深度</div>
+  </div>
+
+  <!-- LeetCode Section -->
+  <div class="algo-section" id="algo-leetcode">
+    <div class="algo-h2">Nim / XOR / Grundy 相關題目</div>
+    <div class="lc-list">
+      <a class="lc-item" href="https://leetcode.com/problems/nim-game/" target="_blank">
+        <span class="lc-num">292</span><span class="lc-title">Nim Game</span>
+        <span class="lc-diff lc-easy">Easy</span><span class="lc-rel">單堆 Nim，n%4==0 必輸</span>
+      </a>
+      <a class="lc-item" href="https://leetcode.com/problems/stone-game-iv/" target="_blank">
+        <span class="lc-num">1510</span><span class="lc-title">Stone Game IV</span>
+        <span class="lc-diff lc-hard">Hard</span><span class="lc-rel">Grundy value DP</span>
+      </a>
+      <a class="lc-item" href="https://leetcode.com/problems/chalkboard-xor-game/" target="_blank">
+        <span class="lc-num">810</span><span class="lc-title">Chalkboard XOR Game</span>
+        <span class="lc-diff lc-hard">Hard</span><span class="lc-rel">直接用 XOR 判斷勝負</span>
+      </a>
+    </div>
+    <div class="algo-h2">Bachet / 21點 相關題目</div>
+    <div class="lc-list">
+      <a class="lc-item" href="https://leetcode.com/problems/divisor-game/" target="_blank">
+        <span class="lc-num">1025</span><span class="lc-title">Divisor Game</span>
+        <span class="lc-diff lc-easy">Easy</span><span class="lc-rel">DP → 偶數必贏</span>
+      </a>
+      <a class="lc-item" href="https://leetcode.com/problems/can-i-win/" target="_blank">
+        <span class="lc-num">464</span><span class="lc-title">Can I Win</span>
+        <span class="lc-diff lc-medium">Medium</span><span class="lc-rel">Bitmask DP，Bachet 的變形</span>
+      </a>
+      <a class="lc-item" href="https://leetcode.com/problems/stone-game-iii/" target="_blank">
+        <span class="lc-num">1406</span><span class="lc-title">Stone Game III</span>
+        <span class="lc-diff lc-hard">Hard</span><span class="lc-rel">線性 DP，每次取 1~3 堆</span>
+      </a>
+    </div>
+    <div class="algo-h2">Minimax / Alpha-Beta 相關題目</div>
+    <div class="lc-list">
+      <a class="lc-item" href="https://leetcode.com/problems/predict-the-winner/" target="_blank">
+        <span class="lc-num">486</span><span class="lc-title">Predict the Winner</span>
+        <span class="lc-diff lc-medium">Medium</span><span class="lc-rel">Minimax 入門，區間 DP</span>
+      </a>
+      <a class="lc-item" href="https://leetcode.com/problems/cat-and-mouse/" target="_blank">
+        <span class="lc-num">913</span><span class="lc-title">Cat and Mouse</span>
+        <span class="lc-diff lc-hard">Hard</span><span class="lc-rel">圖上博弈，Minimax + BFS</span>
+      </a>
+      <a class="lc-item" href="https://leetcode.com/problems/flip-game-ii/" target="_blank">
+        <span class="lc-num">294</span><span class="lc-title">Flip Game II</span>
+        <span class="lc-diff lc-medium">Medium</span><span class="lc-rel">Backtracking + Memo + Grundy</span>
+      </a>
+    </div>
+    <div class="insight-box">
+      <div class="insight-label">📚 建議學習路徑</div>
+      <p>
+        <strong>第一階段（DP規律）：</strong> 先玩 Bachet → 292 → 1025<br>
+        <strong>第二階段（XOR位元）：</strong> 先玩 Nim多堆 → 810 → 1510<br>
+        <strong>第三階段（Grundy值）：</strong> 294 → 464 → 理解 mex 概念<br>
+        <strong>第四階段（Minimax）：</strong> 先玩 Chomp → 486 → 913<br>
+        <strong>第五階段（Alpha-Beta）：</strong> 先玩 Connect Four → 理解剪枝<br>
+        <strong>第六階段（數學結合）：</strong> 先玩 Wythoff → 1406
+      </p>
+    </div>
+  </div>
+
+</div><!-- /algo-content -->
+
+</div><!-- /container -->
+
+<script>
+// ---- Tab switching ----
+function algoTab(id){
+  const ids=['dp','nim','wythoff','minimax','complexity','leetcode'];
+  document.querySelectorAll('.algo-nav-tab').forEach((t,i)=>{t.classList.toggle('active',ids[i]===id);});
+  document.querySelectorAll('.algo-section').forEach(s=>s.classList.remove('active'));
+  document.getElementById('algo-'+id).classList.add('active');
+  if(id==='dp') dpInit();
+}
+
+// Handle hash navigation from game pages
+window.addEventListener('DOMContentLoaded',()=>{
+  const hash=location.hash.replace('#','');
+  if(['dp','nim','wythoff','minimax','complexity','leetcode'].includes(hash)) algoTab(hash);
+  else dpInit();
+});
+
+// ---- DP Stepper ----
+let dpState={step:-1,n:12,maxTake:3,dp:[],steps:[]};
+function dpInit(){
+  const {n,maxTake}=dpState;
+  dpState.dp=new Array(n+1).fill(null);dpState.steps=[];
+  dpState.dp[0]=false;dpState.steps.push({idx:0,val:false,note:'dp[0]=L：無石頭可取，輪到自己時遊戲已結束'});
+  dpState.dp[1]=false;dpState.steps.push({idx:1,val:false,note:'dp[1]=L：只剩1顆，Misère規則必須取 → 必輸'});
+  for(let i=2;i<=n;i++){
+    let win=false;
+    for(let t=1;t<=Math.min(maxTake,i-1);t++){if(dpState.dp[i-t]===false){win=true;break;}}
+    dpState.dp[i]=win;
+    const takes=[];
+    for(let t=1;t<=Math.min(maxTake,i-1);t++) takes.push(`取${t}→剩${i-t}(${dpState.dp[i-t]===false?'L':'W'})`);
+    dpState.steps.push({idx:i,val:win,note:`dp[${i}]=${win?'W':'L'}：${takes.join('，')}${win?'，存在讓對手進L的走法':'，所有走法對手都是W'}`});
+  }
+  dpState.step=-1;dpRenderTable();
+  document.getElementById('dp-step-info').innerHTML='點擊「下一步」開始填表';
+}
+function dpRenderTable(){
+  const {n,dp,step}=dpState;const cur=dpState.steps[step]||null;
+  let html='<table class="dp-table"><tr><th>n</th>';
+  for(let i=0;i<=n;i++) html+=`<th>${i}</th>`;
+  html+='</tr><tr><td style="color:var(--text-dim);font-size:11px">dp[n]</td>';
+  for(let i=0;i<=n;i++){
+    const v=dp[i],isCur=cur&&cur.idx===i;
+    if(v===null) html+=`<td${isCur?' class="highlight"':''}></td>`;
+    else html+=`<td class="${v?'win':'lose'}${isCur?' highlight':''}">${v?'W':'L'}</td>`;
+  }
+  html+='</tr></table>';
+  document.getElementById('dp-table-container').innerHTML=html;
+}
+function dpNext(){
+  if(dpState.step>=dpState.steps.length-1)return;
+  dpState.step++;const s=dpState.steps[dpState.step];
+  dpRenderTable();document.getElementById('dp-step-info').innerHTML=`<span>n=${s.idx}</span>：${s.note}`;
+}
+function dpPrev(){
+  if(dpState.step<=0){dpState.step=-1;dpInit();return;}
+  dpState.step--;
+  dpState.dp=new Array(dpState.n+1).fill(null);
+  for(let i=0;i<=dpState.step;i++){const s=dpState.steps[i];dpState.dp[s.idx]=s.val;}
+  const s=dpState.steps[dpState.step];
+  dpRenderTable();document.getElementById('dp-step-info').innerHTML=`<span>n=${s.idx}</span>：${s.note}`;
+}
+function dpReset(){dpInit();}
+</script>
+</body>
+</html>

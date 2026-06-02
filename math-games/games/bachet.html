@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bachet's Game — 演算法互動遊戲集</title>
+<link rel="stylesheet" href="../shared/style.css">
+</head>
+<body>
+<canvas id="confetti-canvas"></canvas>
+<div class="container">
+
+<header>
+  <div class="title">🪨 Bachet's Game</div>
+  <div class="subtitle">取石遊戲 &nbsp;·&nbsp; Dynamic Programming &nbsp;·&nbsp; O(1) Strategy</div>
+</header>
+
+<div style="text-align:center;margin-bottom:20px">
+  <a href="../index.html" style="font-size:12px;color:var(--text-dim);text-decoration:none;letter-spacing:0.1em;text-transform:uppercase;
+    padding:8px 14px;border:1px solid var(--border);border-radius:8px;transition:all 0.2s;display:inline-block;"
+    onmouseover="this.style.color='var(--accent)';this.style.borderColor='var(--accent)'"
+    onmouseout="this.style.color='var(--text-dim)';this.style.borderColor='var(--border)'">← 返回選單</a>
+</div>
+
+<!-- ===== 遊戲規則 ===== -->
+<div class="rules-block">
+  <div class="rules-title">📖 遊戲規則</div>
+  <div class="rules-body">
+    <div class="rules-item move">
+      <div class="ri-label">每回合</div>
+      <div class="ri-text">從石堆中取走 <strong>1 到 M 顆</strong>石頭（M 由設定決定）</div>
+    </div>
+    <div class="rules-item lose">
+      <div class="ri-label">輸的條件</div>
+      <div class="ri-text">取走<strong>最後一顆</strong>石頭的人輸（Misère 規則）</div>
+    </div>
+    <div class="rules-item win">
+      <div class="ri-label">必勝條件</div>
+      <div class="ri-text">讓對手面對剩餘 <code>n % (M+1) == 1</code> 的局面</div>
+    </div>
+    <div class="rules-item tip">
+      <div class="ri-label">例子（M=3）</div>
+      <div class="ri-text">剩 5、9、13、17、21 顆時輪到你 → 必輸位置</div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 設定 ===== -->
+<div class="panel active" id="panel-setup">
+  <div class="panel-title">⚙️ 遊戲設定</div>
+  <div class="mode-tabs">
+    <div class="mode-tab active" id="btab-cpu" onclick="setModeTab('b','cpu')">🖥️ 單人對戰（電腦）</div>
+    <div class="mode-tab" id="btab-create" onclick="setModeTab('b','create')">🏠 開房間</div>
+    <div class="mode-tab" id="btab-join" onclick="setModeTab('b','join')">🔗 加入房間</div>
+  </div>
+  <div id="bmode-cpu">
+    <div class="input-group"><label>你的名稱</label><input id="b-cpu-name" placeholder="玩家" maxlength="16"></div>
+    <div class="input-group"><label>初始石頭數</label>
+      <select id="b-cpu-stones"><option value="15">15顆</option><option value="21" selected>21顆（經典）</option><option value="30">30顆</option><option value="50">50顆</option></select></div>
+    <div class="input-group"><label>每次最多取（M）</label>
+      <select id="b-cpu-max"><option value="3" selected>最多3顆（經典）</option><option value="4">最多4顆</option><option value="5">最多5顆</option></select></div>
+    <div class="input-group"><label>電腦難度</label>
+      <select id="b-cpu-diff"><option value="easy">😊 簡單（偶爾隨機走）</option><option value="hard" selected>😈 困難（最優演算法）</option></select></div>
+    <div class="input-group"><label>先手</label>
+      <select id="b-cpu-first"><option value="player">玩家先手</option><option value="cpu">電腦先手</option><option value="random">隨機</option></select></div>
+    <div class="btn-row">
+      <button class="btn btn-primary btn-lg" onclick="bachetBeginCpu()">🚀 開始遊戲</button>
+    </div>
+  </div>
+  <div id="bmode-create" style="display:none">
+    <div class="step active" id="bcreate-s1">
+      <div class="input-group"><label>你的名稱</label><input id="b-host-name" placeholder="房主" maxlength="16"></div>
+      <div class="input-group"><label>初始石頭數</label>
+        <select id="b-room-stones"><option value="15">15顆</option><option value="21" selected>21顆</option><option value="30">30顆</option><option value="50">50顆</option></select></div>
+      <div class="input-group"><label>每次最多取（M）</label>
+        <select id="b-room-max"><option value="3" selected>最多3顆</option><option value="4">最多4顆</option><option value="5">最多5顆</option></select></div>
+      <div class="input-group"><label>先手</label>
+        <select id="b-room-first"><option value="host">房主先手</option><option value="guest">訪客先手</option><option value="random">隨機</option></select></div>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="bachetCreateRoom()">🏠 建立房間</button>
+      </div>
+    </div>
+    <div class="step" id="bcreate-s2">
+      <div class="room-code-box"><div class="code-label">房間代碼</div><div class="code-val" id="b-room-code-display">----</div><div class="code-hint">分享給朋友</div></div>
+      <div class="status-bar" style="margin-top:8px"><span class="spinner"></span><span class="status-text">等待對手加入…</span></div>
+      <div class="btn-row">
+        <button class="btn btn-outline btn-sm" onclick="copyCode('b-room-code-display')">📋 複製</button>
+        <button class="btn btn-sm" onclick="bachetCancelRoom()">❌ 取消</button>
+      </div>
+    </div>
+  </div>
+  <div id="bmode-join" style="display:none">
+    <div class="input-group"><label>你的名稱</label><input id="b-guest-name" placeholder="玩家" maxlength="16"></div>
+    <div class="input-group"><label>房間代碼</label>
+      <input id="b-join-code" placeholder="XXXX" maxlength="4" style="letter-spacing:0.3em;font-family:'Orbitron',monospace;font-size:20px;" oninput="this.value=this.value.toUpperCase()"></div>
+    <div id="b-join-err" style="color:var(--accent2);font-size:12px;display:none;margin-bottom:8px;"></div>
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="bachetJoinRoom()">🔗 加入</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 遊戲 ===== -->
+<div class="panel" id="panel-game">
+  <div class="panel-title" id="bachet-game-label">🪨 Bachet's Game</div>
+  <div class="players-row">
+    <div class="player-tag" id="b-p1-tag"><div class="p-name" id="b-p1-name">—</div><div class="p-label">玩家1</div></div>
+    <div style="display:flex;align-items:center;color:var(--text-dim);font-size:11px;font-family:'Orbitron',monospace;">VS</div>
+    <div class="player-tag" id="b-p2-tag"><div class="p-name" id="b-p2-name">—</div><div class="p-label">玩家2</div></div>
+  </div>
+  <div class="status-bar">
+    <div class="status-dot" id="b-status-dot"></div>
+    <div style="flex:1"><div class="status-text" id="b-status-text">準備中</div><div class="status-sub" id="b-status-sub"></div></div>
+  </div>
+  <div style="text-align:center;margin:20px 0;">
+    <div class="stones-display" id="b-stones-display"></div>
+    <div class="stones-count" id="b-stones-count">0</div>
+    <div class="stones-label">顆石頭剩餘</div>
+  </div>
+  <div class="warn-box" id="b-warn-box"></div>
+  <div class="take-btns" id="b-take-btns"></div>
+  <div class="game-log" id="b-log"></div>
+  <div class="btn-row" style="margin-top:14px">
+    <button class="btn btn-sm" onclick="goHome()">⚙️ 重新設定</button>
+  </div>
+</div>
+
+<!-- ===== 演算法解析（可展開） ===== -->
+<div class="algo-accordion">
+  <button class="algo-accordion-trigger" onclick="toggleAlgo(this)">
+    <span>🧠 演算法解析 — Dynamic Programming → O(1)</span>
+    <span class="acc-arrow">▼</span>
+  </button>
+  <div class="algo-accordion-body">
+    <div class="acc-h2">核心問題</div>
+    <div class="acc-p">
+      桌上有 <strong>N 顆石頭</strong>，每次最多取 <strong>M 顆</strong>，取最後一顆者輸。
+      哪些局面是必輸位置（L-position）？
+    </div>
+
+    <div class="acc-h2">DP 推導</div>
+    <div class="acc-p">
+      定義 <code>dp[n]</code> = 剩 n 顆時，<strong>當前玩家</strong>是 W（必贏）還是 L（必輸）。
+    </div>
+    <div class="acc-code">
+      <span class="lang-tag">Python</span>
+      <pre><span class="cmt"># 填 dp 表（N=21, M=3）</span>
+dp[<span class="num">0</span>] = L  <span class="cmt"># 無石可取，上一個人已輸</span>
+dp[<span class="num">1</span>] = L  <span class="cmt"># 只能取 1 顆 → 被迫取走最後 1 顆 → 輸</span>
+dp[<span class="num">2</span>] = W  <span class="cmt"># 取 1 → 對手面對 dp[1]=L → 我贏</span>
+dp[<span class="num">3</span>] = W  <span class="cmt"># 取 2 → 對手面對 dp[1]=L → 我贏</span>
+dp[<span class="num">4</span>] = W  <span class="cmt"># 取 3 → 對手面對 dp[1]=L → 我贏</span>
+dp[<span class="num">5</span>] = L  <span class="cmt"># 取1→dp[4]=W, 取2→dp[3]=W, 取3→dp[2]=W → 全輸</span>
+dp[<span class="num">6</span>] = W  <span class="cmt"># 取 1 → 對手面對 dp[5]=L → 我贏</span>
+<span class="cmt"># 規律：1, 5, 9, 13, 17, 21 ... 每隔 M+1=4 出現一次 L</span></pre>
+    </div>
+
+    <div class="acc-insight">
+      <span class="ins-label">💡 從 DP 到 O(1) 公式</span>
+      跑完 dp 表後發現<strong>週期性規律</strong>，直接用一行判斷：<br><br>
+      <strong><code>n % (M + 1) == 1</code> → 必輸（L-position）</strong><br><br>
+      必勝走法：取 <code>(n % (M+1)) - 1</code> 顆，讓對手面對下一個 L-position。
+    </div>
+
+    <div class="acc-code">
+      <span class="lang-tag">Python</span>
+      <pre><span class="kw">def</span> <span class="fn">best_move</span>(n: <span class="cls">int</span>, M: <span class="cls">int</span>) -> <span class="cls">int</span>:
+    <span class="kw">if</span> n == <span class="num">1</span>: <span class="kw">return</span> <span class="num">1</span>          <span class="cmt"># 強制輸，沒得選</span>
+    K = M + <span class="num">1</span>
+    r = n % K
+    <span class="kw">if</span> r == <span class="num">1</span>: <span class="kw">return</span> <span class="num">1</span>          <span class="cmt"># 敗局，隨便取</span>
+    take = r - <span class="num">1</span> <span class="kw">if</span> r > <span class="num">0</span> <span class="kw">else</span> K - <span class="num">1</span>
+    <span class="kw">return</span> <span class="fn">max</span>(<span class="num">1</span>, <span class="fn">min</span>(take, M, n - <span class="num">1</span>))</pre>
+    </div>
+
+    <a href="../algo.html#dp" class="acc-more" target="_blank">→ 完整解析（含互動 DP 模擬、LeetCode 題目）</a>
+  </div>
+</div>
+
+</div><!-- /container -->
+
+<!-- Disconnect overlay -->
+<div id="disconnect-overlay" style="display:none;position:fixed;inset:0;background:rgba(10,10,15,0.92);
+  z-index:150;backdrop-filter:blur(6px);align-items:center;justify-content:center;">
+  <div style="background:var(--surface);border:1px solid var(--accent2);border-radius:20px;padding:36px;
+    text-align:center;max-width:320px;width:90%;">
+    <div style="font-size:48px;margin-bottom:12px;">😔</div>
+    <div style="font-family:'Orbitron',monospace;font-size:16px;font-weight:900;color:var(--accent2);margin-bottom:10px;">對手已離開</div>
+    <div style="font-size:13px;color:var(--text-dim);margin-bottom:24px;line-height:1.7;">房間已關閉，遊戲無法繼續。</div>
+    <button class="btn btn-primary" onclick="dismissDisconnect()" style="width:100%">⚙️ 回設定</button>
+  </div>
+</div>
+
+<div class="result-overlay" id="result-overlay">
+  <div class="result-box">
+    <span class="result-emoji" id="result-emoji">🏆</span>
+    <div class="result-title" id="result-title">勝利！</div>
+    <div class="result-msg" id="result-msg"></div>
+    <div class="btn-row" style="justify-content:center">
+      <button class="btn btn-primary" onclick="playAgain()">🔄 再玩一局</button>
+      <button class="btn btn-outline" onclick="goHome()">⚙️ 重新設定</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="../shared/firebase.js"></script>
+<script src="../shared/ui.js"></script>
+<script>
+function toggleAlgo(btn){
+  btn.classList.toggle('open');
+  btn.nextElementSibling.classList.toggle('open');
+}
+function goHome(){
+  document.getElementById('result-overlay').classList.remove('show');
+  stopPolling();
+  if(CUR.roomCode){cleanupRoom(CUR.roomCode);CUR.roomCode=null;}
+  document.getElementById('bcreate-s1').classList.add('active');
+  document.getElementById('bcreate-s2').classList.remove('active');
+  CUR.game=null; showPanel('panel-setup');
+}
+function playAgain(){
+  document.getElementById('result-overlay').classList.remove('show');
+  stopPolling();
+  if(CUR.roomCode){cleanupRoom(CUR.roomCode);CUR.roomCode=null;}
+  if(CUR.lastSettings) _bachetStart(CUR.lastSettings); else goHome();
+}
+
+const B={stones:0,maxTake:3,currentPlayer:1,p1Name:'玩家',p2Name:'電腦',mode:null,myPlayer:1,cpuDiff:'hard',roomCode:null,lastSeen:0,gameOver:false};
+
+function bachetBeginCpu(){
+  _bachetStart({game:'bachet',mode:'cpu',
+    name:document.getElementById('b-cpu-name').value.trim()||'玩家',
+    stones:+document.getElementById('b-cpu-stones').value,
+    maxTake:+document.getElementById('b-cpu-max').value,
+    diff:document.getElementById('b-cpu-diff').value,
+    firstSel:document.getElementById('b-cpu-first').value});
+}
+function _bachetStart(s){
+  stopPolling();CUR.game='bachet';CUR.lastSettings=s;
+  B.mode=s.mode;B.stones=s.stones;B.maxTake=s.maxTake;B.cpuDiff=s.diff||'hard';
+  B.p1Name=s.name||s.hostName||'玩家';
+  B.p2Name=B.mode==='cpu'?`電腦（${B.cpuDiff==='hard'?'最優演算法':'隨機走法'}）`:(s.guestName||'訪客');
+  B.myPlayer=s.myPlayer||1;B.gameOver=false;B.roomCode=s.roomCode||null;B.lastSeen=0;
+  B.currentPlayer=s.firstPlayer||resolveFirst(s.firstSel||'player');
+  _bachetInitUI();showPanel('panel-game');
+  document.getElementById('bachet-game-label').textContent='🪨 Bachet\'s Game'+(B.mode!=='cpu'?(B.myPlayer===1?' (房主)':' (訪客)'):'');
+  if(B.mode==='cpu'&&B.currentPlayer===2){bUpdateStatus();setTimeout(bCpuTurn,900);}
+  else bUpdateStatus();
+  if(B.mode!=='cpu'&&B.currentPlayer!==B.myPlayer)
+    startRoomPolling(B.roomCode,room=>{const mv=Object.values(room.moves||{});if(mv.length>B.lastSeen){const m=mv[B.lastSeen];B.lastSeen=mv.length;stopPolling();bApplyMove(m.player,m.take,true);}});
+}
+function _bachetInitUI(){
+  document.getElementById('b-p1-name').textContent=B.p1Name;
+  document.getElementById('b-p2-name').textContent=B.p2Name;
+  const c=document.getElementById('b-take-btns');c.innerHTML='';
+  for(let i=1;i<=B.maxTake;i++){const btn=document.createElement('button');btn.className='take-btn';btn.id='btake-'+i;btn.innerHTML=`${i}<span class="lbl">取${i}顆</span>`;btn.onclick=()=>bPlayerTake(i);c.appendChild(btn);}
+  document.getElementById('b-log').innerHTML='';
+  document.getElementById('b-warn-box').classList.remove('show');
+  addLog('b-log','sys',`開始！${B.stones}顆石頭，每次最多取${B.maxTake}顆。取最後一顆者輸。`);
+  bRenderStones();bUpdateStatus();
+}
+function bRenderStones(){
+  const d=document.getElementById('b-stones-display');
+  document.getElementById('b-stones-count').textContent=B.stones;
+  d.innerHTML='';
+  const show=Math.min(B.stones,60);
+  for(let i=0;i<show;i++){const s=document.createElement('div');s.className='stone';d.appendChild(s);}
+  if(B.stones>60){const m=document.createElement('span');m.style.cssText='color:var(--text-dim);font-size:12px;align-self:center';m.textContent=`+${B.stones-60}…`;d.appendChild(m);}
+  const warn=document.getElementById('b-warn-box');
+  if(B.stones===1){const isMe=B.mode==='cpu'?B.currentPlayer===1:B.currentPlayer===B.myPlayer;warn.textContent=isMe?'😱 只剩1顆！你被迫取走，你輸了…':'🎉 只剩1顆！對手必須取走，你贏了！';warn.classList.add('show');}
+  else warn.classList.remove('show');
+}
+function bUpdateStatus(){
+  const isMyTurn=B.mode==='cpu'?B.currentPlayer===1:B.currentPlayer===B.myPlayer;
+  updatePlayerTags('b-p1-tag','b-p2-tag',B.currentPlayer);
+  if(B.gameOver){setStatusDot('b-status-dot','over');document.getElementById('b-status-text').textContent='遊戲結束';document.getElementById('b-status-sub').textContent='';bSetBtns(false);return;}
+  if(isMyTurn){
+    setStatusDot('b-status-dot','your-turn');
+    document.getElementById('b-status-text').textContent='你的回合';
+    document.getElementById('b-status-sub').textContent=B.stones===1?'被迫取走最後1顆':`可取 1~${Math.min(B.maxTake,B.stones-1)} 顆`;
+    bSetBtns(true);
+    for(let i=1;i<=B.maxTake;i++){const btn=document.getElementById('btake-'+i);if(btn)btn.disabled=B.stones>1?i>=B.stones:i>1;}
+  } else {
+    setStatusDot('b-status-dot','waiting');
+    document.getElementById('b-status-text').textContent=`${B.currentPlayer===1?B.p1Name:B.p2Name} 的回合`;
+    document.getElementById('b-status-sub').textContent=B.mode==='cpu'?'電腦計算中…':'等待對手…';
+    bSetBtns(false);
+  }
+}
+function bSetBtns(e){for(let i=1;i<=B.maxTake;i++){const b=document.getElementById('btake-'+i);if(b)b.disabled=!e;}}
+async function bPlayerTake(n){
+  if(B.gameOver||n>B.stones)return;
+  if(B.stones>1&&n>=B.stones)return;
+  if(B.mode==='cpu'&&B.currentPlayer!==1)return;
+  if(B.mode!=='cpu'&&B.currentPlayer!==B.myPlayer)return;
+  if(B.mode!=='cpu'){const _r=await getRoom(B.roomCode);if(!_r)return;await pushMove(B.roomCode,{player:B.myPlayer,take:n});B.lastSeen++;}
+  bApplyMove(B.myPlayer,n,true);
+}
+function bApplyMove(player,n,animate){
+  const name=player===1?B.p1Name:B.p2Name;
+  addLog('b-log',player===1?'p1':'p2',`${name} 取走了 ${n} 顆`);
+  if(animate){const els=document.querySelectorAll('#b-stones-display .stone');const cnt=Math.min(n,els.length);for(let i=els.length-1;i>=els.length-cnt;i--)els[i].classList.add('taken');}
+  B.stones-=n;
+  if(B.stones===0){
+    B.gameOver=true;
+    const loser=name,winnerIdx=player===1?2:1,winner=winnerIdx===1?B.p1Name:B.p2Name;
+    bRenderStones();bUpdateStatus();addLog('b-log','sys',`${loser}取走最後一顆！${winner}獲勝🎉`);
+    const isMe=(B.mode==='cpu'&&winnerIdx===1)||(B.mode!=='cpu'&&winnerIdx===B.myPlayer);
+    setTimeout(()=>showResult(winnerIdx,winner,loser,isMe,`${loser}取走了最後一顆石頭。`),700);return;
+  }
+  B.currentPlayer=B.currentPlayer===1?2:1;bRenderStones();bUpdateStatus();
+  if(B.mode==='cpu'&&B.currentPlayer===2)setTimeout(bCpuTurn,600+Math.random()*700);
+  else if(B.mode!=='cpu'&&B.currentPlayer!==B.myPlayer)
+    startRoomPolling(B.roomCode,room=>{const mv=Object.values(room.moves||{});if(mv.length>B.lastSeen){const m=mv[B.lastSeen];B.lastSeen=mv.length;stopPolling();bApplyMove(m.player,m.take,true);}});
+}
+function bCpuTurn(){if(B.gameOver)return;setTimeout(()=>bApplyMove(2,bCalcMove(),true),200);}
+function bCalcMove(){
+  const k=B.maxTake+1,s=B.stones;
+  if(B.cpuDiff==='easy'&&Math.random()<0.45)return bOptimal(s,k);
+  if(B.cpuDiff==='easy'){const max=Math.min(B.maxTake,s===1?1:s-1);return Math.floor(Math.random()*max)+1;}
+  return bOptimal(s,k);
+}
+function bOptimal(s,k){
+  if(s===1)return 1;const r=s%k;
+  if(r===1){const max=Math.min(B.maxTake,s-1);return Math.floor(Math.random()*max)+1;}
+  let t=r===0?k-1:r-1;return Math.max(1,Math.min(t,B.maxTake,s-1));
+}
+async function bachetCreateRoom(){
+  const hostName=document.getElementById('b-host-name').value.trim()||'房主';
+  const stones=+document.getElementById('b-room-stones').value;
+  const maxTake=+document.getElementById('b-room-max').value;
+  const firstPlayer=resolveFirst(document.getElementById('b-room-first').value);
+  const code=await uniqueCode();
+  await setRoom(code,{code,game:'bachet',hostName,stones,maxTake,firstPlayer,guest:false,guestName:null,started:false,moves:[],created:Date.now()});
+  CUR.roomCode=code;B.roomCode=code;
+  document.getElementById('b-room-code-display').textContent=code;
+  registerHostDisconnect(code);
+  document.getElementById('bcreate-s1').classList.remove('active');document.getElementById('bcreate-s2').classList.add('active');
+  startRoomPolling(code,room=>{if(room.guest){stopPolling();_bachetStart({game:'bachet',mode:'host',hostName,guestName:room.guestName,stones,maxTake,myPlayer:1,roomCode:code,firstPlayer});}});
+}
+async function bachetCancelRoom(){
+  stopPolling();if(CUR.roomCode){cleanupRoom(CUR.roomCode);CUR.roomCode=null;}
+  document.getElementById('bcreate-s1').classList.add('active');document.getElementById('bcreate-s2').classList.remove('active');
+}
+async function bachetJoinRoom(){
+  const guestName=document.getElementById('b-guest-name').value.trim()||'訪客';
+  const code=document.getElementById('b-join-code').value.trim().toUpperCase();
+  const err=document.getElementById('b-join-err');err.style.display='none';
+  if(code.length!==4){err.textContent='請輸入4位代碼';err.style.display='block';return;}
+  const room=await getRoom(code);
+  if(!room||room.game!=='bachet'){err.textContent='找不到此Bachet房間';err.style.display='block';return;}
+  if(room.guest||room.started){err.textContent='房間已滿';err.style.display='block';return;}
+  await updateRoom(code,{guest:true,guestName,started:true});CUR.roomCode=code;
+  _bachetStart({game:'bachet',mode:'guest',hostName:room.hostName,guestName,name:guestName,stones:room.stones,maxTake:room.maxTake,myPlayer:2,roomCode:code,firstPlayer:room.firstPlayer});
+}
+</script>
+</body>
+</html>
