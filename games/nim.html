@@ -30,13 +30,9 @@
       <div class="ri-label">輸的條件</div>
       <div class="ri-text">取走<strong>最後一顆</strong>石頭的人輸（Misère 規則）</div>
     </div>
-    <div class="rules-item win">
-      <div class="ri-label">必勝條件</div>
-      <div class="ri-text">讓對手面對所有堆 <code>XOR = 0</code> 的局面（Nim-sum 為零）</div>
-    </div>
     <div class="rules-item tip">
-      <div class="ri-label">提示</div>
-      <div class="ri-text">畫面上的 Nim-sum 數字是你的線索——<strong>非零表示你在必贏位置</strong></div>
+      <div class="ri-label">挑戰</div>
+      <div class="ri-text">先玩幾局，看看畫面上的 Nim-sum 數字和輸贏有什麼關係 👇</div>
     </div>
   </div>
 </div>
@@ -109,52 +105,16 @@
   </div>
 </div>
 
-<!-- 演算法解析 -->
-<div class="algo-accordion">
-  <button class="algo-accordion-trigger" onclick="toggleAlgo(this)">
-    <span>🧠 演算法解析 — XOR Nim-sum &amp; Sprague-Grundy</span>
-    <span class="acc-arrow">▼</span>
-  </button>
-  <div class="algo-accordion-body">
-    <div class="acc-h2">為什麼用 XOR？</div>
-    <div class="acc-p">
-      多堆 Nim 無法直接用模運算。Bouton 在 1901 年證明：
-      <strong>所有堆的 XOR（稱為 Nim-sum）決定了輸贏</strong>。
-    </div>
-    <div class="acc-insight">
-      <span class="ins-label">📐 Bouton 定理</span>
-      <strong>Nim-sum = 0 → 當前玩家必輸</strong>（無論怎麼取，都會讓對手面對 Nim-sum ≠ 0）<br>
-      <strong>Nim-sum ≠ 0 → 當前玩家必贏</strong>（一定存在一種取法讓 Nim-sum 變 0）
-    </div>
-    <div class="acc-code">
-      <span class="lang-tag">Python</span>
-      <pre><span class="kw">def</span> <span class="fn">nim_best_move</span>(heaps: list) -> tuple:
-    nim_sum = <span class="num">0</span>
-    <span class="kw">for</span> h <span class="kw">in</span> heaps: nim_sum ^= h
-
-    <span class="kw">if</span> nim_sum == <span class="num">0</span>:
-        <span class="cmt"># 敗局，隨便取一顆</span>
-        i = next(i <span class="kw">for</span> i,h <span class="kw">in</span> <span class="fn">enumerate</span>(heaps) <span class="kw">if</span> h > <span class="num">0</span>)
-        <span class="kw">return</span> (i, <span class="num">1</span>)
-
-    <span class="kw">for</span> i, h <span class="kw">in</span> <span class="fn">enumerate</span>(heaps):
-        target = h ^ nim_sum    <span class="cmt"># 取完後這堆應剩幾顆</span>
-        <span class="kw">if</span> target < h:
-            <span class="kw">return</span> (i, h - target)  <span class="cmt"># 取走 h-target 顆</span>
-
-<span class="cmt"># 例：heaps=[3,5,7]</span>
-<span class="cmt"># nim_sum = 3^5^7 = 011^101^111 = 001 = 1</span>
-<span class="cmt"># 找 h^1 < h：7^1=6 < 7 → 從第3堆取1顆</span>
-<span class="cmt"># 結果 [3,5,6]，3^5^6=0 ✓</span></pre>
-    </div>
-    <div class="acc-h2">Sprague-Grundy 定理</div>
-    <div class="acc-p">
-      每堆石頭的 <strong>Grundy value = 堆的大小</strong>。
-      多個獨立子遊戲合在一起時，整體的 Grundy value 就是各部分的 XOR。
-      這就是為什麼多堆 Nim 用 XOR——它是 Sprague-Grundy 定理的直接應用。
-    </div>
-    <a href="../algo.html#nim" class="acc-more" target="_blank">→ 完整解析（含 Grundy value 計算、LeetCode 題目）</a>
-  </div>
+<!-- 演算法解析連結 -->
+<div style="text-align:center;margin:24px 0 8px;">
+  <a href="nim-algo.html"
+    style="display:inline-flex;align-items:center;gap:10px;padding:14px 28px;
+      background:var(--surface);border:1px solid var(--border);border-radius:12px;
+      text-decoration:none;color:var(--text);font-size:14px;transition:all 0.2s;letter-spacing:0.03em;"
+    onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'"
+    onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text)'">
+    🧠 <strong>看演算法解析</strong> &nbsp;— XOR Nim-sum · Bouton 定理 · Sprague-Grundy
+  </a>
 </div>
 
 </div>
@@ -184,7 +144,6 @@
 <script src="../shared/firebase.js"></script>
 <script src="../shared/ui.js"></script>
 <script>
-function toggleAlgo(btn){btn.classList.toggle('open');btn.nextElementSibling.classList.toggle('open');}
 function goHome(){document.getElementById('result-overlay').classList.remove('show');stopPolling();if(CUR.roomCode){cleanupRoom(CUR.roomCode);CUR.roomCode=null;}document.getElementById('ncreate-s1').classList.add('active');document.getElementById('ncreate-s2').classList.remove('active');CUR.game=null;showPanel('panel-setup');}
 function playAgain(){document.getElementById('result-overlay').classList.remove('show');stopPolling();if(CUR.roomCode){cleanupRoom(CUR.roomCode);CUR.roomCode=null;}if(CUR.lastSettings)_nimStart(CUR.lastSettings);else goHome();}
 const N={heaps:[],currentPlayer:1,p1Name:'玩家',p2Name:'電腦',mode:null,myPlayer:1,cpuDiff:'hard',roomCode:null,lastSeen:0,gameOver:false,selectedHeap:-1};
@@ -220,45 +179,112 @@ function nRenderTakeArea(){
   const area=document.getElementById('n-take-area');area.innerHTML='';
   const isMyTurn=N.mode==='cpu'?N.currentPlayer===1:N.currentPlayer===N.myPlayer;
   if(!isMyTurn||N.gameOver){document.getElementById('n-select-hint').textContent='';return;}
+  const total=N.heaps.reduce((a,b)=>a+b,0);
   if(N.selectedHeap===-1){
     document.getElementById('n-select-hint').textContent='第一步：選擇要取石頭的堆';
     N.heaps.forEach((cnt,i)=>{if(cnt===0)return;const btn=document.createElement('button');btn.className='heap-btn';btn.textContent=`堆${i+1} (${cnt}顆)`;btn.onclick=()=>{N.selectedHeap=i;nRenderHeaps();nRenderTakeArea();};area.appendChild(btn);});
   }else{
     document.getElementById('n-select-hint').textContent=`第二步：從堆${N.selectedHeap+1}（${N.heaps[N.selectedHeap]}顆）取幾顆？`;
     const btn0=document.createElement('button');btn0.className='heap-btn';btn0.textContent='← 重選堆';btn0.onclick=()=>{N.selectedHeap=-1;nRenderHeaps();nRenderTakeArea();};area.appendChild(btn0);
-    const maxTake=N.heaps[N.selectedHeap];const nonEmpty=N.heaps.filter(h=>h>0).length;
-    for(let t=1;t<=maxTake;t++){const wouldClearLast=(nonEmpty===1&&t===maxTake&&maxTake>1);const btn=document.createElement('button');btn.className='heap-btn';btn.textContent=`取 ${t} 顆`;if(wouldClearLast)btn.disabled=true;btn.onclick=()=>nPlayerTake(N.selectedHeap,t);area.appendChild(btn);}
+    const maxTake=N.heaps[N.selectedHeap];
+    const nonEmpty=N.heaps.filter(h=>h>0).length;
+    for(let t=1;t<=maxTake;t++){
+      const btn=document.createElement('button');btn.className='heap-btn';
+      // Misère：只剩這一堆且堆>1時，不能取到0（那樣對手無石可取就輸了，其實是你贏）
+      // 修正：只有 total===t 且 total===1 時才是被迫輸（取走唯一一顆）
+      // 允許所有合法取法，包含清空一堆（Misère規則下清空一堆不一定輸）
+      btn.textContent=`取 ${t} 顆`;
+      btn.onclick=()=>nPlayerTake(N.selectedHeap,t);
+      area.appendChild(btn);
+    }
   }
 }
 function nUpdateStatus(){
   const isMyTurn=N.mode==='cpu'?N.currentPlayer===1:N.currentPlayer===N.myPlayer;
   updatePlayerTags('n-p1-tag','n-p2-tag',N.currentPlayer);
   if(N.gameOver){setStatusDot('n-status-dot','over');document.getElementById('n-status-text').textContent='遊戲結束';document.getElementById('n-status-sub').textContent='';return;}
-  if(isMyTurn){setStatusDot('n-status-dot','your-turn');document.getElementById('n-status-text').textContent='你的回合';const xs=N.heaps.reduce((a,b)=>a^b,0);document.getElementById('n-status-sub').textContent=xs===0?'⚠️ 你在必輸位置（Nim-sum=0）':'✅ 你在必贏位置！找到讓 Nim-sum=0 的走法';}
-  else{setStatusDot('n-status-dot','waiting');document.getElementById('n-status-text').textContent=`${N.currentPlayer===1?N.p1Name:N.p2Name} 的回合`;document.getElementById('n-status-sub').textContent=N.mode==='cpu'?'電腦計算中…':'等待對手…';}
+  if(isMyTurn){
+    setStatusDot('n-status-dot','your-turn');document.getElementById('n-status-text').textContent='你的回合';
+    const xs=N.heaps.reduce((a,b)=>a^b,0);
+    document.getElementById('n-status-sub').textContent=xs===0?'⚠️ 你在必輸位置（Nim-sum=0）':'✅ 你在必贏位置！找到讓 Nim-sum=0 的走法';
+  }else{
+    setStatusDot('n-status-dot','waiting');document.getElementById('n-status-text').textContent=`${N.currentPlayer===1?N.p1Name:N.p2Name} 的回合`;
+    document.getElementById('n-status-sub').textContent=N.mode==='cpu'?'電腦計算中…':'等待對手…';
+  }
 }
 async function nPlayerTake(heapIdx,take){
   if(N.gameOver)return;if(N.mode==='cpu'&&N.currentPlayer!==1)return;if(N.mode!=='cpu'&&N.currentPlayer!==N.myPlayer)return;
+  if(take>N.heaps[heapIdx])return;
   if(N.mode!=='cpu'){const _r=await getRoom(N.roomCode);if(!_r)return;await pushMove(N.roomCode,{player:N.myPlayer,heap:heapIdx,take});N.lastSeen++;}
   nApplyMove(N.myPlayer,heapIdx,take,true);
 }
 function nApplyMove(player,heapIdx,take,animate){
-  const name=player===1?N.p1Name:N.p2Name;addLog('n-log',player===1?'p1':'p2',`${name} 從堆${heapIdx+1} 取走了 ${take} 顆（剩 ${N.heaps[heapIdx]-take} 顆）`);
+  const name=player===1?N.p1Name:N.p2Name;
+  addLog('n-log',player===1?'p1':'p2',`${name} 從堆${heapIdx+1} 取走了 ${take} 顆（剩 ${N.heaps[heapIdx]-take} 顆）`);
   N.heaps[heapIdx]-=take;N.selectedHeap=-1;
   const total=N.heaps.reduce((a,b)=>a+b,0);
-  if(total===0){N.gameOver=true;const loser=name,winnerIdx=player===1?2:1,winner=winnerIdx===1?N.p1Name:N.p2Name;nRenderHeaps();nUpdateXor();nUpdateStatus();addLog('n-log','sys',`${loser} 取走最後一顆！${winner} 獲勝🎉`);const isMe=(N.mode==='cpu'&&winnerIdx===1)||(N.mode!=='cpu'&&winnerIdx===N.myPlayer);setTimeout(()=>showResult(winnerIdx,winner,loser,isMe,`${loser} 取走了最後一顆石頭。`),700);return;}
+  if(total===0){
+    N.gameOver=true;const loser=name,winnerIdx=player===1?2:1,winner=winnerIdx===1?N.p1Name:N.p2Name;
+    nRenderHeaps();nUpdateXor();nUpdateStatus();addLog('n-log','sys',`${loser} 取走最後一顆！${winner} 獲勝🎉`);
+    const isMe=(N.mode==='cpu'&&winnerIdx===1)||(N.mode!=='cpu'&&winnerIdx===N.myPlayer);
+    setTimeout(()=>showResult(winnerIdx,winner,loser,isMe,`${loser} 取走了最後一顆石頭。`),700);return;
+  }
   N.currentPlayer=N.currentPlayer===1?2:1;nRenderHeaps();nRenderTakeArea();nUpdateXor();nUpdateStatus();
   if(N.mode==='cpu'&&N.currentPlayer===2)setTimeout(nCpuTurn,700+Math.random()*600);
   else if(N.mode!=='cpu'&&N.currentPlayer!==N.myPlayer)startRoomPolling(N.roomCode,room=>{const mv=Object.values(room.moves||{});if(mv.length>N.lastSeen){const m=mv[N.lastSeen];N.lastSeen=mv.length;stopPolling();nApplyMove(m.player,m.heap,m.take,true);}});
 }
 function nCpuTurn(){if(N.gameOver)return;const m=nCalcMove();setTimeout(()=>nApplyMove(2,m.heap,m.take,true),200);}
-function nCalcMove(){if(N.cpuDiff==='easy'&&Math.random()<0.5)return nRandomMove();return nOptimalMove();}
-function nRandomMove(){const valid=[];N.heaps.forEach((h,i)=>{if(h>0)valid.push(i);});const hi=valid[Math.floor(Math.random()*valid.length)];const nonEmpty=N.heaps.filter(h=>h>0).length;const maxT=(nonEmpty===1&&N.heaps[hi]>1)?N.heaps[hi]-1:N.heaps[hi];return{heap:hi,take:Math.floor(Math.random()*maxT)+1};}
+function nCalcMove(){
+  // 簡單模式：25% 走最優，75% 隨機
+  if(N.cpuDiff==='easy'){
+    if(Math.random()<0.25)return nOptimalMove();
+    return nRandomMove();
+  }
+  return nOptimalMove();
+}
+function nRandomMove(){
+  const valid=[];N.heaps.forEach((h,i)=>{if(h>0)valid.push(i);});
+  const hi=valid[Math.floor(Math.random()*valid.length)];
+  return{heap:hi,take:Math.floor(Math.random()*N.heaps[hi])+1};
+}
 function nOptimalMove(){
-  const multiHeaps=N.heaps.filter(h=>h>1).length,nimSum=N.heaps.reduce((a,b)=>a^b,0);
-  if(multiHeaps===0){const hi=N.heaps.indexOf(1);return{heap:hi,take:1};}
+  const nimSum=N.heaps.reduce((a,b)=>a^b,0);
+  const nonEmpty=N.heaps.filter(h=>h>0).length;
+  const multiHeaps=N.heaps.filter(h=>h>1).length;
+
+  // Misère 特例：所有堆都是 0 或 1
+  if(multiHeaps===0){
+    // 只剩 1 的堆，Misère：奇數堆必輸，偶數堆必贏
+    // 必贏走法：讓剩下奇數堆（留給對手）
+    const ones=N.heaps.filter(h=>h===1).length;
+    const hi=N.heaps.indexOf(1);
+    // 如果目前1的數量是偶數，取走一個讓對手面對奇數個
+    // 如果目前1的數量是奇數，輸局，隨便取
+    return{heap:hi,take:1};
+  }
+
+  // 一般情況：Nim-sum !== 0 時有最優走法
   if(nimSum===0)return nRandomMove();
-  for(let i=0;i<N.heaps.length;i++){const target=N.heaps[i]^nimSum;if(target<N.heaps[i]){const newHeaps=[...N.heaps];newHeaps[i]=target;const othersMulti=newHeaps.filter(h=>h>1).length;if(othersMulti===0){const ones=newHeaps.filter(h=>h===1).length;if(ones%2===0&&target===1)return{heap:i,take:N.heaps[i]-1};if(ones%2===1&&target===0)return{heap:i,take:N.heaps[i]};if(ones%2===0&&target===0&&N.heaps[i]>1)return{heap:i,take:N.heaps[i]-1};}return{heap:i,take:N.heaps[i]-target};}}
+
+  for(let i=0;i<N.heaps.length;i++){
+    const target=N.heaps[i]^nimSum;
+    if(target<N.heaps[i]){
+      // Misère 修正：若取完後剩下全是0或1的堆，
+      // 要確保剩下的1的數量是奇數（讓對手在Misère下必輸）
+      const newHeaps=[...N.heaps];newHeaps[i]=target;
+      const newMulti=newHeaps.filter(h=>h>1).length;
+      if(newMulti===0){
+        const newOnes=newHeaps.filter(h=>h===1).length;
+        // Misère：對手面對奇數個1堆時必輸
+        if(newOnes%2===1)return{heap:i,take:N.heaps[i]-target};
+        // 否則調整：多取或少取一顆讓1的數量變奇數
+        if(target+1<=N.heaps[i]&&(newOnes+1)%2===1)return{heap:i,take:N.heaps[i]-(target+1)};
+        if(target-1>=0&&(newOnes-1)%2===1)return{heap:i,take:N.heaps[i]-(target-1)};
+      }else{
+        return{heap:i,take:N.heaps[i]-target};
+      }
+    }
+  }
   return nRandomMove();
 }
 async function nimCreateRoom(){const numHeaps=+document.getElementById('n-room-heaps').value;const maxH=+document.getElementById('n-room-max').value;const heaps=Array.from({length:numHeaps},()=>Math.floor(Math.random()*(maxH-1))+1);const hostName=document.getElementById('n-host-name').value.trim()||'房主';const firstPlayer=resolveFirst(document.getElementById('n-room-first').value);const code=await uniqueCode();await setRoom(code,{code,game:'nim',hostName,heaps,firstPlayer,guest:false,guestName:null,started:false,moves:[],created:Date.now()});CUR.roomCode=code;N.roomCode=code;document.getElementById('n-room-code-display').textContent=code;registerHostDisconnect(code);document.getElementById('ncreate-s1').classList.remove('active');document.getElementById('ncreate-s2').classList.add('active');startRoomPolling(code,room=>{if(room.guest){stopPolling();_nimStart({game:'nim',mode:'host',hostName,guestName:room.guestName,heaps,myPlayer:1,roomCode:code,firstPlayer});}});}
