@@ -329,7 +329,7 @@ function bUpdateStatus(){
     document.getElementById('b-status-text').textContent='你的回合';
     document.getElementById('b-status-sub').textContent=B.stones===1?'被迫取走最後1顆':`可取 1~${Math.min(B.maxTake,B.stones-1)} 顆`;
     bSetBtns(true);
-    for(let i=1;i<=B.maxTake;i++){const btn=document.getElementById('btake-'+i);if(btn)btn.disabled=B.stones>1?i>=B.stones:i>1;}
+    for(let i=1;i<=B.maxTake;i++){const btn=document.getElementById('btake-'+i);if(btn)btn.disabled=i>B.stones;}
   } else {
     setStatusDot('b-status-dot','waiting');
     document.getElementById('b-status-text').textContent=`${B.currentPlayer===1?B.p1Name:B.p2Name} 的回合`;
@@ -340,7 +340,6 @@ function bUpdateStatus(){
 function bSetBtns(e){for(let i=1;i<=B.maxTake;i++){const b=document.getElementById('btake-'+i);if(b)b.disabled=!e;}}
 async function bPlayerTake(n){
   if(B.gameOver||n>B.stones)return;
-  if(B.stones>1&&n>=B.stones)return;
   if(B.mode==='cpu'&&B.currentPlayer!==1)return;
   if(B.mode!=='cpu'&&B.currentPlayer!==B.myPlayer)return;
   if(B.mode!=='cpu'){const _r=await getRoom(B.roomCode);if(!_r)return;await pushMove(B.roomCode,{player:B.myPlayer,take:n});B.lastSeen++;}
@@ -366,8 +365,10 @@ function bApplyMove(player,n,animate){
 function bCpuTurn(){if(B.gameOver)return;setTimeout(()=>bApplyMove(2,bCalcMove(),true),200);}
 function bCalcMove(){
   const k=B.maxTake+1,s=B.stones;
-  if(B.cpuDiff==='easy'&&Math.random()<0.45)return bOptimal(s,k);
-  if(B.cpuDiff==='easy'){const max=Math.min(B.maxTake,s===1?1:s-1);return Math.floor(Math.random()*max)+1;}
+  if(B.cpuDiff==='easy'){
+    if(Math.random()<0.25)return bOptimal(s,k);
+    const max=Math.min(B.maxTake,s===1?1:s-1);return Math.floor(Math.random()*max)+1;
+  }
   return bOptimal(s,k);
 }
 function bOptimal(s,k){
