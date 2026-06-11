@@ -121,113 +121,20 @@
   </div>
 </div>
 
-<!-- ===== 演算法解析（可展開） ===== -->
-<div class="algo-accordion">
-  <button class="algo-accordion-trigger" onclick="toggleAlgo(this)">
-    <span>🧠 演算法解析 — Dynamic Programming → O(1)</span>
-    <span class="acc-arrow">▼</span>
-  </button>
-  <div class="algo-accordion-body">
-
-    <!-- STEP 1 -->
-    <div class="acc-step-label">Step 1 · 觀察必輸位置</div>
-    <div class="acc-p">
-      先從小的情況開始想（M=3，每次最多取3顆）：<br><br>
-      剩 <strong>1 顆</strong>時輪到你 → 只能取走最後1顆 → <span style="color:var(--accent2)">你輸</span><br>
-      剩 <strong>2 顆</strong>時輪到你 → 取1顆，對手剩1顆必輸 → <span style="color:var(--accent)">你贏</span><br>
-      剩 <strong>3 顆</strong>時輪到你 → 取2顆，對手剩1顆必輸 → <span style="color:var(--accent)">你贏</span><br>
-      剩 <strong>4 顆</strong>時輪到你 → 取3顆，對手剩1顆必輸 → <span style="color:var(--accent)">你贏</span><br>
-      剩 <strong>5 顆</strong>時輪到你 → 取1剩4(W)、取2剩3(W)、取3剩2(W)，對手怎麼都贏 → <span style="color:var(--accent2)">你輸</span>
-    </div>
-    <div class="acc-insight" style="margin-bottom:0">
-      <span class="ins-label">🔍 規律浮現</span>
-      必輸位置：1, 5, 9, 13, 17, 21 …<br>
-      每隔 <strong>M+1 = 4</strong> 出現一次，這不是巧合！
-    </div>
-
-    <!-- STEP 2 -->
-    <div class="acc-step-label" style="margin-top:28px">Step 2 · 用 DP 嚴格證明</div>
-    <div class="acc-p">
-      直覺看到規律了，但怎麼確定後面也成立？用動態規劃（DP）來嚴格推導。<br><br>
-      定義 <code>dp[n]</code> = 剩 n 顆時，<strong>當前玩家</strong>是 W（必贏）還是 L（必輸）。<br><br>
-      轉移規則很直接：<br>
-      ・若存在某個取法 k（1≤k≤M），使得 <code>dp[n-k] = L</code>，則 <code>dp[n] = W</code>（我能讓對手必輸）<br>
-      ・若所有取法都讓對手 W，則 <code>dp[n] = L</code>（我怎麼走都輸）
-    </div>
-    <div class="acc-code">
-      <span class="lang-tag">Python</span>
-      <pre><span class="cmt"># DP 填表（M=3，以 True=必贏W / False=必輸L 表示）</span>
-dp[<span class="num">0</span>] = <span class="kw">False</span>  <span class="cmt"># 0顆：無石可取，上一個人取走最後一顆輸了，此時輪到你已經贏了</span>
-dp[<span class="num">1</span>] = <span class="kw">False</span>  <span class="cmt"># 1顆：只能取1顆 → 取走最後一顆 → 輸(L)</span>
-dp[<span class="num">2</span>] = <span class="kw">True</span>   <span class="cmt"># 2顆：取1 → dp[1]=L，對手輸 → 贏(W)</span>
-dp[<span class="num">3</span>] = <span class="kw">True</span>   <span class="cmt"># 3顆：取2 → dp[1]=L → 贏(W)</span>
-dp[<span class="num">4</span>] = <span class="kw">True</span>   <span class="cmt"># 4顆：取3 → dp[1]=L → 贏(W)</span>
-dp[<span class="num">5</span>] = <span class="kw">False</span>  <span class="cmt"># 5顆：取1→dp[4]=W, 取2→dp[3]=W, 取3→dp[2]=W → 全輸(L)</span>
-dp[<span class="num">6</span>] = <span class="kw">True</span>   <span class="cmt"># 6顆：取1 → dp[5]=L → 贏(W)</span>
-dp[<span class="num">7</span>] = <span class="kw">True</span>   <span class="cmt"># 7顆：取2 → dp[5]=L → 贏(W)</span>
-dp[<span class="num">8</span>] = <span class="kw">True</span>   <span class="cmt"># 8顆：取3 → dp[5]=L → 贏(W)</span>
-dp[<span class="num">9</span>] = <span class="kw">False</span>  <span class="cmt"># 9顆：取1→dp[8]=W, 取2→dp[7]=W, 取3→dp[6]=W → 全輸(L)</span>
-<span class="cmt"># L位置：1, 5, 9, 13 … 完全吻合，每 M+1=4 一個週期</span></pre>
-    </div>
-
-    <!-- STEP 3 -->
-    <div class="acc-step-label" style="margin-top:28px">Step 3 · 理解為什麼是週期 M+1</div>
-    <div class="acc-p">
-      關鍵在於：每次兩人合計取走的顆數，可以從 <strong>2 到 2M</strong>，但不管怎樣，<br>
-      <strong>只要你每次都讓一輪合計 = M+1</strong>，就能控制局面。<br><br>
-      對手取 k 顆，你取 <strong>(M+1-k)</strong> 顆，一輪結束後石頭減少恰好 M+1。<br>
-      只要從 L-position 出發，每輪減 M+1，對手永遠面對下一個 L-position。
-    </div>
-    <div class="acc-insight">
-      <span class="ins-label">💡 核心直覺</span>
-      你的目標是「控制節奏」：不管對手取幾顆，你都能補到一輪合計 M+1。<br>
-      這樣石頭數就按 …→ 1+(M+1)k 的規律遞減，對手永遠踩在必輸格。
-    </div>
-
-    <!-- STEP 4 -->
-    <div class="acc-step-label" style="margin-top:28px">Step 4 · 從規律推出 O(1) 公式</div>
-    <div class="acc-p">
-      DP 跑完之後，L-position 就是 <code>1, M+2, 2(M+1)+1, …</code><br>
-      統一寫成：<strong><code>n % (M+1) == 1</code> 時必輸</strong>。<br><br>
-      必勝走法也很直接：
-    </div>
-    <div class="acc-code">
-      <span class="lang-tag">Python</span>
-      <pre><span class="kw">def</span> <span class="fn">best_move</span>(n: <span class="cls">int</span>, M: <span class="cls">int</span>) -> <span class="cls">int</span>:
-    <span class="kw">if</span> n == <span class="num">1</span>:
-        <span class="kw">return</span> <span class="num">1</span>          <span class="cmt"># 已是敗局，被迫取走</span>
-    K = M + <span class="num">1</span>
-    r = n % K
-    <span class="kw">if</span> r == <span class="num">1</span>:
-        <span class="kw">return</span> <span class="num">1</span>          <span class="cmt"># 已在 L-position，隨便取（此局必輸）</span>
-    take = r - <span class="num">1</span> <span class="kw">if</span> r > <span class="num">0</span> <span class="kw">else</span> K - <span class="num">1</span>
-    <span class="kw">return</span> <span class="fn">max</span>(<span class="num">1</span>, <span class="fn">min</span>(take, M, n - <span class="num">1</span>))
-    <span class="cmt"># 取完後讓 n' % (M+1) == 1，把 L-position 留給對手</span></pre>
-    </div>
-
-    <!-- STEP 5 -->
-    <div class="acc-step-label" style="margin-top:28px">Step 5 · 驗證：回看剛才那局</div>
-    <div class="acc-p">
-      以經典設定 N=21、M=3 來驗證：<br><br>
-      K = M+1 = 4，L-position = <strong>1, 5, 9, 13, 17, 21</strong><br>
-      開局 21 顆，<code>21 % 4 = 1</code> → 先手在 L-position，<strong>先手必輸</strong>！<br><br>
-      後手策略：不管先手取幾顆，後手都補到一輪合計4顆：<br>
-      先手取1→後手取3（剩17）、先手取2→後手取2（剩17）、先手取3→後手取1（剩17）<br>
-      每輪後，石頭數都停在 L-position：17 → 13 → 9 → 5 → 1，先手被迫取走最後一顆。
-    </div>
-    <div class="acc-insight">
-      <span class="ins-label">✅ 結論</span>
-      先手必輸的條件：<code>N % (M+1) == 1</code><br>
-      必勝策略：每輪讓合計取走數 = M+1，把 L-position 一路傳給對手。
-    </div>
-
-    <a href="../algo.html#dp" class="acc-more" target="_blank">→ 完整解析（含互動 DP 模擬、LeetCode 題目）</a>
-  </div>
+<!-- ===== 演算法解析連結 ===== -->
+<div style="text-align:center;margin:24px 0 8px;">
+  <a href="bachet-algo.html"
+    style="display:inline-flex;align-items:center;gap:10px;padding:14px 28px;
+      background:var(--surface);border:1px solid var(--border);border-radius:12px;
+      text-decoration:none;color:var(--text);font-size:14px;transition:all 0.2s;letter-spacing:0.03em;"
+    onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'"
+    onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text)'">
+    🧠 <strong>看演算法解析</strong> &nbsp;— DP 推導 · O(1) 公式 · LeetCode 題目
+  </a>
 </div>
 
 </div><!-- /container -->
 
-<!-- Disconnect overlay -->
 <div id="disconnect-overlay" style="display:none;position:fixed;inset:0;background:rgba(10,10,15,0.92);
   z-index:150;backdrop-filter:blur(6px);align-items:center;justify-content:center;">
   <div style="background:var(--surface);border:1px solid var(--accent2);border-radius:20px;padding:36px;
@@ -256,10 +163,6 @@ dp[<span class="num">9</span>] = <span class="kw">False</span>  <span class="cmt
 <script src="../shared/firebase.js"></script>
 <script src="../shared/ui.js"></script>
 <script>
-function toggleAlgo(btn){
-  btn.classList.toggle('open');
-  btn.nextElementSibling.classList.toggle('open');
-}
 function goHome(){
   document.getElementById('result-overlay').classList.remove('show');
   stopPolling();
@@ -327,7 +230,7 @@ function bUpdateStatus(){
   if(isMyTurn){
     setStatusDot('b-status-dot','your-turn');
     document.getElementById('b-status-text').textContent='你的回合';
-    document.getElementById('b-status-sub').textContent=B.stones===1?'被迫取走最後1顆':`可取 1~${Math.min(B.maxTake,B.stones-1)} 顆`;
+    document.getElementById('b-status-sub').textContent=B.stones===1?'被迫取走最後1顆':`可取 1~${Math.min(B.maxTake,B.stones)} 顆`;
     bSetBtns(true);
     for(let i=1;i<=B.maxTake;i++){const btn=document.getElementById('btake-'+i);if(btn)btn.disabled=i>B.stones;}
   } else {
