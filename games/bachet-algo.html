@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bachet's Game 演算法解析 — 演算法互動遊戲集</title>
+<link rel="stylesheet" href="../shared/style.css">
+</head>
+<body>
+<div class="container">
+
+<header>
+  <div class="title">🧠 Bachet's Game 演算法解析</div>
+  <div class="subtitle">Dynamic Programming &nbsp;·&nbsp; O(1) Strategy &nbsp;·&nbsp; Misère 規則</div>
+</header>
+
+<div style="text-align:center;margin-bottom:20px;display:flex;justify-content:center;gap:12px;flex-wrap:wrap;">
+  <a href="bachet.html" style="font-size:12px;color:var(--text-dim);text-decoration:none;letter-spacing:0.1em;text-transform:uppercase;
+    padding:8px 14px;border:1px solid var(--border);border-radius:8px;transition:all 0.2s;display:inline-block;"
+    onmouseover="this.style.color='var(--accent)';this.style.borderColor='var(--accent)'"
+    onmouseout="this.style.color='var(--text-dim)';this.style.borderColor='var(--border)'">🪨 回遊戲</a>
+  <a href="../index.html" style="font-size:12px;color:var(--text-dim);text-decoration:none;letter-spacing:0.1em;text-transform:uppercase;
+    padding:8px 14px;border:1px solid var(--border);border-radius:8px;transition:all 0.2s;display:inline-block;"
+    onmouseover="this.style.color='var(--accent)';this.style.borderColor='var(--accent)'"
+    onmouseout="this.style.color='var(--text-dim)';this.style.borderColor='var(--border)'">← 返回選單</a>
+</div>
+
+<!-- 目錄 -->
+<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:28px;">
+  <div style="font-size:11px;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-dim);margin-bottom:12px;">本頁內容</div>
+  <div style="display:flex;flex-direction:column;gap:8px;">
+    <a href="#step1" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Step 1 · 觀察必輸位置</a>
+    <a href="#step2" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Step 2 · 用 DP 嚴格證明</a>
+    <a href="#step3" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Step 3 · 為什麼週期是 M+1</a>
+    <a href="#step4" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Step 4 · 推出 O(1) 公式</a>
+    <a href="#step5" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Step 5 · 驗證：完整走一局</a>
+    <a href="#sim" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">互動 DP 模擬</a>
+    <a href="#leetcode" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">LeetCode 相關題目</a>
+  </div>
+</div>
+
+<!-- Step 1 -->
+<div id="step1" class="algo-section">
+  <div class="acc-step-label">Step 1 · 觀察必輸位置</div>
+  <div class="acc-p">
+    先從小的情況開始想（以 M=3 為例，每次最多取3顆）：<br><br>
+    剩 <strong>1 顆</strong>時輪到你 → 只能取走最後1顆 → <span style="color:var(--accent2)">❌ 你輸（L）</span><br>
+    剩 <strong>2 顆</strong>時輪到你 → 取1顆，讓對手面對1顆 → <span style="color:var(--accent)">✅ 你贏（W）</span><br>
+    剩 <strong>3 顆</strong>時輪到你 → 取2顆，讓對手面對1顆 → <span style="color:var(--accent)">✅ 你贏（W）</span><br>
+    剩 <strong>4 顆</strong>時輪到你 → 取3顆，讓對手面對1顆 → <span style="color:var(--accent)">✅ 你贏（W）</span><br>
+    剩 <strong>5 顆</strong>時輪到你 → 取1剩4(W)、取2剩3(W)、取3剩2(W)，對手怎麼都贏 → <span style="color:var(--accent2)">❌ 你輸（L）</span><br>
+    剩 <strong>6~8 顆</strong>時輪到你 → 可以取到讓對手剩5顆(L) → <span style="color:var(--accent)">✅ 你贏（W）</span><br>
+    剩 <strong>9 顆</strong>時輪到你 → 取1剩8(W)、取2剩7(W)、取3剩6(W) → <span style="color:var(--accent2)">❌ 你輸（L）</span>
+  </div>
+  <div class="acc-insight">
+    <span class="ins-label">🔍 規律浮現</span>
+    必輸位置（L-position）：<strong>1, 5, 9, 13, 17, 21 …</strong><br>
+    每隔 <strong>M+1 = 4</strong> 出現一次。這不是巧合，下面我們來證明它。
+  </div>
+</div>
+
+<!-- Step 2 -->
+<div id="step2" class="algo-section">
+  <div class="acc-step-label">Step 2 · 用 DP 嚴格證明</div>
+  <div class="acc-p">
+    光靠觀察不夠嚴謹，用動態規劃（DP）來確認規律是否永遠成立。<br><br>
+    定義 <code>dp[n]</code> = 剩 n 顆時，<strong>當前玩家</strong>的狀態（W 必贏 / L 必輸）<br><br>
+    <strong>轉移規則：</strong><br>
+    ・若存在某個取法 k（1 ≤ k ≤ M），使得 <code>dp[n-k] = L</code>，則 <code>dp[n] = W</code><br>
+    ・若所有取法都讓對手進入 W，則 <code>dp[n] = L</code>
+  </div>
+  <div class="acc-code">
+    <span class="lang-tag">Python</span>
+    <pre><span class="cmt"># DP 填表（M=3，True=必贏W / False=必輸L）</span>
+dp[<span class="num">0</span>] = <span class="kw">False</span>  <span class="cmt"># 0顆：輪到你時對手已取走最後一顆，你贏了——但這裡定義為L是為了轉移方便</span>
+dp[<span class="num">1</span>] = <span class="kw">False</span>  <span class="cmt"># 只能取1顆 → 取走最後一顆 → 輸 (L)</span>
+dp[<span class="num">2</span>] = <span class="kw">True</span>   <span class="cmt"># 取1 → dp[1]=L，讓對手輸 → 贏 (W)</span>
+dp[<span class="num">3</span>] = <span class="kw">True</span>   <span class="cmt"># 取2 → dp[1]=L → 贏 (W)</span>
+dp[<span class="num">4</span>] = <span class="kw">True</span>   <span class="cmt"># 取3 → dp[1]=L → 贏 (W)</span>
+dp[<span class="num">5</span>] = <span class="kw">False</span>  <span class="cmt"># 取1→dp[4]=W, 取2→dp[3]=W, 取3→dp[2]=W → 全都贏不了 (L)</span>
+dp[<span class="num">6</span>] = <span class="kw">True</span>   <span class="cmt"># 取1 → dp[5]=L → 贏 (W)</span>
+dp[<span class="num">7</span>] = <span class="kw">True</span>   <span class="cmt"># 取2 → dp[5]=L → 贏 (W)</span>
+dp[<span class="num">8</span>] = <span class="kw">True</span>   <span class="cmt"># 取3 → dp[5]=L → 贏 (W)</span>
+dp[<span class="num">9</span>] = <span class="kw">False</span>  <span class="cmt"># 取1→dp[8]=W, 取2→dp[7]=W, 取3→dp[6]=W → (L)</span>
+<span class="cmt"># L位置：1, 5, 9, 13 … 完全吻合，每 M+1=4 一個週期 ✓</span>
+
+<span class="cmt"># 完整 DP 實作</span>
+<span class="kw">def</span> <span class="fn">solve</span>(N: <span class="cls">int</span>, M: <span class="cls">int</span>) -> <span class="cls">list</span>:
+    dp = [<span class="kw">False</span>] * (N + <span class="num">1</span>)
+    <span class="kw">for</span> n <span class="kw">in</span> <span class="fn">range</span>(<span class="num">2</span>, N + <span class="num">1</span>):
+        dp[n] = <span class="fn">any</span>(<span class="kw">not</span> dp[n - k] <span class="kw">for</span> k <span class="kw">in</span> <span class="fn">range</span>(<span class="num">1</span>, <span class="fn">min</span>(M, n) + <span class="num">1</span>))
+    <span class="kw">return</span> dp</pre>
+  </div>
+</div>
+
+<!-- Step 3 -->
+<div id="step3" class="algo-section">
+  <div class="acc-step-label">Step 3 · 為什麼週期是 M+1</div>
+  <div class="acc-p">
+    DP 確認了規律，但為什麼週期偏偏是 <strong>M+1</strong>？<br><br>
+    關鍵在於：兩人輪流取，每輪一定會取走 <strong>至少2顆、最多2M顆</strong>。<br>
+    但如果你能每輪<strong>控制合計恰好 = M+1</strong>，就掌握了節奏：<br><br>
+    對手取 k 顆（1 ≤ k ≤ M）<br>
+    你取 <strong>M+1-k</strong> 顆（同樣合法，因為 1 ≤ M+1-k ≤ M）<br>
+    一輪結束，石頭恰好減少 M+1 顆。
+  </div>
+  <div class="acc-insight">
+    <span class="ins-label">💡 核心直覺</span>
+    從一個 L-position 出發，每輪減 M+1，下一個 L-position 還是你的對手面對。<br>
+    L-position 之間距離固定是 M+1，所以整條數線上每隔 M+1 就出現一個 L。<br><br>
+    反之，如果你在 W-position，一定能找到一個取法跳到下一個 L-position，<br>
+    讓對手陷入必輸局面。
+  </div>
+</div>
+
+<!-- Step 4 -->
+<div id="step4" class="algo-section">
+  <div class="acc-step-label">Step 4 · 推出 O(1) 公式</div>
+  <div class="acc-p">
+    L-position 序列是 <code>1, M+2, 2(M+1)+1, 3(M+1)+1, …</code><br>
+    統一表示為：<code>n = 1 + j*(M+1)</code>，其中 j = 0, 1, 2, …<br><br>
+    因此：<strong><code>n % (M+1) == 1</code> ↔ 必輸（L-position）</strong>
+  </div>
+  <div class="acc-code">
+    <span class="lang-tag">Python</span>
+    <pre><span class="kw">def</span> <span class="fn">is_losing</span>(n: <span class="cls">int</span>, M: <span class="cls">int</span>) -> <span class="cls">bool</span>:
+    <span class="kw">return</span> n % (M + <span class="num">1</span>) == <span class="num">1</span>   <span class="cmt"># O(1) 判斷</span>
+
+<span class="kw">def</span> <span class="fn">best_move</span>(n: <span class="cls">int</span>, M: <span class="cls">int</span>) -> <span class="cls">int</span>:
+    <span class="kw">if</span> n == <span class="num">1</span>:
+        <span class="kw">return</span> <span class="num">1</span>              <span class="cmt"># 已是敗局，被迫取走</span>
+    K = M + <span class="num">1</span>
+    r = n % K
+    <span class="kw">if</span> r == <span class="num">1</span>:
+        <span class="kw">return</span> <span class="num">1</span>              <span class="cmt"># 在 L-position，隨便取（此局必輸）</span>
+    take = r - <span class="num">1</span> <span class="kw">if</span> r > <span class="num">0</span> <span class="kw">else</span> K - <span class="num">1</span>
+    <span class="kw">return</span> <span class="fn">max</span>(<span class="num">1</span>, <span class="fn">min</span>(take, M, n - <span class="num">1</span>))
+    <span class="cmt"># 取完後 n' % (M+1) == 1，把 L-position 傳給對手</span></pre>
+  </div>
+</div>
+
+<!-- Step 5 -->
+<div id="step5" class="algo-section">
+  <div class="acc-step-label">Step 5 · 驗證：完整走一局（N=21, M=3）</div>
+  <div class="acc-p">
+    K = M+1 = 4，L-position = <strong>1, 5, 9, 13, 17, 21</strong><br><br>
+    開局 21 顆，<code>21 % 4 = 1</code> → 先手在 L-position，<strong>先手必輸</strong><br><br>
+    後手策略（每輪補到合計4顆）：
+  </div>
+  <div style="overflow-x:auto;margin:16px 0;">
+    <table style="width:100%;border-collapse:collapse;font-size:13px;">
+      <thead>
+        <tr style="border-bottom:1px solid var(--border);">
+          <th style="padding:10px;text-align:left;color:var(--text-dim);font-weight:500;">先手取</th>
+          <th style="padding:10px;text-align:left;color:var(--text-dim);font-weight:500;">後手取</th>
+          <th style="padding:10px;text-align:left;color:var(--text-dim);font-weight:500;">剩餘</th>
+          <th style="padding:10px;text-align:left;color:var(--text-dim);font-weight:500;">狀態</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:10px;">任意 k</td><td style="padding:10px;">4-k</td><td style="padding:10px;font-weight:700;">17</td>
+          <td style="padding:10px;color:var(--accent2);">L ✗</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:10px;">任意 k</td><td style="padding:10px;">4-k</td><td style="padding:10px;font-weight:700;">13</td>
+          <td style="padding:10px;color:var(--accent2);">L ✗</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:10px;">任意 k</td><td style="padding:10px;">4-k</td><td style="padding:10px;font-weight:700;">9</td>
+          <td style="padding:10px;color:var(--accent2);">L ✗</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:10px;">任意 k</td><td style="padding:10px;">4-k</td><td style="padding:10px;font-weight:700;">5</td>
+          <td style="padding:10px;color:var(--accent2);">L ✗</td>
+        </tr>
+        <tr>
+          <td style="padding:10px;">任意 k</td><td style="padding:10px;">4-k</td><td style="padding:10px;font-weight:700;">1</td>
+          <td style="padding:10px;color:var(--accent2);">先手被迫取走 ✗</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="acc-insight">
+    <span class="ins-label">✅ 結論</span>
+    先手必輸條件：<code>N % (M+1) == 1</code><br>
+    必勝策略：每輪讓合計取走 = M+1，把 L-position 一路傳給對手。<br>
+    時間複雜度：O(1) 判斷勝負，O(1) 計算最優走法。
+  </div>
+</div>
+
+<!-- 互動 DP 模擬 -->
+<div id="sim" class="algo-section">
+  <div class="acc-step-label">互動 DP 模擬</div>
+  <div class="acc-p">點擊「下一步」，逐格填入 dp 表，觀察 L-position 的週期規律。</div>
+  <div style="margin:16px 0;">
+    <label style="font-size:13px;color:var(--text-dim);">N =</label>
+    <select id="sim-n" style="margin:0 8px;background:var(--surface);border:1px solid var(--border);color:var(--text);padding:4px 8px;border-radius:6px;">
+      <option value="12">12</option>
+      <option value="21" selected>21</option>
+      <option value="30">30</option>
+    </select>
+    <label style="font-size:13px;color:var(--text-dim);">M =</label>
+    <select id="sim-m" style="margin:0 8px;background:var(--surface);border:1px solid var(--border);color:var(--text);padding:4px 8px;border-radius:6px;">
+      <option value="2">2</option>
+      <option value="3" selected>3</option>
+      <option value="4">4</option>
+    </select>
+  </div>
+  <div id="sim-grid" style="display:flex;flex-wrap:wrap;gap:6px;margin:16px 0;min-height:48px;"></div>
+  <div id="sim-explain" style="font-size:13px;color:var(--text-dim);min-height:40px;margin-bottom:12px;"></div>
+  <div style="display:flex;gap:10px;flex-wrap:wrap;">
+    <button class="btn btn-sm" onclick="simPrev()">← 上一步</button>
+    <button class="btn btn-primary btn-sm" onclick="simNext()">下一步 →</button>
+    <button class="btn btn-sm" onclick="simReset()">↺ 重置</button>
+  </div>
+</div>
+
+<!-- LeetCode -->
+<div id="leetcode" class="algo-section">
+  <div class="acc-step-label">LeetCode 相關題目</div>
+  <div class="acc-p">從簡單到難，建議依序練習：</div>
+  <div style="display:flex;flex-direction:column;gap:10px;margin-top:12px;">
+    <a href="https://leetcode.com/problems/nim-game/" target="_blank" class="lc-card">
+      <span class="lc-num">#292</span>
+      <span class="lc-title">Nim Game</span>
+      <span class="lc-tag easy">Easy</span>
+      <span class="lc-desc">單堆 Nim 入門，n%4==0 必輸，和本題同樣原理</span>
+    </a>
+    <a href="https://leetcode.com/problems/divisor-game/" target="_blank" class="lc-card">
+      <span class="lc-num">#1025</span>
+      <span class="lc-title">Divisor Game</span>
+      <span class="lc-tag easy">Easy</span>
+      <span class="lc-desc">DP 推導後有數學規律，偶數必贏</span>
+    </a>
+    <a href="https://leetcode.com/problems/can-i-win/" target="_blank" class="lc-card">
+      <span class="lc-num">#464</span>
+      <span class="lc-title">Can I Win</span>
+      <span class="lc-tag medium">Medium</span>
+      <span class="lc-desc">Bitmask DP，Bachet 的進階變形</span>
+    </a>
+    <a href="https://leetcode.com/problems/stone-game/" target="_blank" class="lc-card">
+      <span class="lc-num">#877</span>
+      <span class="lc-title">Stone Game</span>
+      <span class="lc-tag medium">Medium</span>
+      <span class="lc-desc">DP + 數學，先手必贏的證明</span>
+    </a>
+    <a href="https://leetcode.com/problems/stone-game-iii/" target="_blank" class="lc-card">
+      <span class="lc-num">#1406</span>
+      <span class="lc-title">Stone Game III</span>
+      <span class="lc-tag hard">Hard</span>
+      <span class="lc-desc">每次取 1~3 堆，線性 DP</span>
+    </a>
+  </div>
+</div>
+
+<!-- 下一個遊戲 -->
+<div style="text-align:center;margin:32px 0 8px;">
+  <div style="font-size:12px;color:var(--text-dim);margin-bottom:12px;letter-spacing:0.1em;text-transform:uppercase;">接下來</div>
+  <a href="count21-algo.html"
+    style="display:inline-flex;align-items:center;gap:10px;padding:14px 28px;
+      background:var(--surface);border:1px solid var(--border);border-radius:12px;
+      text-decoration:none;color:var(--text);font-size:14px;transition:all 0.2s;"
+    onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'"
+    onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text)'">
+    🔢 <strong>21點報數解析</strong> &nbsp;— 和 Bachet 一樣的數學，不同的外殼 →
+  </a>
+</div>
+
+</div><!-- /container -->
+
+<style>
+.algo-section{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:24px;margin-bottom:20px;}
+.lc-card{display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--bg);border:1px solid var(--border);border-radius:10px;text-decoration:none;color:var(--text);transition:border-color 0.2s;flex-wrap:wrap;}
+.lc-card:hover{border-color:var(--accent);}
+.lc-num{font-family:'Orbitron',monospace;font-size:11px;color:var(--text-dim);min-width:44px;}
+.lc-title{font-weight:600;font-size:14px;flex:1;}
+.lc-tag{font-size:10px;padding:2px 8px;border-radius:20px;font-weight:700;letter-spacing:0.05em;}
+.lc-tag.easy{background:rgba(0,200,100,0.15);color:#00c864;}
+.lc-tag.medium{background:rgba(255,180,0,0.15);color:#ffb400;}
+.lc-tag.hard{background:rgba(255,60,60,0.15);color:#ff3c3c;}
+.lc-desc{font-size:12px;color:var(--text-dim);width:100%;margin-top:2px;}
+#sim-grid .cell{width:44px;height:44px;border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;border:1px solid var(--border);font-size:11px;transition:all 0.3s;}
+#sim-grid .cell.win{background:rgba(0,200,100,0.15);border-color:rgba(0,200,100,0.4);color:#00c864;}
+#sim-grid .cell.lose{background:rgba(255,60,60,0.15);border-color:rgba(255,60,60,0.4);color:#ff3c3c;}
+#sim-grid .cell.empty{opacity:0.3;}
+#sim-grid .cell.current{box-shadow:0 0 0 2px var(--accent);}
+.acc-step-label{font-family:'Orbitron',monospace;font-size:11px;letter-spacing:0.15em;text-transform:uppercase;color:var(--accent);margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid var(--border);}
+</style>
+
+<script>
+let simStep=0,simDp=[],simN=21,simM=3;
+function simReset(){
+  simStep=0;
+  simN=+document.getElementById('sim-n').value;
+  simM=+document.getElementById('sim-m').value;
+  simDp=new Array(simN+1).fill(null);
+  renderGrid();
+  document.getElementById('sim-explain').textContent='點擊「下一步」開始填表';
+}
+function renderGrid(){
+  const g=document.getElementById('sim-grid');g.innerHTML='';
+  for(let i=0;i<=simN;i++){
+    const el=document.createElement('div');
+    el.className='cell'+(simDp[i]===null?' empty':simDp[i]?' win':' lose')+(i===simStep&&simDp[i]===null?' current':'');
+    el.innerHTML=`<span style="font-size:10px;opacity:0.6">n=${i}</span><span style="font-weight:700">${simDp[i]===null?'?':simDp[i]?'W':'L'}</span>`;
+    g.appendChild(el);
+  }
+}
+function simNext(){
+  if(simStep>simN)return;
+  if(simStep===0){simDp[0]=false;}
+  else if(simStep===1){simDp[1]=false;}
+  else{
+    const win=Array.from({length:Math.min(simM,simStep)},(_,i)=>i+1).some(k=>simDp[simStep-k]===false);
+    simDp[simStep]=win;
+  }
+  const n=simStep,v=simDp[n];
+  let msg=`n=${n}：`;
+  if(n===0)msg+='定義為 L（邊界條件）';
+  else if(n===1)msg+='只能取1顆 → 取走最後一顆 → L（必輸）';
+  else{
+    const moves=Array.from({length:Math.min(simM,n)},(_,i)=>i+1);
+    msg+=moves.map(k=>`取${k}→dp[${n-k}]=${simDp[n-k]?'W':'L'}`).join('、');
+    msg+=v?` → 存在讓對手進入L的走法 → W（必贏）`:` → 所有走法都讓對手W → L（必輸）`;
+  }
+  document.getElementById('sim-explain').textContent=msg;
+  simStep++;
+  renderGrid();
+}
+function simPrev(){if(simStep>0){simStep--;simDp[simStep]=null;renderGrid();document.getElementById('sim-explain').textContent='';}}
+document.getElementById('sim-n').onchange=simReset;
+document.getElementById('sim-m').onchange=simReset;
+simReset();
+</script>
+</body>
+</html>

@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>21點報數 演算法解析 — 演算法互動遊戲集</title>
+<link rel="stylesheet" href="../shared/style.css">
+</head>
+<body>
+<div class="container">
+
+<header>
+  <div class="title">🧠 21點報數 演算法解析</div>
+  <div class="subtitle">Dynamic Programming &nbsp;·&nbsp; O(1) Strategy &nbsp;·&nbsp; 和 Bachet 的關係</div>
+</header>
+
+<div style="text-align:center;margin-bottom:20px;display:flex;justify-content:center;gap:12px;flex-wrap:wrap;">
+  <a href="count21.html" style="font-size:12px;color:var(--text-dim);text-decoration:none;letter-spacing:0.1em;text-transform:uppercase;
+    padding:8px 14px;border:1px solid var(--border);border-radius:8px;transition:all 0.2s;display:inline-block;"
+    onmouseover="this.style.color='var(--accent)';this.style.borderColor='var(--accent)'"
+    onmouseout="this.style.color='var(--text-dim)';this.style.borderColor='var(--border)'">🔢 回遊戲</a>
+  <a href="../index.html" style="font-size:12px;color:var(--text-dim);text-decoration:none;letter-spacing:0.1em;text-transform:uppercase;
+    padding:8px 14px;border:1px solid var(--border);border-radius:8px;transition:all 0.2s;display:inline-block;"
+    onmouseover="this.style.color='var(--accent)';this.style.borderColor='var(--accent)'"
+    onmouseout="this.style.color='var(--text-dim)';this.style.borderColor='var(--border)'">← 返回選單</a>
+</div>
+
+<!-- 目錄 -->
+<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:28px;">
+  <div style="font-size:11px;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-dim);margin-bottom:12px;">本頁內容</div>
+  <div style="display:flex;flex-direction:column;gap:8px;">
+    <a href="#step1" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Step 1 · 觀察必輸位置</a>
+    <a href="#step2" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Step 2 · 和 Bachet 的對應關係</a>
+    <a href="#step3" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Step 3 · DP 推導</a>
+    <a href="#step4" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Step 4 · O(1) 公式與必勝策略</a>
+    <a href="#step5" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Step 5 · 驗證：完整走一局</a>
+    <a href="#leetcode" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">LeetCode 相關題目</a>
+  </div>
+</div>
+
+<!-- Step 1 -->
+<div id="step1" class="algo-section">
+  <div class="acc-step-label">Step 1 · 觀察必輸位置</div>
+  <div class="acc-p">
+    以經典設定 目標=21、M=2（每次最多報2個）為例，從尾端往回推：<br><br>
+    距離目標 <strong>1</strong> 步時輪到你 → 只能報到21 → <span style="color:var(--accent2)">❌ 你輸（L）</span><br>
+    距離 <strong>2</strong> 步時輪到你 → 報1個，讓對手距離1步 → <span style="color:var(--accent)">✅ 你贏（W）</span><br>
+    距離 <strong>3</strong> 步時輪到你 → 報2個，讓對手距離1步 → <span style="color:var(--accent)">✅ 你贏（W）</span><br>
+    距離 <strong>4</strong> 步時輪到你 → 報1剩3(W)、報2剩2(W)，對手怎麼都贏 → <span style="color:var(--accent2)">❌ 你輸（L）</span><br>
+    距離 <strong>5~6</strong> 步時 → 可以讓對手距離4步(L) → <span style="color:var(--accent)">✅ 你贏（W）</span><br>
+    距離 <strong>7</strong> 步時 → 報1剩6(W)、報2剩5(W) → <span style="color:var(--accent2)">❌ 你輸（L）</span>
+  </div>
+  <div class="acc-insight">
+    <span class="ins-label">🔍 規律</span>
+    必輸距離：<strong>1, 4, 7, 10, 13, 16, 19 …</strong><br>
+    換算成實際數字（目標21）：必輸時「目前數到」= 0, 3, 6, 9, 12, 15, 18<br>
+    每隔 <strong>M+1 = 3</strong> 出現一次，和 Bachet 完全一樣的結構。
+  </div>
+</div>
+
+<!-- Step 2 -->
+<div id="step2" class="algo-section">
+  <div class="acc-step-label">Step 2 · 和 Bachet 的對應關係</div>
+  <div class="acc-p">
+    21點報數和 Bachet's Game 表面上完全不同，但數學結構一模一樣。<br>
+    只要做一個變數替換，就能把一個問題轉換成另一個：
+  </div>
+  <div style="overflow-x:auto;margin:16px 0;">
+    <table style="width:100%;border-collapse:collapse;font-size:13px;">
+      <thead>
+        <tr style="border-bottom:1px solid var(--border);">
+          <th style="padding:12px;text-align:left;color:var(--text-dim);font-weight:500;">21點報數</th>
+          <th style="padding:12px;text-align:center;color:var(--accent);font-weight:500;">對應</th>
+          <th style="padding:12px;text-align:left;color:var(--text-dim);font-weight:500;">Bachet's Game</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:12px;">目前報到 current</td>
+          <td style="padding:12px;text-align:center;color:var(--text-dim);">↔</td>
+          <td style="padding:12px;">已取走的石頭數</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:12px;">剩餘距離 = target - current</td>
+          <td style="padding:12px;text-align:center;color:var(--text-dim);">↔</td>
+          <td style="padding:12px;">剩餘石頭數 n</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:12px;">報 1~M 個數字</td>
+          <td style="padding:12px;text-align:center;color:var(--text-dim);">↔</td>
+          <td style="padding:12px;">取 1~M 顆石頭</td>
+        </tr>
+        <tr>
+          <td style="padding:12px;">說到目標數字者輸</td>
+          <td style="padding:12px;text-align:center;color:var(--text-dim);">↔</td>
+          <td style="padding:12px;">取走最後一顆者輸</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="acc-insight">
+    <span class="ins-label">💡 關鍵洞察</span>
+    把 Bachet 的「剩幾顆石頭」換成「距離目標還有幾步」，兩個問題完全等價。<br>
+    這就是為什麼學會一個，另一個就自動會了——<strong>同一個數學，兩個包裝</strong>。
+  </div>
+</div>
+
+<!-- Step 3 -->
+<div id="step3" class="algo-section">
+  <div class="acc-step-label">Step 3 · DP 推導（用「剩餘距離」定義）</div>
+  <div class="acc-p">
+    定義 <code>dp[d]</code> = 距離目標還有 d 步時，當前玩家的狀態（W/L）<br>
+    轉移規則和 Bachet 完全一樣。
+  </div>
+  <div class="acc-code">
+    <span class="lang-tag">Python</span>
+    <pre><span class="cmt"># DP 填表（target=21, M=2，以「剩餘距離」為狀態）</span>
+dp[<span class="num">0</span>] = <span class="kw">False</span>  <span class="cmt"># 距離0：輪到你時對手剛說完21，你已贏——邊界定義</span>
+dp[<span class="num">1</span>] = <span class="kw">False</span>  <span class="cmt"># 只能報1個到達目標 → 你輸 (L)</span>
+dp[<span class="num">2</span>] = <span class="kw">True</span>   <span class="cmt"># 報1個 → 對手距離1(L) → 你贏 (W)</span>
+dp[<span class="num">3</span>] = <span class="kw">True</span>   <span class="cmt"># 報2個 → 對手距離1(L) → 你贏 (W)</span>
+dp[<span class="num">4</span>] = <span class="kw">False</span>  <span class="cmt"># 報1→dp[3]=W, 報2→dp[2]=W → 你輸 (L)</span>
+dp[<span class="num">5</span>] = <span class="kw">True</span>   <span class="cmt"># 報1 → dp[4]=L → 你贏 (W)</span>
+dp[<span class="num">6</span>] = <span class="kw">True</span>   <span class="cmt"># 報2 → dp[4]=L → 你贏 (W)</span>
+dp[<span class="num">7</span>] = <span class="kw">False</span>  <span class="cmt"># 報1→dp[6]=W, 報2→dp[5]=W → 你輸 (L)</span>
+<span class="cmt"># L位置：1, 4, 7, 10 … 每 M+1=3 一個週期</span>
+
+<span class="cmt"># 轉換回「目前數到幾」：必輸時 current = target - d</span>
+<span class="cmt"># d=1→current=20, d=4→current=17, d=7→current=14 …</span>
+<span class="cmt"># 所以必輸的 current 值：0, 3, 6, 9, 12, 15, 18（= target % (M+1) 的倍數）</span></pre>
+  </div>
+</div>
+
+<!-- Step 4 -->
+<div id="step4" class="algo-section">
+  <div class="acc-step-label">Step 4 · O(1) 公式與必勝策略</div>
+  <div class="acc-p">
+    L-position 對應到「剩餘距離 <code>% (M+1) == 1</code>」，<br>
+    等價於「<code>(target - current) % (M+1) == 1</code>」。<br><br>
+    必勝走法：讓對手面對下一個 L-position。
+  </div>
+  <div class="acc-code">
+    <span class="lang-tag">Python</span>
+    <pre><span class="kw">def</span> <span class="fn">is_losing</span>(current: <span class="cls">int</span>, target: <span class="cls">int</span>, M: <span class="cls">int</span>) -> <span class="cls">bool</span>:
+    remaining = target - current
+    <span class="kw">return</span> remaining % (M + <span class="num">1</span>) == <span class="num">1</span>   <span class="cmt"># O(1)</span>
+
+<span class="kw">def</span> <span class="fn">best_count</span>(current: <span class="cls">int</span>, target: <span class="cls">int</span>, M: <span class="cls">int</span>) -> <span class="cls">int</span>:
+    remaining = target - current
+    K = M + <span class="num">1</span>
+    r = remaining % K
+    <span class="kw">if</span> r == <span class="num">1</span> <span class="kw">or</span> r == <span class="num">0</span>:
+        <span class="kw">return</span> <span class="num">1</span>              <span class="cmt"># 敗局（r==1）或邊界，隨便報</span>
+    <span class="kw">return</span> <span class="fn">min</span>(r - <span class="num">1</span>, M)   <span class="cmt"># 報 r-1 個，讓對手剩餘距離 % K == 1</span>
+
+<span class="cmt"># 例子：target=21, M=2, current=0</span>
+<span class="cmt"># remaining=21, K=3, r=0 → 敗局（先手必輸！）</span>
+<span class="cmt"># 對手報1→remaining=20, r=2 → 後手報1個補成3 → 先手又面對倍數</span></pre>
+  </div>
+</div>
+
+<!-- Step 5 -->
+<div id="step5" class="algo-section">
+  <div class="acc-step-label">Step 5 · 驗證：完整走一局（目標=21, M=2）</div>
+  <div class="acc-p">
+    K = M+1 = 3，必輸的「目前數到」= <strong>0, 3, 6, 9, 12, 15, 18</strong><br><br>
+    開局 current=0，<code>(21-0) % 3 = 0</code>，距離是3的倍數 → <strong>先手必輸</strong><br><br>
+    後手策略（每輪讓合計報數 = M+1 = 3）：
+  </div>
+  <div style="overflow-x:auto;margin:16px 0;">
+    <table style="width:100%;border-collapse:collapse;font-size:13px;">
+      <thead>
+        <tr style="border-bottom:1px solid var(--border);">
+          <th style="padding:10px;text-align:left;color:var(--text-dim);font-weight:500;">先手報</th>
+          <th style="padding:10px;text-align:left;color:var(--text-dim);font-weight:500;">後手報</th>
+          <th style="padding:10px;text-align:left;color:var(--text-dim);font-weight:500;">數到</th>
+          <th style="padding:10px;text-align:left;color:var(--text-dim);font-weight:500;">狀態</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:10px;">1個（到1）</td><td style="padding:10px;">2個（到3）</td>
+          <td style="padding:10px;font-weight:700;">3</td><td style="padding:10px;color:var(--accent2);">L ✗</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:10px;">1個（到4）</td><td style="padding:10px;">2個（到6）</td>
+          <td style="padding:10px;font-weight:700;">6</td><td style="padding:10px;color:var(--accent2);">L ✗</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:10px;">…</td><td style="padding:10px;">…</td>
+          <td style="padding:10px;font-weight:700;">18</td><td style="padding:10px;color:var(--accent2);">L ✗</td>
+        </tr>
+        <tr>
+          <td style="padding:10px;">1個（到19）</td><td style="padding:10px;">2個（到21）</td>
+          <td style="padding:10px;font-weight:700;">21</td><td style="padding:10px;color:var(--accent2);">先手被迫說21 ✗</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="acc-insight">
+    <span class="ins-label">✅ 結論</span>
+    先手必輸條件：<code>(target - 0) % (M+1) == 0</code>，即 target 是 M+1 的倍數<br>
+    必勝策略：每輪讓合計報數 = M+1，把 L-position 一路傳給對手。<br>
+    本質上和 Bachet 的 <code>n % (M+1) == 1</code> 是同一回事，只是換了坐標系。
+  </div>
+</div>
+
+<!-- LeetCode -->
+<div id="leetcode" class="algo-section">
+  <div class="acc-step-label">LeetCode 相關題目</div>
+  <div class="acc-p">這類題目的核心都是「找出必敗狀態規律」，通常 DP 推導後有 O(1) 數學解：</div>
+  <div style="display:flex;flex-direction:column;gap:10px;margin-top:12px;">
+    <a href="https://leetcode.com/problems/nim-game/" target="_blank" class="lc-card">
+      <span class="lc-num">#292</span>
+      <span class="lc-title">Nim Game</span>
+      <span class="lc-tag easy">Easy</span>
+      <span class="lc-desc">最簡單的入門，直接套用本題的邏輯</span>
+    </a>
+    <a href="https://leetcode.com/problems/divisor-game/" target="_blank" class="lc-card">
+      <span class="lc-num">#1025</span>
+      <span class="lc-title">Divisor Game</span>
+      <span class="lc-tag easy">Easy</span>
+      <span class="lc-desc">DP 推導出規律，偶數必贏</span>
+    </a>
+    <a href="https://leetcode.com/problems/stone-game/" target="_blank" class="lc-card">
+      <span class="lc-num">#877</span>
+      <span class="lc-title">Stone Game</span>
+      <span class="lc-tag medium">Medium</span>
+      <span class="lc-desc">先手必贏的數學證明，結合本題思路</span>
+    </a>
+    <a href="https://leetcode.com/problems/stone-game-ii/" target="_blank" class="lc-card">
+      <span class="lc-num">#1140</span>
+      <span class="lc-title">Stone Game II</span>
+      <span class="lc-tag medium">Medium</span>
+      <span class="lc-desc">區間 DP，每次可取的數量動態改變</span>
+    </a>
+  </div>
+</div>
+
+<!-- 導航 -->
+<div style="display:flex;justify-content:center;gap:12px;margin:32px 0 8px;flex-wrap:wrap;">
+  <a href="bachet-algo.html"
+    style="display:inline-flex;align-items:center;gap:8px;padding:12px 20px;
+      background:var(--surface);border:1px solid var(--border);border-radius:12px;
+      text-decoration:none;color:var(--text);font-size:13px;transition:all 0.2s;"
+    onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'"
+    onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text)'">
+    ← 🪨 Bachet 解析
+  </a>
+  <a href="../index.html"
+    style="display:inline-flex;align-items:center;gap:8px;padding:12px 20px;
+      background:var(--surface);border:1px solid var(--border);border-radius:12px;
+      text-decoration:none;color:var(--text);font-size:13px;transition:all 0.2s;"
+    onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'"
+    onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text)'">
+    回選單 →
+  </a>
+</div>
+
+</div><!-- /container -->
+
+<style>
+.algo-section{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:24px;margin-bottom:20px;}
+.lc-card{display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--bg);border:1px solid var(--border);border-radius:10px;text-decoration:none;color:var(--text);transition:border-color 0.2s;flex-wrap:wrap;}
+.lc-card:hover{border-color:var(--accent);}
+.lc-num{font-family:'Orbitron',monospace;font-size:11px;color:var(--text-dim);min-width:44px;}
+.lc-title{font-weight:600;font-size:14px;flex:1;}
+.lc-tag{font-size:10px;padding:2px 8px;border-radius:20px;font-weight:700;letter-spacing:0.05em;}
+.lc-tag.easy{background:rgba(0,200,100,0.15);color:#00c864;}
+.lc-tag.medium{background:rgba(255,180,0,0.15);color:#ffb400;}
+.lc-tag.hard{background:rgba(255,60,60,0.15);color:#ff3c3c;}
+.lc-desc{font-size:12px;color:var(--text-dim);width:100%;margin-top:2px;}
+.acc-step-label{font-family:'Orbitron',monospace;font-size:11px;letter-spacing:0.15em;text-transform:uppercase;color:var(--accent);margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid var(--border);}
+</style>
+</body>
+</html>
