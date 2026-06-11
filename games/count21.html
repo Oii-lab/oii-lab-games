@@ -34,13 +34,9 @@
       <div class="ri-label">輸的條件</div>
       <div class="ri-text">說出<strong>目標數字</strong>（如 21）的人輸</div>
     </div>
-    <div class="rules-item win">
-      <div class="ri-label">必勝條件</div>
-      <div class="ri-text">讓對手面對 <code>(目標 - 剩餘) % (M+1) == 0</code> 的局面</div>
-    </div>
     <div class="rules-item tip">
-      <div class="ri-label">本質</div>
-      <div class="ri-text">和 Bachet's Game <strong>完全相同</strong>，只是換了外殼——石頭換成數字</div>
+      <div class="ri-label">挑戰</div>
+      <div class="ri-text">先玩幾局，看看你能不能找出必輸的節奏 👇</div>
     </div>
   </div>
 </div>
@@ -121,40 +117,16 @@
   </div>
 </div>
 
-<!-- 演算法解析 -->
-<div class="algo-accordion">
-  <button class="algo-accordion-trigger" onclick="toggleAlgo(this)">
-    <span>🧠 演算法解析 — 和 Bachet's Game 完全相同的 DP</span>
-    <span class="acc-arrow">▼</span>
-  </button>
-  <div class="algo-accordion-body">
-    <div class="acc-h2">為什麼和 Bachet 一樣？</div>
-    <div class="acc-p">
-      把「報數字 1~M」對應到「取石頭 1~M 顆」，把「說到目標 T」對應到「取走最後一顆」，
-      兩個遊戲的<strong>數學結構完全相同</strong>。
-    </div>
-    <div class="acc-insight">
-      <span class="ins-label">💡 對應關係</span>
-      <strong>剩餘距離</strong> = 目標 − 目前數字<br>
-      剩餘距離 <code>% (M+1) == 0</code> → 當前玩家必輸（下一個說到目標的就是你）<br><br>
-      必勝走法：報 <code>剩餘距離 % (M+1)</code> 個數字，把必輸位置留給對手。
-    </div>
-    <div class="acc-code">
-      <span class="lang-tag">Python</span>
-      <pre><span class="kw">def</span> <span class="fn">best_count</span>(current: <span class="cls">int</span>, target: <span class="cls">int</span>, M: <span class="cls">int</span>) -> <span class="cls">int</span>:
-    remaining = target - current
-    K = M + <span class="num">1</span>
-    r = remaining % K
-    <span class="kw">if</span> r == <span class="num">0</span>:
-        <span class="kw">return</span> <span class="num">1</span>          <span class="cmt"># 敗局，隨便報</span>
-    <span class="kw">return</span> <span class="fn">min</span>(r, M)    <span class="cmt"># 報 r 個，讓對手面對倍數</span>
-
-<span class="cmt"># 例子：target=21, M=2, 目前=0</span>
-<span class="cmt"># remaining=21, K=3, r=0 → 敗局（先手必輸！）</span>
-<span class="cmt"># 對手報1→remaining=20, r=2→對手報2個 → 你又面對倍數</span></pre>
-    </div>
-    <a href="../algo.html#dp" class="acc-more" target="_blank">→ 完整解析（含互動 DP 模擬）</a>
-  </div>
+<!-- 演算法解析連結 -->
+<div style="text-align:center;margin:24px 0 8px;">
+  <a href="count21-algo.html"
+    style="display:inline-flex;align-items:center;gap:10px;padding:14px 28px;
+      background:var(--surface);border:1px solid var(--border);border-radius:12px;
+      text-decoration:none;color:var(--text);font-size:14px;transition:all 0.2s;letter-spacing:0.03em;"
+    onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'"
+    onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text)'">
+    🧠 <strong>看演算法解析</strong> &nbsp;— 為什麼和 Bachet 一樣？DP 對應關係完整說明
+  </a>
 </div>
 
 </div>
@@ -186,7 +158,6 @@
 <script src="../shared/firebase.js"></script>
 <script src="../shared/ui.js"></script>
 <script>
-function toggleAlgo(btn){btn.classList.toggle('open');btn.nextElementSibling.classList.toggle('open');}
 function goHome(){
   document.getElementById('result-overlay').classList.remove('show');
   stopPolling();if(CUR.roomCode){cleanupRoom(CUR.roomCode);CUR.roomCode=null;}
@@ -228,8 +199,12 @@ function cUpdateStatus(){
   if(isMyTurn){
     setStatusDot('c-status-dot','your-turn');document.getElementById('c-status-text').textContent='你的回合';
     document.getElementById('c-status-sub').textContent=`目前${C.current}，可報${C.current+1}${C.maxSay>1?`~${Math.min(C.current+C.maxSay,C.target)}`:''}`;
-    cSetBtns(true);for(let i=1;i<=C.maxSay;i++){const btn=document.getElementById('csay-'+i);if(btn)btn.disabled=C.current+i>C.target;}
-  }else{setStatusDot('c-status-dot','waiting');document.getElementById('c-status-text').textContent=`${C.currentPlayer===1?C.p1Name:C.p2Name} 的回合`;document.getElementById('c-status-sub').textContent=C.mode==='cpu'?'電腦計算中…':'等待對手…';cSetBtns(false);}
+    cSetBtns(true);
+    for(let i=1;i<=C.maxSay;i++){const btn=document.getElementById('csay-'+i);if(btn)btn.disabled=C.current+i>C.target;}
+  }else{
+    setStatusDot('c-status-dot','waiting');document.getElementById('c-status-text').textContent=`${C.currentPlayer===1?C.p1Name:C.p2Name} 的回合`;
+    document.getElementById('c-status-sub').textContent=C.mode==='cpu'?'電腦計算中…':'等待對手…';cSetBtns(false);
+  }
 }
 function cSetBtns(e){for(let i=1;i<=C.maxSay;i++){const b=document.getElementById('csay-'+i);if(b)b.disabled=!e;}}
 async function cPlayerSay(count){
@@ -256,8 +231,10 @@ function cApplyMove(player,nums,animate){
 function cCpuTurn(){if(C.gameOver)return;setTimeout(()=>cApplyMove(2,cCalcMove(),true),250);}
 function cCalcMove(){
   const k=C.maxSay+1,t=C.target,cur=C.current;
-  if(C.cpuDiff==='easy'&&Math.random()<0.45)return cOptimal(k,t,cur);
-  if(C.cpuDiff==='easy'){const max=Math.min(C.maxSay,t-cur);const cnt=Math.floor(Math.random()*max)+1;return Array.from({length:cnt},(_,i)=>cur+i+1);}
+  if(C.cpuDiff==='easy'){
+    if(Math.random()<0.25)return cOptimal(k,t,cur);
+    const max=Math.min(C.maxSay,t-cur);const cnt=Math.floor(Math.random()*max)+1;return Array.from({length:cnt},(_,i)=>cur+i+1);
+  }
   return cOptimal(k,t,cur);
 }
 function cOptimal(k,t,cur){const remaining=t-cur;if(remaining%k===0)return[cur+1];const cnt=Math.min(remaining%k,C.maxSay);return Array.from({length:cnt||1},(_,i)=>cur+i+1);}
