@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nim 多堆版 演算法解析 — 演算法互動遊戲集</title>
+<link rel="stylesheet" href="../shared/style.css">
+</head>
+<body>
+<div class="container">
+
+<header>
+  <div class="title">🧠 Nim 多堆版 演算法解析</div>
+  <div class="subtitle">XOR Nim-sum &nbsp;·&nbsp; Bouton 定理 &nbsp;·&nbsp; Sprague-Grundy Theorem</div>
+</header>
+
+<div style="text-align:center;margin-bottom:20px;display:flex;justify-content:center;gap:12px;flex-wrap:wrap;">
+  <a href="nim.html" style="font-size:12px;color:var(--text-dim);text-decoration:none;letter-spacing:0.1em;text-transform:uppercase;padding:8px 14px;border:1px solid var(--border);border-radius:8px;transition:all 0.2s;display:inline-block;"
+    onmouseover="this.style.color='var(--accent)';this.style.borderColor='var(--accent)'"
+    onmouseout="this.style.color='var(--text-dim)';this.style.borderColor='var(--border)'">⚡ 回遊戲</a>
+  <a href="../index.html" style="font-size:12px;color:var(--text-dim);text-decoration:none;letter-spacing:0.1em;text-transform:uppercase;padding:8px 14px;border:1px solid var(--border);border-radius:8px;transition:all 0.2s;display:inline-block;"
+    onmouseover="this.style.color='var(--accent)';this.style.borderColor='var(--accent)'"
+    onmouseout="this.style.color='var(--text-dim)';this.style.borderColor='var(--border)'">← 返回選單</a>
+</div>
+
+<!-- 目錄 -->
+<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:28px;">
+  <div style="font-size:11px;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-dim);margin-bottom:12px;">本頁內容</div>
+  <div style="display:flex;flex-direction:column;gap:8px;">
+    <a href="#step1" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Step 1 · 為什麼單堆的方法在多堆失效</a>
+    <a href="#step2" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Step 2 · XOR 的關鍵性質</a>
+    <a href="#step3" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Step 3 · Bouton 定理與必勝策略</a>
+    <a href="#step4" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Step 4 · 完整走一局</a>
+    <a href="#step5" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Step 5 · Sprague-Grundy 定理</a>
+    <a href="#step6" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Step 6 · Misère 規則的調整</a>
+    <a href="#sim" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">互動 XOR 計算器</a>
+    <a href="#leetcode" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">LeetCode 相關題目</a>
+  </div>
+</div>
+
+<!-- Step 1 -->
+<div id="step1" class="algo-section">
+  <div class="acc-step-label">Step 1 · 為什麼單堆的方法在多堆失效</div>
+  <div class="acc-p">
+    Bachet's Game 用的是 <code>n % (M+1)</code> 的週期規律。<br>
+    但多堆 Nim 每次可以從<strong>任意一堆</strong>取任意數量，情況完全不同：<br><br>
+    比如 [3, 5]，你能取第一堆的3顆、也能取第二堆的1顆……沒有固定的「步長」可以套用模運算。<br><br>
+    這時候需要一個能同時描述<strong>多個數字</strong>狀態的工具——<strong>XOR（位元互斥或）</strong>。
+  </div>
+</div>
+
+<!-- Step 2 -->
+<div id="step2" class="algo-section">
+  <div class="acc-step-label">Step 2 · XOR 的關鍵性質</div>
+  <div class="acc-p">
+    XOR 有兩個對這個問題至關重要的性質：
+  </div>
+  <div class="acc-code">
+    <span class="lang-tag">Python</span>
+    <pre><span class="cmt"># 性質1：a XOR a = 0（自我抵消）</span>
+<span class="num">5</span> ^ <span class="num">5</span> == <span class="num">0</span>   <span class="cmt"># True</span>
+
+<span class="cmt"># 性質2：a XOR 0 = a（與0 XOR 不變）</span>
+<span class="num">5</span> ^ <span class="num">0</span> == <span class="num">5</span>   <span class="cmt"># True</span>
+
+<span class="cmt"># 把每個數字寫成二進位，對每個位元獨立看：</span>
+<span class="cmt">#  3 = 011</span>
+<span class="cmt">#  5 = 101</span>
+<span class="cmt">#  6 = 110</span>
+<span class="cmt"># XOR = 000  ← 每個位元上 1 的個數都是偶數 → Nim-sum = 0</span>
+
+<span class="cmt">#  1 = 001</span>
+<span class="cmt">#  2 = 010</span>
+<span class="cmt">#  4 = 100</span>
+<span class="cmt"># XOR = 111 = 7  ← 每個位元上都是奇數個 1 → Nim-sum ≠ 0</span></pre>
+  </div>
+  <div class="acc-insight">
+    <span class="ins-label">💡 直覺</span>
+    把各堆石頭數量「疊加」在二進位上，XOR 就是看每個位元有幾個 1。<br>
+    偶數個 1 → 那個位元 XOR 為 0，奇數個 1 → XOR 為 1。<br>
+    Nim-sum = 0 代表每個位元都「配對」了，是一種「平衡」狀態。
+  </div>
+</div>
+
+<!-- Step 3 -->
+<div id="step3" class="algo-section">
+  <div class="acc-step-label">Step 3 · Bouton 定理與必勝策略</div>
+  <div class="acc-insight" style="margin-bottom:20px;">
+    <span class="ins-label">📐 Bouton 定理（1901年）</span>
+    <strong>Nim-sum = 0 → 當前玩家必輸</strong><br>
+    <strong>Nim-sum ≠ 0 → 當前玩家必贏</strong>
+  </div>
+  <div class="acc-p"><strong>為什麼 Nim-sum = 0 必輸？</strong><br><br>
+    從 Nim-sum = 0 出發，不管你從哪一堆取幾顆，那一堆的數字一定會改變，<br>
+    至少有一個位元被動到，所以取完後 Nim-sum <strong>一定不等於 0</strong>。<br>
+    對手永遠從 Nim-sum ≠ 0 的狀態開始，你永遠從 Nim-sum = 0 的狀態開始。<br>
+    最終所有石頭被取光（Nim-sum = 0），輪到你——你輸。
+  </div>
+  <div class="acc-p" style="margin-top:16px;"><strong>為什麼 Nim-sum ≠ 0 必贏？</strong><br><br>
+    Nim-sum ≠ 0，表示存在某個最高位的 1。<br>
+    找到那個最高位，找一堆在那個位上也是 1 的堆，<br>
+    從那堆取走適當數量，讓那堆和 Nim-sum XOR 之後比原來小，<br>
+    取完後整體 Nim-sum 就變成 0，把必輸局面傳給對手。
+  </div>
+  <div class="acc-code">
+    <span class="lang-tag">Python</span>
+    <pre><span class="kw">def</span> <span class="fn">nim_best_move</span>(heaps: list) -> tuple:
+    nim_sum = <span class="num">0</span>
+    <span class="kw">for</span> h <span class="kw">in</span> heaps:
+        nim_sum ^= h
+
+    <span class="kw">if</span> nim_sum == <span class="num">0</span>:
+        <span class="cmt"># 敗局，隨便取一顆（對手完美時必輸）</span>
+        i = next(i <span class="kw">for</span> i, h <span class="kw">in</span> <span class="fn">enumerate</span>(heaps) <span class="kw">if</span> h > <span class="num">0</span>)
+        <span class="kw">return</span> (i, <span class="num">1</span>)
+
+    <span class="kw">for</span> i, h <span class="kw">in</span> <span class="fn">enumerate</span>(heaps):
+        target = h ^ nim_sum    <span class="cmt"># 取完後這堆應剩幾顆</span>
+        <span class="kw">if</span> target < h:          <span class="cmt"># 只有減少才合法</span>
+            <span class="kw">return</span> (i, h - target)  <span class="cmt"># 取走 h-target 顆</span></pre>
+  </div>
+</div>
+
+<!-- Step 4 -->
+<div id="step4" class="algo-section">
+  <div class="acc-step-label">Step 4 · 完整走一局（[3, 5, 7]）</div>
+  <div class="acc-p">
+    初始局面：[3, 5, 7]<br>
+    Nim-sum = 3 XOR 5 XOR 7 = <code>011 XOR 101 XOR 111 = 001 = 1</code> ≠ 0 → 先手必贏
+  </div>
+  <div style="overflow-x:auto;margin:16px 0;">
+    <table style="width:100%;border-collapse:collapse;font-size:13px;">
+      <thead>
+        <tr style="border-bottom:1px solid var(--border);">
+          <th style="padding:10px;text-align:left;color:var(--text-dim);font-weight:500;">局面</th>
+          <th style="padding:10px;text-align:left;color:var(--text-dim);font-weight:500;">Nim-sum</th>
+          <th style="padding:10px;text-align:left;color:var(--text-dim);font-weight:500;">走法</th>
+          <th style="padding:10px;text-align:left;color:var(--text-dim);font-weight:500;">狀態</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:10px;font-weight:700;">[3, 5, 7]</td>
+          <td style="padding:10px;color:var(--accent);">1 ≠ 0</td>
+          <td style="padding:10px;">先手從堆3取1顆（7→6）</td>
+          <td style="padding:10px;color:var(--accent);">W ✓</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:10px;font-weight:700;">[3, 5, 6]</td>
+          <td style="padding:10px;color:var(--accent2);">0</td>
+          <td style="padding:10px;">後手任意取</td>
+          <td style="padding:10px;color:var(--accent2);">L ✗</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:10px;font-weight:700;">…</td>
+          <td style="padding:10px;color:var(--accent);">≠ 0</td>
+          <td style="padding:10px;">先手恢復 Nim-sum=0</td>
+          <td style="padding:10px;color:var(--accent);">W ✓</td>
+        </tr>
+        <tr>
+          <td style="padding:10px;font-weight:700;">[0, 0, 1]</td>
+          <td style="padding:10px;color:var(--accent2);">0（Misère）</td>
+          <td style="padding:10px;">後手被迫取最後一顆</td>
+          <td style="padding:10px;color:var(--accent2);">後手輸 ✗</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="acc-insight">
+    <span class="ins-label">✅ 驗證</span>
+    3 XOR 5 XOR 6 = <code>011 XOR 101 XOR 110 = 000 = 0</code> ✓<br>
+    先手每次都能把 Nim-sum 恢復成 0，後手永遠面對 Nim-sum ≠ 0。
+  </div>
+</div>
+
+<!-- Step 5 -->
+<div id="step5" class="algo-section">
+  <div class="acc-step-label">Step 5 · Sprague-Grundy 定理（進階）</div>
+  <div class="acc-p">
+    為什麼 XOR 能用？背後有更深的理論：<strong>Sprague-Grundy 定理</strong>。<br><br>
+    每個遊戲狀態都有一個 <strong>Grundy value（或稱 nimber）</strong>，定義為：<br>
+    <code>G(狀態) = mex({ G(可到達的狀態) })</code><br>
+    其中 mex 是「最小不存在的非負整數」。<br><br>
+    對於 Nim 的單堆：<code>G(n顆) = n</code>（因為從n顆可以到0,1,...,n-1，mex = n）<br><br>
+    <strong>多個獨立子遊戲合在一起時：整體 G = 各子遊戲 G 的 XOR。</strong><br>
+    這就是為什麼多堆 Nim 的勝負完全由 XOR 決定！
+  </div>
+  <div class="acc-code">
+    <span class="lang-tag">Python</span>
+    <pre><span class="kw">from</span> functools <span class="kw">import</span> lru_cache
+
+<span class="kw">def</span> <span class="fn">grundy</span>(n: <span class="cls">int</span>, moves: set) -> <span class="cls">int</span>:
+    <span class="cmt">"""計算任意遊戲的 Grundy value"""</span>
+    @lru_cache(maxsize=<span class="kw">None</span>)
+    <span class="kw">def</span> <span class="fn">g</span>(state):
+        reachable = {g(state - m) <span class="kw">for</span> m <span class="kw">in</span> moves <span class="kw">if</span> m <= state}
+        mex = <span class="num">0</span>
+        <span class="kw">while</span> mex <span class="kw">in</span> reachable:
+            mex += <span class="num">1</span>
+        <span class="kw">return</span> mex
+    <span class="kw">return</span> g(n)
+
+<span class="cmt"># Nim 單堆：moves = {1,2,3,...,n}（可取任意數）</span>
+<span class="cmt"># G(0)=0, G(1)=1, G(2)=2, G(3)=3 ... G(n)=n</span>
+
+<span class="cmt"># 多堆 [3,5,7]：G = 3 XOR 5 XOR 7 = 1 ≠ 0 → 先手必贏</span>
+<span class="cmt"># 多堆 [3,5,6]：G = 3 XOR 5 XOR 6 = 0 → 當前玩家必輸</span></pre>
+  </div>
+  <div class="acc-insight">
+    <span class="ins-label">🔬 重要性</span>
+    Sprague-Grundy 讓你能分析<strong>任意組合賽局</strong>，不只是 Nim。<br>
+    只要能算出每個子遊戲的 Grundy value，XOR 起來就知道輸贏。<br>
+    這是組合賽局理論最核心的定理。
+  </div>
+</div>
+
+<!-- Step 6 -->
+<div id="step6" class="algo-section">
+  <div class="acc-step-label">Step 6 · Misère 規則的調整</div>
+  <div class="acc-p">
+    我們的遊戲用的是 <strong>Misère 規則</strong>（取最後一顆者輸），和標準 Nim（取最後一顆者贏）略有不同。<br><br>
+    Misère Nim 的策略只在接近結局時需要調整：
+  </div>
+  <div style="overflow-x:auto;margin:16px 0;">
+    <table style="width:100%;border-collapse:collapse;font-size:13px;">
+      <thead>
+        <tr style="border-bottom:1px solid var(--border);">
+          <th style="padding:10px;text-align:left;color:var(--text-dim);font-weight:500;">情況</th>
+          <th style="padding:10px;text-align:left;color:var(--text-dim);font-weight:500;">標準 Nim</th>
+          <th style="padding:10px;text-align:left;color:var(--text-dim);font-weight:500;">Misère Nim</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:10px;">存在大於1的堆</td>
+          <td style="padding:10px;">Nim-sum = 0 → 必輸</td>
+          <td style="padding:10px;">Nim-sum = 0 → 必輸（相同）</td>
+        </tr>
+        <tr>
+          <td style="padding:10px;">全部都是 0 或 1 的堆</td>
+          <td style="padding:10px;">1的堆數為奇數 → 必贏</td>
+          <td style="padding:10px;">1的堆數為奇數 → <strong>必輸</strong>（相反）</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="acc-insight">
+    <span class="ins-label">💡 記憶口訣</span>
+    中盤和標準 Nim 完全一樣，只有到「全是1的堆」時反轉。<br>
+    直覺上，全是1的堆意味著每人每輪只能取1顆，最後一個取的人輸，<br>
+    所以奇數堆時你是「最後取」的人。
+  </div>
+</div>
+
+<!-- 互動計算器 -->
+<div id="sim" class="algo-section">
+  <div class="acc-step-label">互動 XOR 計算器</div>
+  <div class="acc-p">輸入各堆的石頭數，即時計算 Nim-sum 和勝負判斷。</div>
+  <div id="sim-heaps" style="display:flex;flex-direction:column;gap:10px;margin:16px 0;"></div>
+  <div style="display:flex;gap:10px;margin-bottom:16px;">
+    <button class="btn btn-sm" onclick="simAddHeap()">＋ 加一堆</button>
+    <button class="btn btn-sm" onclick="simRemoveHeap()">－ 減一堆</button>
+  </div>
+  <div id="sim-result" style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:16px;font-size:14px;"></div>
+</div>
+
+<!-- LeetCode -->
+<div id="leetcode" class="algo-section">
+  <div class="acc-step-label">LeetCode 相關題目</div>
+  <div style="display:flex;flex-direction:column;gap:10px;margin-top:12px;">
+    <a href="https://leetcode.com/problems/nim-game/" target="_blank" class="lc-card">
+      <span class="lc-num">#292</span><span class="lc-title">Nim Game</span>
+      <span class="lc-tag easy">Easy</span>
+      <span class="lc-desc">單堆 Nim 入門，n%4==0 必輸，理解前先看這題</span>
+    </a>
+    <a href="https://leetcode.com/problems/chalkboard-xor-game/" target="_blank" class="lc-card">
+      <span class="lc-num">#810</span><span class="lc-title">Chalkboard XOR Game</span>
+      <span class="lc-tag hard">Hard</span>
+      <span class="lc-desc">直接用 XOR 判斷勝負，本題的核心應用</span>
+    </a>
+    <a href="https://leetcode.com/problems/stone-game-iv/" target="_blank" class="lc-card">
+      <span class="lc-num">#1510</span><span class="lc-title">Stone Game IV</span>
+      <span class="lc-tag hard">Hard</span>
+      <span class="lc-desc">Grundy value DP，每次取完全平方數</span>
+    </a>
+    <a href="https://leetcode.com/problems/flip-game-ii/" target="_blank" class="lc-card">
+      <span class="lc-num">#294</span><span class="lc-title">Flip Game II</span>
+      <span class="lc-tag medium">Medium</span>
+      <span class="lc-desc">Backtracking + Memo + Grundy value 概念</span>
+    </a>
+    <a href="https://leetcode.com/problems/cat-and-mouse/" target="_blank" class="lc-card">
+      <span class="lc-num">#913</span><span class="lc-title">Cat and Mouse</span>
+      <span class="lc-tag hard">Hard</span>
+      <span class="lc-desc">圖上博弈，Minimax + BFS，進階挑戰</span>
+    </a>
+  </div>
+</div>
+
+<!-- 導航 -->
+<div style="display:flex;justify-content:center;gap:12px;margin:32px 0 8px;flex-wrap:wrap;">
+  <a href="count21-algo.html" style="display:inline-flex;align-items:center;gap:8px;padding:12px 20px;background:var(--surface);border:1px solid var(--border);border-radius:12px;text-decoration:none;color:var(--text);font-size:13px;transition:all 0.2s;"
+    onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'"
+    onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text)'">← 🔢 21點報數解析</a>
+  <a href="../index.html" style="display:inline-flex;align-items:center;gap:8px;padding:12px 20px;background:var(--surface);border:1px solid var(--border);border-radius:12px;text-decoration:none;color:var(--text);font-size:13px;transition:all 0.2s;"
+    onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'"
+    onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text)'">回選單 →</a>
+</div>
+
+</div>
+
+<style>
+.algo-section{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:24px;margin-bottom:20px;}
+.lc-card{display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--bg);border:1px solid var(--border);border-radius:10px;text-decoration:none;color:var(--text);transition:border-color 0.2s;flex-wrap:wrap;}
+.lc-card:hover{border-color:var(--accent);}
+.lc-num{font-family:'Orbitron',monospace;font-size:11px;color:var(--text-dim);min-width:44px;}
+.lc-title{font-weight:600;font-size:14px;flex:1;}
+.lc-tag{font-size:10px;padding:2px 8px;border-radius:20px;font-weight:700;letter-spacing:0.05em;}
+.lc-tag.easy{background:rgba(0,200,100,0.15);color:#00c864;}
+.lc-tag.medium{background:rgba(255,180,0,0.15);color:#ffb400;}
+.lc-tag.hard{background:rgba(255,60,60,0.15);color:#ff3c3c;}
+.lc-desc{font-size:12px;color:var(--text-dim);width:100%;margin-top:2px;}
+.acc-step-label{font-family:'Orbitron',monospace;font-size:11px;letter-spacing:0.15em;text-transform:uppercase;color:var(--accent);margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid var(--border);}
+.sim-heap-row{display:flex;align-items:center;gap:12px;}
+.sim-heap-row input{background:var(--surface);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:8px;width:80px;font-size:16px;text-align:center;}
+.sim-heap-row .bin{font-family:'Orbitron',monospace;font-size:12px;color:var(--text-dim);min-width:60px;}
+</style>
+
+<script>
+let simHeapVals=[3,5,7];
+function simRender(){
+  const c=document.getElementById('sim-heaps');c.innerHTML='';
+  simHeapVals.forEach((v,i)=>{
+    const row=document.createElement('div');row.className='sim-heap-row';
+    const lbl=document.createElement('span');lbl.style.cssText='font-size:13px;color:var(--text-dim);min-width:36px;';lbl.textContent=`堆${i+1}`;
+    const inp=document.createElement('input');inp.type='number';inp.min=0;inp.max=99;inp.value=v;
+    inp.oninput=()=>{simHeapVals[i]=Math.max(0,+inp.value||0);simCalc();};
+    const bin=document.createElement('span');bin.className='bin';bin.textContent=`= ${v.toString(2).padStart(4,'0')}`;
+    inp.oninput=()=>{simHeapVals[i]=Math.max(0,+inp.value||0);bin.textContent=`= ${simHeapVals[i].toString(2).padStart(4,'0')}`;simCalc();};
+    row.appendChild(lbl);row.appendChild(inp);row.appendChild(bin);c.appendChild(row);
+  });
+  simCalc();
+}
+function simCalc(){
+  const xs=simHeapVals.reduce((a,b)=>a^b,0);
+  const multiHeaps=simHeapVals.filter(h=>h>1).length;
+  const ones=simHeapVals.filter(h=>h===1).length;
+  let verdict,detail;
+  if(simHeapVals.every(h=>h===0)){verdict='遊戲已結束';detail='';}
+  else if(multiHeaps===0){
+    verdict=ones%2===1?'⚠️ 當前玩家必輸（Misère：奇數個1堆）':'✅ 當前玩家必贏（Misère：偶數個1堆）';
+    detail=`全是1的堆，適用 Misère 特殊規則`;
+  }else{
+    verdict=xs===0?'⚠️ 當前玩家必輸（Nim-sum = 0）':'✅ 當前玩家必贏（Nim-sum ≠ 0）';
+    detail=`${simHeapVals.join(' XOR ')} = ${xs}（二進位：${xs.toString(2)}）`;
+  }
+  document.getElementById('sim-result').innerHTML=`
+    <div style="font-size:20px;font-family:'Orbitron',monospace;font-weight:900;margin-bottom:8px;">${xs}</div>
+    <div style="font-size:12px;color:var(--text-dim);margin-bottom:12px;">${detail}</div>
+    <div style="font-size:15px;font-weight:600;">${verdict}</div>`;
+}
+function simAddHeap(){if(simHeapVals.length<6){simHeapVals.push(1);simRender();}}
+function simRemoveHeap(){if(simHeapVals.length>2){simHeapVals.pop();simRender();}}
+simRender();
+</script>
+</body>
+</html>
