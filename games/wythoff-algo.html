@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wythoff's Game 演算法解析 — 演算法互動遊戲集</title>
+<link rel="stylesheet" href="../shared/style.css">
+</head>
+<body>
+<div class="container">
+
+<header>
+  <div class="title">🧠 Wythoff's Game 演算法解析</div>
+  <div class="subtitle">黃金比例 φ &nbsp;·&nbsp; Beatty 定理 &nbsp;·&nbsp; 為什麼紅格是必敗位置</div>
+</header>
+
+<div style="text-align:center;margin-bottom:20px;display:flex;justify-content:center;gap:12px;flex-wrap:wrap;">
+  <a href="wythoff.html" style="font-size:12px;color:var(--text-dim);text-decoration:none;letter-spacing:0.1em;text-transform:uppercase;padding:8px 14px;border:1px solid var(--border);border-radius:8px;transition:all 0.2s;display:inline-block;"
+    onmouseover="this.style.color='var(--accent)';this.style.borderColor='var(--accent)'"
+    onmouseout="this.style.color='var(--text-dim)';this.style.borderColor='var(--border)'">φ 回遊戲</a>
+  <a href="../index.html" style="font-size:12px;color:var(--text-dim);text-decoration:none;letter-spacing:0.1em;text-transform:uppercase;padding:8px 14px;border:1px solid var(--border);border-radius:8px;transition:all 0.2s;display:inline-block;"
+    onmouseover="this.style.color='var(--accent)';this.style.borderColor='var(--accent)'"
+    onmouseout="this.style.color='var(--text-dim)';this.style.borderColor='var(--border)'">← 返回選單</a>
+</div>
+
+<!-- 目錄 -->
+<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:28px;">
+  <div style="font-size:11px;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-dim);margin-bottom:12px;">本頁內容</div>
+  <div style="display:flex;flex-direction:column;gap:8px;">
+    <a href="#step1" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Step 1 · 和 Nim 的差異</a>
+    <a href="#step2" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Step 2 · 用 DP 找出必敗位置</a>
+    <a href="#step3" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Step 3 · 驚人的規律：黃金比例</a>
+    <a href="#step4" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Step 4 · 為什麼是黃金比例：Beatty 定理</a>
+    <a href="#step5" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Step 5 · O(1) 判斷與必勝策略</a>
+    <a href="#sim" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">互動必敗位置計算器</a>
+    <a href="#leetcode" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">LeetCode 相關題目</a>
+  </div>
+</div>
+
+<!-- Step 1 -->
+<div id="step1" class="algo-section">
+  <div class="acc-step-label">Step 1 · 和 Nim 的差異</div>
+  <div class="acc-p">
+    Wythoff's Game 是 Nim 的變體，但多了一個關鍵操作：<br><br>
+    標準 Nim：每回合只能從<strong>一堆</strong>取任意數量<br>
+    Wythoff's Game：每回合可以從一堆取，<strong>或從兩堆同時取相同數量</strong><br><br>
+    多了這個「對角線移動」，讓 XOR 策略完全失效。<br>
+    比如 [1, 2]，在 Nim 中 XOR = 3 ≠ 0 是必贏，但在 Wythoff 中 (1,2) 是必敗位置！
+  </div>
+  <div class="acc-insight">
+    <span class="ins-label">💡 關鍵差異</span>
+    Nim 的移動只改變一個坐標（水平或垂直移動）<br>
+    Wythoff 還允許對角線移動（兩堆同時減少相同量）<br>
+    多了對角線，棋盤上的必敗位置完全不同。
+  </div>
+</div>
+
+<!-- Step 2 -->
+<div id="step2" class="algo-section">
+  <div class="acc-step-label">Step 2 · 用 DP 找出必敗位置</div>
+  <div class="acc-p">
+    定義 <code>dp[a][b]</code> = 位置 (a,b) 時當前玩家是 W（必贏）還是 L（必輸）<br><br>
+    轉移規則：若存在任何合法移動能到達 L-position，則當前是 W；否則是 L。
+  </div>
+  <div class="acc-code">
+    <span class="lang-tag">Python</span>
+    <pre><span class="kw">def</span> <span class="fn">solve_wythoff</span>(N: <span class="cls">int</span>) -> <span class="cls">list</span>:
+    dp = [[<span class="kw">True</span>] * (N+<span class="num">1</span>) <span class="kw">for</span> _ <span class="kw">in</span> <span class="fn">range</span>(N+<span class="num">1</span>)]
+    dp[<span class="num">0</span>][<span class="num">0</span>] = <span class="kw">False</span>  <span class="cmt"># (0,0) 無石可取，上一個人取走最後一顆，你已贏？</span>
+                      <span class="cmt"># 注意：Standard規則，取走最後一顆者贏，所以(0,0)是L（已輸）</span>
+
+    <span class="kw">for</span> a <span class="kw">in</span> <span class="fn">range</span>(N+<span class="num">1</span>):
+        <span class="kw">for</span> b <span class="kw">in</span> <span class="fn">range</span>(N+<span class="num">1</span>):
+            <span class="kw">if</span> a == <span class="num">0</span> <span class="kw">and</span> b == <span class="num">0</span>: <span class="kw">continue</span>
+            can_win = <span class="kw">False</span>
+            <span class="cmt"># 從堆A取：移到 (i, b) for i < a</span>
+            <span class="kw">for</span> i <span class="kw">in</span> <span class="fn">range</span>(a):
+                <span class="kw">if</span> <span class="kw">not</span> dp[i][b]: can_win = <span class="kw">True</span>; <span class="kw">break</span>
+            <span class="cmt"># 從堆B取：移到 (a, j) for j < b</span>
+            <span class="kw">if</span> <span class="kw">not</span> can_win:
+                <span class="kw">for</span> j <span class="kw">in</span> <span class="fn">range</span>(b):
+                    <span class="kw">if</span> <span class="kw">not</span> dp[a][j]: can_win = <span class="kw">True</span>; <span class="kw">break</span>
+            <span class="cmt"># 兩堆各取k：移到 (a-k, b-k)</span>
+            <span class="kw">if</span> <span class="kw">not</span> can_win:
+                <span class="kw">for</span> k <span class="kw">in</span> <span class="fn">range</span>(<span class="num">1</span>, <span class="fn">min</span>(a,b)+<span class="num">1</span>):
+                    <span class="kw">if</span> <span class="kw">not</span> dp[a-k][b-k]: can_win = <span class="kw">True</span>; <span class="kw">break</span>
+            dp[a][b] = can_win
+    <span class="kw">return</span> dp
+
+<span class="cmt"># L-position（必敗）結果（前幾個，a≤b）：</span>
+<span class="cmt"># (0,0), (1,2), (3,5), (4,7), (6,10), (8,13), (9,15), (11,18)...</span></pre>
+  </div>
+</div>
+
+<!-- Step 3 -->
+<div id="step3" class="algo-section">
+  <div class="acc-step-label">Step 3 · 驚人的規律：黃金比例</div>
+  <div class="acc-p">
+    把 DP 跑出來的必敗位置列出來（a ≤ b）：
+  </div>
+  <div style="overflow-x:auto;margin:16px 0;">
+    <table style="width:100%;border-collapse:collapse;font-size:13px;">
+      <thead>
+        <tr style="border-bottom:1px solid var(--border);">
+          <th style="padding:10px;text-align:center;color:var(--text-dim);font-weight:500;">n</th>
+          <th style="padding:10px;text-align:center;color:var(--text-dim);font-weight:500;">a = ⌊n·φ⌋</th>
+          <th style="padding:10px;text-align:center;color:var(--text-dim);font-weight:500;">b = ⌊n·φ²⌋</th>
+          <th style="padding:10px;text-align:center;color:var(--text-dim);font-weight:500;">b - a</th>
+        </tr>
+      </thead>
+      <tbody id="wythoff-table"></tbody>
+    </table>
+  </div>
+  <div class="acc-insight">
+    <span class="ins-label">🔍 規律</span>
+    必敗位置 (a, b) 滿足：<strong>a = ⌊n·φ⌋，b = ⌊n·φ²⌋</strong>，其中 φ = (1+√5)/2 ≈ 1.618<br>
+    而且 b - a = n，也就是 <strong>b = a + n</strong><br>
+    φ² = φ + 1 ≈ 2.618，所以 b ≈ 2.618n，a ≈ 1.618n
+  </div>
+</div>
+
+<!-- Step 4 -->
+<div id="step4" class="algo-section">
+  <div class="acc-step-label">Step 4 · 為什麼是黃金比例：Beatty 定理</div>
+  <div class="acc-p">
+    為什麼必敗位置偏偏和 φ 有關？背後是 1907 年的 <strong>Beatty 定理</strong>。
+  </div>
+  <div class="acc-insight" style="margin-bottom:20px;">
+    <span class="ins-label">📐 Beatty 定理</span>
+    若 r, s 是正無理數且 <code>1/r + 1/s = 1</code>，<br>
+    則序列 <code>⌊r⌋, ⌊2r⌋, ⌊3r⌋, …</code> 和 <code>⌊s⌋, ⌊2s⌋, ⌊3s⌋, …</code><br>
+    <strong>不重複、不遺漏地包含所有正整數</strong>（稱為 Beatty 分割）。
+  </div>
+  <div class="acc-p">
+    黃金比例 φ 和 φ² 恰好滿足這個條件：<br>
+    <code>1/φ + 1/φ² = 1/1.618 + 1/2.618 ≈ 0.618 + 0.382 = 1</code> ✓<br><br>
+    因此序列 <code>⌊n·φ⌋</code>（1, 3, 4, 6, 8, 9, 11, …）<br>
+    和序列 <code>⌊n·φ²⌋</code>（2, 5, 7, 10, 13, 15, 18, …）<br>
+    <strong>恰好把所有正整數不重複地分成兩組</strong>。<br><br>
+    這保證了必敗位置 (⌊n·φ⌋, ⌊n·φ²⌋) 能覆蓋所有可能的「平衡點」，<br>
+    而且從任何非必敗位置出發，<strong>一定能找到一步走到某個必敗位置</strong>。
+  </div>
+  <div class="acc-code">
+    <span class="lang-tag">Python</span>
+    <pre><span class="kw">import</span> math
+PHI = (<span class="num">1</span> + math.sqrt(<span class="num">5</span>)) / <span class="num">2</span>   <span class="cmt"># φ ≈ 1.6180339887</span>
+PHI2 = PHI + <span class="num">1</span>                   <span class="cmt"># φ² = φ+1 ≈ 2.6180339887</span>
+
+<span class="cmt"># 驗證 Beatty 條件</span>
+<span class="kw">print</span>(<span class="num">1</span>/PHI + <span class="num">1</span>/PHI2)  <span class="cmt"># ≈ 1.0 ✓</span>
+
+<span class="cmt"># 生成必敗位置</span>
+losing = [(int(n*PHI), int(n*PHI2)) <span class="kw">for</span> n <span class="kw">in</span> <span class="fn">range</span>(<span class="num">1</span>, <span class="num">10</span>)]
+<span class="cmt"># [(1,2), (3,5), (4,7), (6,10), (8,13), (9,15), (11,18), (12,20), (14,23)]</span>
+
+<span class="cmt"># 驗證：a序列和b序列合起來是所有正整數</span>
+a_seq = [int(n*PHI) <span class="kw">for</span> n <span class="kw">in</span> <span class="fn">range</span>(<span class="num">1</span>, <span class="num">20</span>)]  <span class="cmt"># 1,3,4,6,8,9,11,12,14...</span>
+b_seq = [int(n*PHI2) <span class="kw">for</span> n <span class="kw">in</span> <span class="fn">range</span>(<span class="num">1</span>, <span class="num">20</span>)]  <span class="cmt"># 2,5,7,10,13,15,18,20...</span>
+<span class="cmt"># sorted(a_seq + b_seq) = [1,2,3,4,5,6,7,8,9,10,11,...] ✓</span></pre>
+  </div>
+</div>
+
+<!-- Step 5 -->
+<div id="step5" class="algo-section">
+  <div class="acc-step-label">Step 5 · O(1) 判斷與必勝策略</div>
+  <div class="acc-p">
+    有了公式，判斷和走法都可以在 O(1) 完成判斷，O(max(a,b)) 找最優走法：
+  </div>
+  <div class="acc-code">
+    <span class="lang-tag">Python</span>
+    <pre><span class="kw">import</span> math
+PHI = (<span class="num">1</span> + math.sqrt(<span class="num">5</span>)) / <span class="num">2</span>
+
+<span class="kw">def</span> <span class="fn">is_losing</span>(a: <span class="cls">int</span>, b: <span class="cls">int</span>) -> <span class="cls">bool</span>:
+    <span class="kw">if</span> a > b: a, b = b, a   <span class="cmt"># 確保 a ≤ b</span>
+    n = b - a               <span class="cmt"># n = b - a</span>
+    <span class="kw">return</span> <span class="fn">int</span>(n * PHI) == a  <span class="cmt"># O(1) 判斷</span>
+
+<span class="kw">def</span> <span class="fn">best_move</span>(a: <span class="cls">int</span>, b: <span class="cls">int</span>):
+    <span class="kw">if</span> <span class="fn">is_losing</span>(a, b):
+        <span class="kw">return</span> <span class="kw">None</span>  <span class="cmt"># 敗局，無最優走法</span>
+
+    <span class="cmt"># 嘗試減少堆A</span>
+    <span class="kw">for</span> na <span class="kw">in</span> <span class="fn">range</span>(a):
+        <span class="kw">if</span> <span class="fn">is_losing</span>(na, b): <span class="kw">return</span> (na, b)
+
+    <span class="cmt"># 嘗試減少堆B</span>
+    <span class="kw">for</span> nb <span class="kw">in</span> <span class="fn">range</span>(b):
+        <span class="kw">if</span> <span class="fn">is_losing</span>(a, nb): <span class="kw">return</span> (a, nb)
+
+    <span class="cmt"># 嘗試兩堆各減 k</span>
+    <span class="kw">for</span> k <span class="kw">in</span> <span class="fn">range</span>(<span class="num">1</span>, <span class="fn">min</span>(a, b) + <span class="num">1</span>):
+        <span class="kw">if</span> <span class="fn">is_losing</span>(a - k, b - k): <span class="kw">return</span> (a - k, b - k)
+
+<span class="cmt"># 複雜度：O(max(a,b)) 掃描，O(1) 判斷每個位置</span>
+<span class="cmt"># 為什麼一定能找到？Beatty 定理保證必敗位置的唯一性</span></pre>
+  </div>
+  <div class="acc-insight">
+    <span class="ins-label">✅ 和 Nim 的比較</span>
+    Nim：O(k) 判斷（k = 堆數），O(k·log N) 找最優走法<br>
+    Wythoff：O(1) 判斷，O(max(a,b)) 找最優走法<br><br>
+    Wythoff 判斷更快，但找走法需要掃描。這是因為 Nim 有 XOR 這個代數結構，
+    而 Wythoff 的必敗位置涉及無理數，沒有類似的代數捷徑。
+  </div>
+</div>
+
+<!-- 互動計算器 -->
+<div id="sim" class="algo-section">
+  <div class="acc-step-label">互動必敗位置計算器</div>
+  <div class="acc-p">輸入兩堆的石頭數，判斷是否為必敗位置。</div>
+  <div style="display:flex;gap:16px;align-items:center;margin:16px 0;flex-wrap:wrap;">
+    <div>
+      <label style="font-size:13px;color:var(--text-dim);">堆 A</label><br>
+      <input id="sim-a" type="number" min="0" max="50" value="3" oninput="simCalc()"
+        style="background:var(--surface);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:8px;width:80px;font-size:18px;text-align:center;margin-top:6px;">
+    </div>
+    <div style="font-size:24px;color:var(--text-dim);padding-top:20px;">,</div>
+    <div>
+      <label style="font-size:13px;color:var(--text-dim);">堆 B</label><br>
+      <input id="sim-b" type="number" min="0" max="50" value="5" oninput="simCalc()"
+        style="background:var(--surface);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:8px;width:80px;font-size:18px;text-align:center;margin-top:6px;">
+    </div>
+  </div>
+  <div id="sim-result" style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:16px;font-size:14px;margin-bottom:16px;"></div>
+
+  <div class="acc-p" style="margin-top:16px;">前 10 個必敗位置（n = 1 ~ 10）：</div>
+  <div id="sim-table" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;"></div>
+</div>
+
+<!-- LeetCode -->
+<div id="leetcode" class="algo-section">
+  <div class="acc-step-label">LeetCode 相關題目</div>
+  <div class="acc-p">Wythoff 直接對應的題目不多，但相關的博弈和數學題值得練習：</div>
+  <div style="display:flex;flex-direction:column;gap:10px;margin-top:12px;">
+    <a href="https://leetcode.com/problems/nim-game/" target="_blank" class="lc-card">
+      <span class="lc-num">#292</span><span class="lc-title">Nim Game</span>
+      <span class="lc-tag easy">Easy</span>
+      <span class="lc-desc">單堆 Nim，理解博弈基礎再看 Wythoff</span>
+    </a>
+    <a href="https://leetcode.com/problems/stone-game-vi/" target="_blank" class="lc-card">
+      <span class="lc-num">#1686</span><span class="lc-title">Stone Game VI</span>
+      <span class="lc-tag medium">Medium</span>
+      <span class="lc-desc">兩堆石頭的貪心策略，和 Wythoff 有相似的兩堆結構</span>
+    </a>
+    <a href="https://leetcode.com/problems/predict-the-winner/" target="_blank" class="lc-card">
+      <span class="lc-num">#486</span><span class="lc-title">Predict the Winner</span>
+      <span class="lc-tag medium">Medium</span>
+      <span class="lc-desc">Minimax 入門，博弈樹思維</span>
+    </a>
+  </div>
+</div>
+
+<!-- 導航 -->
+<div style="display:flex;justify-content:center;gap:12px;margin:32px 0 8px;flex-wrap:wrap;">
+  <a href="nim-algo.html" style="display:inline-flex;align-items:center;gap:8px;padding:12px 20px;background:var(--surface);border:1px solid var(--border);border-radius:12px;text-decoration:none;color:var(--text);font-size:13px;transition:all 0.2s;"
+    onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'"
+    onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text)'">← ⚡ Nim 解析</a>
+  <a href="../index.html" style="display:inline-flex;align-items:center;gap:8px;padding:12px 20px;background:var(--surface);border:1px solid var(--border);border-radius:12px;text-decoration:none;color:var(--text);font-size:13px;transition:all 0.2s;"
+    onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'"
+    onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text)'">回選單 →</a>
+</div>
+
+</div>
+
+<style>
+.algo-section{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:24px;margin-bottom:20px;}
+.lc-card{display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--bg);border:1px solid var(--border);border-radius:10px;text-decoration:none;color:var(--text);transition:border-color 0.2s;flex-wrap:wrap;}
+.lc-card:hover{border-color:var(--accent);}
+.lc-num{font-family:'Orbitron',monospace;font-size:11px;color:var(--text-dim);min-width:44px;}
+.lc-title{font-weight:600;font-size:14px;flex:1;}
+.lc-tag{font-size:10px;padding:2px 8px;border-radius:20px;font-weight:700;letter-spacing:0.05em;}
+.lc-tag.easy{background:rgba(0,200,100,0.15);color:#00c864;}
+.lc-tag.medium{background:rgba(255,180,0,0.15);color:#ffb400;}
+.lc-tag.hard{background:rgba(255,60,60,0.15);color:#ff3c3c;}
+.lc-desc{font-size:12px;color:var(--text-dim);width:100%;margin-top:2px;}
+.acc-step-label{font-family:'Orbitron',monospace;font-size:11px;letter-spacing:0.15em;text-transform:uppercase;color:var(--accent);margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid var(--border);}
+.losing-badge{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;background:rgba(255,64,129,0.1);border:1px solid rgba(255,64,129,0.3);border-radius:8px;font-size:13px;font-family:'Orbitron',monospace;}
+</style>
+
+<script>
+const PHI=(1+Math.sqrt(5))/2;
+function isLosing(a,b){if(a>b){const t=a;a=b;b=t;}return Math.floor((b-a)*PHI)===a;}
+
+// 填表
+const tbody=document.getElementById('wythoff-table');
+for(let n=0;n<=8;n++){
+  const a=Math.floor(n*PHI),b=Math.floor(n*PHI*PHI);
+  const tr=document.createElement('tr');tr.style.borderBottom='1px solid var(--border)';
+  tr.innerHTML=`<td style="padding:10px;text-align:center;">${n}</td>
+    <td style="padding:10px;text-align:center;font-weight:700;color:var(--accent);">${a}</td>
+    <td style="padding:10px;text-align:center;font-weight:700;color:var(--accent2);">${b}</td>
+    <td style="padding:10px;text-align:center;color:var(--text-dim);">${b-a}</td>`;
+  tbody.appendChild(tr);
+}
+
+// 互動計算器
+function simCalc(){
+  const a=+document.getElementById('sim-a').value||0;
+  const b=+document.getElementById('sim-b').value||0;
+  const losing=isLosing(a,b);
+  const aa=Math.min(a,b),bb=Math.max(a,b),n=bb-aa;
+  const expectedA=Math.floor(n*PHI);
+  document.getElementById('sim-result').innerHTML=`
+    <div style="font-size:18px;font-weight:700;margin-bottom:10px;">(${a}, ${b})</div>
+    <div style="margin-bottom:8px;font-size:13px;color:var(--text-dim);">
+      min=${aa}, max=${bb}, n=max-min=${n}<br>
+      ⌊n·φ⌋ = ⌊${n}×${PHI.toFixed(4)}⌋ = ${expectedA}
+      ${aa===expectedA?'= min ✓':'≠ min ✗'}
+    </div>
+    <div style="font-size:16px;font-weight:600;color:${losing?'var(--accent2)':'var(--accent)'};">
+      ${losing?'⚠️ 必敗位置（L-position）':'✅ 必贏位置（W-position）'}
+    </div>`;
+}
+
+// 前10個必敗位置
+const simTable=document.getElementById('sim-table');
+for(let n=1;n<=10;n++){
+  const a=Math.floor(n*PHI),b=Math.floor(n*PHI*PHI);
+  const badge=document.createElement('div');badge.className='losing-badge';
+  badge.textContent=`(${a}, ${b})`;
+  badge.style.cursor='pointer';
+  badge.onclick=()=>{document.getElementById('sim-a').value=a;document.getElementById('sim-b').value=b;simCalc();};
+  simTable.appendChild(badge);
+}
+simCalc();
+</script>
+</body>
+</html>
