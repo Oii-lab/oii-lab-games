@@ -30,13 +30,9 @@
       <div class="ri-label">贏的條件</div>
       <div class="ri-text">取走<strong>最後一顆</strong>石頭的人<strong>贏</strong>（Standard 規則）</div>
     </div>
-    <div class="rules-item lose">
-      <div class="ri-label">必輸位置（紅色格子）</div>
-      <div class="ri-text">位置 <code>(⌊n·φ⌋, ⌊n·φ²⌋)</code>，φ ≈ 1.618（黃金比例）</div>
-    </div>
     <div class="rules-item tip">
-      <div class="ri-label">策略提示</div>
-      <div class="ri-text">點擊棋盤上的格子移動到該位置。往<strong>紅色格子</strong>走就是好棋！</div>
+      <div class="ri-label">挑戰</div>
+      <div class="ri-text">先玩幾局，觀察棋盤上的紅色格子和輸贏有什麼關係 👇</div>
     </div>
   </div>
 </div>
@@ -93,7 +89,7 @@
     <div class="status-dot" id="w-status-dot"></div>
     <div style="flex:1"><div class="status-text" id="w-status-text">準備中</div><div class="status-sub" id="w-status-sub"></div></div>
   </div>
-  <div style="font-size:12px;color:var(--text-dim);margin-bottom:8px;">紅色 = 必敗位置（⌊n·φ⌋, ⌊n·φ²⌋）。點擊格子移動至該位置（只能減少）。</div>
+  <div style="font-size:12px;color:var(--text-dim);margin-bottom:8px;">點擊格子移動至該位置（只能減少）。</div>
   <div class="wythoff-legend">
     <span><span class="dot" style="background:rgba(255,64,129,0.4);border:1px solid var(--accent2);"></span>必敗位置</span>
     <span><span class="dot" style="background:rgba(0,229,255,0.2);border:1px solid var(--accent);"></span>目前位置</span>
@@ -110,52 +106,16 @@
   </div>
 </div>
 
-<!-- 演算法解析 -->
-<div class="algo-accordion">
-  <button class="algo-accordion-trigger" onclick="toggleAlgo(this)">
-    <span>🧠 演算法解析 — 黃金比例 φ 與 Beatty 定理</span>
-    <span class="acc-arrow">▼</span>
-  </button>
-  <div class="algo-accordion-body">
-    <div class="acc-h2">令人驚訝的規律</div>
-    <div class="acc-p">
-      Wythoff's Game 的所有<strong>必敗位置</strong>，竟然和黃金比例 <code>φ = (1+√5)/2 ≈ 1.618</code> 有直接關係。
-    </div>
-    <div class="acc-insight">
-      <span class="ins-label">φ Wythoff 定理（1907）</span>
-      所有必敗位置 (a, b)（a ≤ b）都是：<br>
-      <strong>aₙ = ⌊n·φ⌋，bₙ = ⌊n·φ²⌋ = aₙ + n</strong><br><br>
-      前幾個：(0,0), (1,2), (3,5), (4,7), (6,10), (8,13), ...
-    </div>
-    <div class="acc-code">
-      <span class="lang-tag">Python</span>
-      <pre><span class="kw">import</span> math
-PHI = (<span class="num">1</span> + math.sqrt(<span class="num">5</span>)) / <span class="num">2</span>   <span class="cmt"># ≈ 1.6180339887</span>
-
-<span class="kw">def</span> <span class="fn">is_losing</span>(a: int, b: int) -> bool:
-    <span class="kw">if</span> a > b: a, b = b, a
-    n = b - a
-    <span class="kw">return</span> int(n * PHI) == a   <span class="cmt"># O(1)！</span>
-
-<span class="kw">def</span> <span class="fn">best_move</span>(a: int, b: int):
-    <span class="kw">if</span> <span class="fn">is_losing</span>(a, b): <span class="kw">return</span> None  <span class="cmt"># 敗局</span>
-    <span class="kw">for</span> na <span class="kw">in</span> range(a):      <span class="cmt"># 試著減少 A</span>
-        <span class="kw">if</span> <span class="fn">is_losing</span>(na, b): <span class="kw">return</span> (na, b)
-    <span class="kw">for</span> nb <span class="kw">in</span> range(b):      <span class="cmt"># 試著減少 B</span>
-        <span class="kw">if</span> <span class="fn">is_losing</span>(a, nb): <span class="kw">return</span> (a, nb)
-    d = min(a, b)
-    <span class="kw">for</span> k <span class="kw">in</span> range(<span class="num">1</span>, d+<span class="num">1</span>):  <span class="cmt"># 試著兩堆各減 k</span>
-        <span class="kw">if</span> <span class="fn">is_losing</span>(a-k, b-k): <span class="kw">return</span> (a-k, b-k)</pre>
-    </div>
-    <div class="acc-h2">為什麼是黃金比例？</div>
-    <div class="acc-p">
-      關鍵是 <strong>Beatty 定理</strong>：若 <code>1/r + 1/s = 1</code>（r, s 為無理數），
-      則 <code>{⌊n·r⌋}</code> 和 <code>{⌊n·s⌋}</code> 恰好不重複地分割所有正整數。
-      由於 <code>1/φ + 1/φ² = 1</code>，序列 <code>⌊n·φ⌋</code> 和 <code>⌊n·φ²⌋</code>
-      完美配成對——正好對應所有必敗位置。
-    </div>
-    <a href="../algo.html#wythoff" class="acc-more" target="_blank">→ 完整解析（含 Beatty 定理證明）</a>
-  </div>
+<!-- 演算法解析連結 -->
+<div style="text-align:center;margin:24px 0 8px;">
+  <a href="wythoff-algo.html"
+    style="display:inline-flex;align-items:center;gap:10px;padding:14px 28px;
+      background:var(--surface);border:1px solid var(--border);border-radius:12px;
+      text-decoration:none;color:var(--text);font-size:14px;transition:all 0.2s;letter-spacing:0.03em;"
+    onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'"
+    onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text)'">
+    🧠 <strong>看演算法解析</strong> &nbsp;— 黃金比例 φ · Beatty 定理 · 為什麼紅格是必敗位置
+  </a>
 </div>
 
 </div>
@@ -185,13 +145,19 @@ PHI = (<span class="num">1</span> + math.sqrt(<span class="num">5</span>)) / <sp
 <script src="../shared/firebase.js"></script>
 <script src="../shared/ui.js"></script>
 <script>
-function toggleAlgo(btn){btn.classList.toggle('open');btn.nextElementSibling.classList.toggle('open');}
 function goHome(){document.getElementById('result-overlay').classList.remove('show');stopPolling();if(CUR.roomCode){cleanupRoom(CUR.roomCode);CUR.roomCode=null;}document.getElementById('wcreate-s1').classList.add('active');document.getElementById('wcreate-s2').classList.remove('active');CUR.game=null;showPanel('panel-setup');}
 function playAgain(){document.getElementById('result-overlay').classList.remove('show');stopPolling();if(CUR.roomCode){cleanupRoom(CUR.roomCode);CUR.roomCode=null;}if(CUR.lastSettings)_wythoffStart(CUR.lastSettings);else goHome();}
 const PHI=(1+Math.sqrt(5))/2;
 const W={heapA:0,heapB:0,maxVal:12,currentPlayer:1,p1Name:'玩家',p2Name:'電腦',mode:null,myPlayer:1,cpuDiff:'hard',roomCode:null,lastSeen:0,gameOver:false};
 function wythoffIsLosing(a,b){if(a>b){const t=a;a=b;b=t;}return Math.floor((b-a)*PHI)===a;}
-function wythoffBeginCpu(){const maxV=+document.getElementById('w-max-val').value;let a,b;do{a=Math.floor(Math.random()*maxV)+1;b=Math.floor(Math.random()*maxV)+1;}while(wythoffIsLosing(a,b)||(a===0&&b===0));_wythoffStart({game:'wythoff',mode:'cpu',name:document.getElementById('w-cpu-name').value.trim()||'玩家',heapA:a,heapB:b,maxVal:maxV,diff:document.getElementById('w-cpu-diff').value,firstSel:document.getElementById('w-cpu-first').value});}
+function wythoffBeginCpu(){
+  const maxV=+document.getElementById('w-max-val').value;
+  let a,b;
+  // 確保初始位置不是 losing position 也不是 (0,0)
+  do{a=Math.floor(Math.random()*maxV)+1;b=Math.floor(Math.random()*maxV)+1;}
+  while(wythoffIsLosing(a,b));
+  _wythoffStart({game:'wythoff',mode:'cpu',name:document.getElementById('w-cpu-name').value.trim()||'玩家',heapA:a,heapB:b,maxVal:maxV,diff:document.getElementById('w-cpu-diff').value,firstSel:document.getElementById('w-cpu-first').value});
+}
 function _wythoffStart(s){
   stopPolling();CUR.game='wythoff';CUR.lastSettings={...s};
   W.mode=s.mode;W.heapA=s.heapA;W.heapB=s.heapB;W.maxVal=s.maxVal||12;W.cpuDiff=s.diff||'hard';
@@ -211,7 +177,7 @@ function wRenderGrid(){
   for(let b=W.maxVal;b>=0;b--){for(let a=0;a<=W.maxVal;a++){
     const cell=document.createElement('div'),isCurrent=(a===W.heapA&&b===W.heapB),isLosing=wythoffIsLosing(a,b),isReachable=!W.gameOver&&isMyTurn&&wIsReachable(a,b);
     if(isCurrent)cell.className='wythoff-cell current';
-    else if(!isReachable&&(a>W.heapA||b>W.heapB))cell.className='wythoff-cell eaten';
+    else if(a>W.heapA||b>W.heapB)cell.className='wythoff-cell eaten';
     else if(isLosing)cell.className='wythoff-cell losing';
     else cell.className='wythoff-cell alive';
     cell.textContent=`${a},${b}`;
@@ -225,26 +191,73 @@ function wUpdateStatus(){
   const isMyTurn=W.mode==='cpu'?W.currentPlayer===1:W.currentPlayer===W.myPlayer;
   updatePlayerTags('w-p1-tag','w-p2-tag',W.currentPlayer);
   if(W.gameOver){setStatusDot('w-status-dot','over');document.getElementById('w-status-text').textContent='遊戲結束';document.getElementById('w-status-sub').textContent='';return;}
-  if(isMyTurn){setStatusDot('w-status-dot','your-turn');document.getElementById('w-status-text').textContent='你的回合';const losing=wythoffIsLosing(W.heapA,W.heapB);document.getElementById('w-status-sub').textContent=losing?'⚠️ 你在必輸位置（紅色格子）':'✅ 你在必贏位置！找到紅色格子走過去';}
-  else{setStatusDot('w-status-dot','waiting');document.getElementById('w-status-text').textContent=`${W.currentPlayer===1?W.p1Name:W.p2Name} 的回合`;document.getElementById('w-status-sub').textContent=W.mode==='cpu'?'電腦計算中…':'等待對手…';}
+  if(isMyTurn){
+    setStatusDot('w-status-dot','your-turn');document.getElementById('w-status-text').textContent='你的回合';
+    const losing=wythoffIsLosing(W.heapA,W.heapB);
+    document.getElementById('w-status-sub').textContent=losing?'⚠️ 你在必輸位置（紅色格子）':'✅ 你在必贏位置！找到紅色格子走過去';
+  }else{
+    setStatusDot('w-status-dot','waiting');document.getElementById('w-status-text').textContent=`${W.currentPlayer===1?W.p1Name:W.p2Name} 的回合`;
+    document.getElementById('w-status-sub').textContent=W.mode==='cpu'?'電腦計算中…':'等待對手…';
+  }
 }
 async function wPlayerMove(newA,newB){if(W.gameOver||!wIsReachable(newA,newB))return;if(W.mode==='cpu'&&W.currentPlayer!==1)return;if(W.mode!=='cpu'&&W.currentPlayer!==W.myPlayer)return;if(W.mode!=='cpu'){const _r=await getRoom(W.roomCode);if(!_r)return;await pushMove(W.roomCode,{player:W.myPlayer,newA,newB});W.lastSeen++;}wApplyMove(W.myPlayer,newA,newB,true);}
 function wApplyMove(player,newA,newB,animate){
   const name=player===1?W.p1Name:W.p2Name,takenA=W.heapA-newA,takenB=W.heapB-newB;
   addLog('w-log',player===1?'p1':'p2',`${name} ${takenA>0&&takenB>0?`兩堆各取${takenA}顆`:takenA>0?`堆A取${takenA}顆`:`堆B取${takenB}顆`} → (${newA}, ${newB})`);
   W.heapA=newA;W.heapB=newB;
-  if(W.heapA===0&&W.heapB===0){W.gameOver=true;const winner=name,winnerIdx=player,loserIdx=player===1?2:1,loser=loserIdx===1?W.p1Name:W.p2Name;wRenderGrid();wUpdateHeapDisplay();wUpdateStatus();addLog('w-log','sys',`${winner} 取走最後一顆！獲勝🎉`);const isMe=(W.mode==='cpu'&&winnerIdx===1)||(W.mode!=='cpu'&&winnerIdx===W.myPlayer);setTimeout(()=>showResult(winnerIdx,winner,loser,isMe,`${winner} 取走了最後的石頭。`),700);return;}
+  if(W.heapA===0&&W.heapB===0){
+    W.gameOver=true;const winner=name,winnerIdx=player,loserIdx=player===1?2:1,loser=loserIdx===1?W.p1Name:W.p2Name;
+    wRenderGrid();wUpdateHeapDisplay();wUpdateStatus();addLog('w-log','sys',`${winner} 取走最後一顆！獲勝🎉`);
+    const isMe=(W.mode==='cpu'&&winnerIdx===1)||(W.mode!=='cpu'&&winnerIdx===W.myPlayer);
+    setTimeout(()=>showResult(winnerIdx,winner,loser,isMe,`${winner} 取走了最後的石頭。`),700);return;
+  }
   W.currentPlayer=W.currentPlayer===1?2:1;wRenderGrid();wUpdateHeapDisplay();wUpdateStatus();
   if(W.mode==='cpu'&&W.currentPlayer===2)setTimeout(wCpuTurn,700+Math.random()*700);
   else if(W.mode!=='cpu'&&W.currentPlayer!==W.myPlayer)startRoomPolling(W.roomCode,room=>{const mv=Object.values(room.moves||{});if(mv.length>W.lastSeen){const m=mv[W.lastSeen];W.lastSeen=mv.length;stopPolling();wApplyMove(m.player,m.newA,m.newB,true);}});
 }
 function wCpuTurn(){if(W.gameOver)return;const m=wCalcMove();setTimeout(()=>wApplyMove(2,m.a,m.b,true),300);}
-function wCalcMove(){if(W.cpuDiff==='easy'&&Math.random()<0.5)return wRandomMove();return wOptimalMove();}
-function wRandomMove(){const moves=[];for(let a=0;a<=W.heapA;a++)if(wIsReachable(a,W.heapB))moves.push({a,b:W.heapB});for(let b=0;b<W.heapB;b++)if(wIsReachable(W.heapA,b))moves.push({a:W.heapA,b});const d=Math.min(W.heapA,W.heapB);for(let k=1;k<=d;k++)moves.push({a:W.heapA-k,b:W.heapB-k});return moves[Math.floor(Math.random()*moves.length)]||{a:0,b:W.heapB-1};}
-function wOptimalMove(){for(let a=0;a<W.heapA;a++)if(wythoffIsLosing(a,W.heapB))return{a,b:W.heapB};for(let b=0;b<W.heapB;b++)if(wythoffIsLosing(W.heapA,b))return{a:W.heapA,b};const d=Math.min(W.heapA,W.heapB);for(let k=1;k<=d;k++)if(wythoffIsLosing(W.heapA-k,W.heapB-k))return{a:W.heapA-k,b:W.heapB-k};return wRandomMove();}
-async function wythoffCreateRoom(){const maxV=+document.getElementById('w-room-max').value;const hostName=document.getElementById('w-host-name').value.trim()||'房主';let a,b;do{a=Math.floor(Math.random()*maxV)+1;b=Math.floor(Math.random()*maxV)+1;}while(wythoffIsLosing(a,b)||(a===0&&b===0));const firstPlayer=resolveFirst(document.getElementById('w-room-first').value);const code=await uniqueCode();await setRoom(code,{code,game:'wythoff',hostName,heapA:a,heapB:b,maxVal:maxV,firstPlayer,guest:false,guestName:null,started:false,moves:[],created:Date.now()});CUR.roomCode=code;W.roomCode=code;document.getElementById('w-room-code-display').textContent=code;registerHostDisconnect(code);document.getElementById('wcreate-s1').classList.remove('active');document.getElementById('wcreate-s2').classList.add('active');startRoomPolling(code,room=>{if(room.guest){stopPolling();_wythoffStart({game:'wythoff',mode:'host',hostName,guestName:room.guestName,heapA:a,heapB:b,maxVal:maxV,myPlayer:1,roomCode:code,firstPlayer});}});}
+function wCalcMove(){
+  // 簡單模式：25% 走最優，75% 隨機
+  if(W.cpuDiff==='easy'){
+    if(Math.random()<0.25)return wOptimalMove();
+    return wRandomMove();
+  }
+  return wOptimalMove();
+}
+function wRandomMove(){
+  const moves=[];
+  for(let a=0;a<W.heapA;a++)moves.push({a,b:W.heapB});
+  for(let b=0;b<W.heapB;b++)moves.push({a:W.heapA,b});
+  const d=Math.min(W.heapA,W.heapB);
+  for(let k=1;k<=d;k++)moves.push({a:W.heapA-k,b:W.heapB-k});
+  return moves[Math.floor(Math.random()*moves.length)]||{a:0,b:W.heapB>0?W.heapB-1:0};
+}
+function wOptimalMove(){
+  for(let a=0;a<W.heapA;a++)if(wythoffIsLosing(a,W.heapB))return{a,b:W.heapB};
+  for(let b=0;b<W.heapB;b++)if(wythoffIsLosing(W.heapA,b))return{a:W.heapA,b};
+  const d=Math.min(W.heapA,W.heapB);
+  for(let k=1;k<=d;k++)if(wythoffIsLosing(W.heapA-k,W.heapB-k))return{a:W.heapA-k,b:W.heapB-k};
+  return wRandomMove();
+}
+async function wythoffCreateRoom(){
+  const maxV=+document.getElementById('w-room-max').value;const hostName=document.getElementById('w-host-name').value.trim()||'房主';
+  let a,b;do{a=Math.floor(Math.random()*maxV)+1;b=Math.floor(Math.random()*maxV)+1;}while(wythoffIsLosing(a,b));
+  const firstPlayer=resolveFirst(document.getElementById('w-room-first').value);const code=await uniqueCode();
+  await setRoom(code,{code,game:'wythoff',hostName,heapA:a,heapB:b,maxVal:maxV,firstPlayer,guest:false,guestName:null,started:false,moves:[],created:Date.now()});
+  CUR.roomCode=code;W.roomCode=code;document.getElementById('w-room-code-display').textContent=code;registerHostDisconnect(code);
+  document.getElementById('wcreate-s1').classList.remove('active');document.getElementById('wcreate-s2').classList.add('active');
+  startRoomPolling(code,room=>{if(room.guest){stopPolling();_wythoffStart({game:'wythoff',mode:'host',hostName,guestName:room.guestName,heapA:a,heapB:b,maxVal:maxV,myPlayer:1,roomCode:code,firstPlayer});}});
+}
 async function wythoffCancelRoom(){stopPolling();if(CUR.roomCode){cleanupRoom(CUR.roomCode);CUR.roomCode=null;}document.getElementById('wcreate-s1').classList.add('active');document.getElementById('wcreate-s2').classList.remove('active');}
-async function wythoffJoinRoom(){const guestName=document.getElementById('w-guest-name').value.trim()||'訪客';const code=document.getElementById('w-join-code').value.trim().toUpperCase();const err=document.getElementById('w-join-err');err.style.display='none';if(code.length!==4){err.textContent='請輸入4位代碼';err.style.display='block';return;}const room=await getRoom(code);if(!room||room.game!=='wythoff'){err.textContent='找不到此Wythoff房間';err.style.display='block';return;}if(room.guest||room.started){err.textContent='房間已滿';err.style.display='block';return;}await updateRoom(code,{guest:true,guestName,started:true});CUR.roomCode=code;_wythoffStart({game:'wythoff',mode:'guest',hostName:room.hostName,guestName,name:guestName,heapA:room.heapA,heapB:room.heapB,maxVal:room.maxVal,myPlayer:2,roomCode:code,firstPlayer:room.firstPlayer});}
+async function wythoffJoinRoom(){
+  const guestName=document.getElementById('w-guest-name').value.trim()||'訪客';const code=document.getElementById('w-join-code').value.trim().toUpperCase();
+  const err=document.getElementById('w-join-err');err.style.display='none';
+  if(code.length!==4){err.textContent='請輸入4位代碼';err.style.display='block';return;}
+  const room=await getRoom(code);if(!room||room.game!=='wythoff'){err.textContent='找不到此Wythoff房間';err.style.display='block';return;}
+  if(room.guest||room.started){err.textContent='房間已滿';err.style.display='block';return;}
+  await updateRoom(code,{guest:true,guestName,started:true});CUR.roomCode=code;
+  _wythoffStart({game:'wythoff',mode:'guest',hostName:room.hostName,guestName,name:guestName,heapA:room.heapA,heapB:room.heapB,maxVal:room.maxVal,myPlayer:2,roomCode:code,firstPlayer:room.firstPlayer});
+}
 </script>
 </body>
 </html>
