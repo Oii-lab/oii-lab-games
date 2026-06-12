@@ -435,7 +435,7 @@ function ttUpdateStatus(){
     document.getElementById('tt-status-text').textContent='你的回合';
     const xor=ttGetGrundy();
     document.getElementById('tt-status-sub').textContent=xor===0?'⚠️ 你在必輸位置（Grundy XOR=0）':'✅ 你在必贏位置！找到讓 XOR=0 的走法';
-    ttUpdateHint();
+    ttRenderTurtles();ttUpdateHint();
   }else{
     setStatusDot('tt-status-dot','waiting');
     document.getElementById('tt-status-text').textContent=`${TT.currentPlayer===1?TT.p1Name:TT.p2Name} 的回合`;
