@@ -25,7 +25,10 @@
 <div class="container">
 
 <header>
-  <div class="title">🔴 Connect Four</div>
+  <div class="title">
+  <img src="../assets/icons/connect4.png" style="height:60px;vertical-align:middle;margin-right:8px;">
+  Connect Four
+</div>
   <div class="subtitle">四子連線 &nbsp;·&nbsp; Alpha-Beta Pruning &nbsp;·&nbsp; Minimax</div>
 </header>
 
@@ -52,8 +55,8 @@
       <div class="ri-text">棋盤全滿且無人連四，則平局</div>
     </div>
     <div class="rules-item tip">
-      <div class="ri-label">電腦策略</div>
-      <div class="ri-text"><strong>Alpha-Beta Pruning</strong> 搜尋，困難模式看 7 步，幾乎不會犯錯</div>
+      <div class="ri-label">挑戰</div>
+      <div class="ri-text">困難模式的電腦幾乎不犯錯，試著想想它用的是什麼策略 👇</div>
     </div>
   </div>
 </div>
@@ -134,57 +137,16 @@
   </div>
 </div>
 
-<!-- 演算法解析 -->
-<div class="algo-accordion">
-  <button class="algo-accordion-trigger" onclick="toggleAlgo(this)">
-    <span>🧠 演算法解析 — Alpha-Beta Pruning</span>
-    <span class="acc-arrow">▼</span>
-  </button>
-  <div class="algo-accordion-body">
-    <div class="acc-h2">Minimax 是什麼？</div>
-    <div class="acc-p">
-      電腦把所有可能的棋步展開成<strong>博弈樹</strong>：
-      自己的回合選分數最高的走法（Max），對手的回合選分數最低的走法（Min），
-      遞迴到底後回傳最佳選擇。
-    </div>
-    <div class="acc-h2">Alpha-Beta 如何剪枝？</div>
-    <div class="acc-insight">
-      <span class="ins-label">💡 核心思想</span>
-      維護兩個界限：<strong>α（我能保證的最低分）</strong>和<strong>β（對手允許的最高分）</strong>。
-      一旦 <code>α ≥ β</code>，這個分支<strong>絕對不會被選到</strong>，直接跳過。<br><br>
-      最好情況：搜尋量從 O(b<sup>d</sup>) 降到 O(b<sup>d/2</sup>)——<strong>等於深度翻倍</strong>。
-    </div>
-    <div class="acc-code">
-      <span class="lang-tag">Python</span>
-      <pre><span class="kw">def</span> <span class="fn">alpha_beta</span>(board, depth, alpha, beta, maximizing):
-    <span class="kw">if</span> depth == <span class="num">0</span> <span class="kw">or</span> <span class="fn">is_terminal</span>(board):
-        <span class="kw">return</span> <span class="fn">evaluate</span>(board)
-
-    <span class="kw">if</span> maximizing:
-        value = -<span class="fn">float</span>(<span class="str">'inf'</span>)
-        <span class="kw">for</span> col <span class="kw">in</span> <span class="fn">valid_columns</span>(board):
-            value = <span class="fn">max</span>(value, <span class="fn">alpha_beta</span>(
-                <span class="fn">drop</span>(board, col, CPU), depth-<span class="num">1</span>, alpha, beta, False))
-            alpha = <span class="fn">max</span>(alpha, value)
-            <span class="kw">if</span> alpha >= beta: <span class="kw">break</span>  <span class="cmt"># β 剪枝：對手不會讓我到這</span>
-        <span class="kw">return</span> value
-    <span class="kw">else</span>:
-        value = <span class="fn">float</span>(<span class="str">'inf'</span>)
-        <span class="kw">for</span> col <span class="kw">in</span> <span class="fn">valid_columns</span>(board):
-            value = <span class="fn">min</span>(value, <span class="fn">alpha_beta</span>(
-                <span class="fn">drop</span>(board, col, HUMAN), depth-<span class="num">1</span>, alpha, beta, True))
-            beta = <span class="fn">min</span>(beta, value)
-            <span class="kw">if</span> alpha >= beta: <span class="kw">break</span>  <span class="cmt"># α 剪枝：我已有更好選擇</span>
-        <span class="kw">return</span> value</pre>
-    </div>
-    <div class="acc-h2">啟發式評估（heuristic）</div>
-    <div class="acc-p">
-      搜尋不可能到終局，所以在 depth=0 時用<strong>評估函數</strong>打分：
-      每個「四格視窗」中，己方棋子越多分越高，對手棋子越多分越低。
-      中間列加權更高（中心控制）。
-    </div>
-    <a href="../algo.html#minimax" class="acc-more" target="_blank">→ 完整解析（含 Chomp Minimax 比較）</a>
-  </div>
+<!-- 演算法解析連結 -->
+<div style="text-align:center;margin:24px 0 8px;">
+  <a href="connect4-algo.html"
+    style="display:inline-flex;align-items:center;gap:10px;padding:14px 28px;
+      background:var(--surface);border:1px solid var(--border);border-radius:12px;
+      text-decoration:none;color:var(--text);font-size:14px;transition:all 0.2s;letter-spacing:0.03em;"
+    onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'"
+    onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text)'">
+    🧠 <strong>看演算法解析</strong> &nbsp;— Minimax · Alpha-Beta Pruning · 啟發式評估函數
+  </a>
 </div>
 
 </div>
@@ -214,7 +176,6 @@
 <script src="../shared/firebase.js"></script>
 <script src="../shared/ui.js"></script>
 <script>
-function toggleAlgo(btn){btn.classList.toggle('open');btn.nextElementSibling.classList.toggle('open');}
 function goHome(){document.getElementById('result-overlay').classList.remove('show');stopPolling();if(CUR.roomCode){cleanupRoom(CUR.roomCode);CUR.roomCode=null;}document.getElementById('f4create-s1').classList.add('active');document.getElementById('f4create-s2').classList.remove('active');CUR.game=null;showPanel('panel-setup');}
 function playAgain(){document.getElementById('result-overlay').classList.remove('show');stopPolling();if(CUR.roomCode){cleanupRoom(CUR.roomCode);CUR.roomCode=null;}if(CUR.lastSettings)_f4Start(CUR.lastSettings);else goHome();}
 
@@ -240,8 +201,12 @@ function f4RenderBoard(winCells){
   for(let c=0;c<F4.cols;c++){const btn=document.createElement('button');btn.className='c4-drop-btn';btn.textContent='▼';btn.id='f4btn-'+c;btn.disabled=!isMyTurn||F4.gameOver||F4.board[F4.rows-1][c]!==0;btn.onclick=()=>f4PlayerDrop(c);btnsEl.appendChild(btn);}
   const grid=document.getElementById('f4-grid');grid.style.gridTemplateColumns=`repeat(${F4.cols},48px)`;
   const cells=grid.querySelectorAll('.c4-cell');
-  if(cells.length===F4.rows*F4.cols){for(let r=F4.rows-1;r>=0;r--){for(let c=0;c<F4.cols;c++){const idx=(F4.rows-1-r)*F4.cols+c,cell=cells[idx],v=F4.board[r][c];cell.className='c4-cell'+(v===1?' p1':v===2?' p2':'');if(winCells&&winCells.some(([wr,wc])=>wr===r&&wc===c))cell.classList.add('win-cell');}}}
-  else{grid.innerHTML='';for(let r=F4.rows-1;r>=0;r--){for(let c=0;c<F4.cols;c++){const cell=document.createElement('div'),v=F4.board[r][c];cell.className='c4-cell'+(v===1?' p1':v===2?' p2':'');if(winCells&&winCells.some(([wr,wc])=>wr===r&&wc===c))cell.classList.add('win-cell');grid.appendChild(cell);}}}
+  if(cells.length===F4.rows*F4.cols){
+    for(let r=F4.rows-1;r>=0;r--){for(let c=0;c<F4.cols;c++){const idx=(F4.rows-1-r)*F4.cols+c,cell=cells[idx],v=F4.board[r][c];cell.className='c4-cell'+(v===1?' p1':v===2?' p2':'');if(winCells&&winCells.some(([wr,wc])=>wr===r&&wc===c))cell.classList.add('win-cell');}}
+  }else{
+    grid.innerHTML='';
+    for(let r=F4.rows-1;r>=0;r--){for(let c=0;c<F4.cols;c++){const cell=document.createElement('div'),v=F4.board[r][c];cell.className='c4-cell'+(v===1?' p1':v===2?' p2':'');if(winCells&&winCells.some(([wr,wc])=>wr===r&&wc===c))cell.classList.add('win-cell');grid.appendChild(cell);}}
+  }
 }
 function f4UpdateStatus(){
   const isMyTurn=F4.mode==='cpu'?F4.currentPlayer===1:F4.currentPlayer===F4.myPlayer;
@@ -260,8 +225,19 @@ function f4ApplyMove(player,col,animate){
   let row=-1;for(let r=0;r<F4.rows;r++){if(F4.board[r][col]===0){row=r;break;}}if(row===-1)return;
   F4.board[row][col]=player;const name=player===1?F4.p1Name:F4.p2Name;addLog('f4-log',player===1?'p1':'p2',`${name} 投入第 ${col+1} 列`);
   const winCells=f4CheckWin(row,col,player);
-  if(winCells){F4.gameOver=true;const winnerIdx=player,winner=name,loserIdx=player===1?2:1,loser=loserIdx===1?F4.p1Name:F4.p2Name;addLog('f4-log','sys',`${winner} 四子連線！獲勝🎉`);const isMe=(F4.mode==='cpu'&&winnerIdx===1)||(F4.mode!=='cpu'&&winnerIdx===F4.myPlayer);f4RenderBoard(winCells);updatePlayerTags('f4-p1-tag','f4-p2-tag',F4.currentPlayer);setStatusDot('f4-status-dot','over');document.getElementById('f4-status-text').textContent='遊戲結束';document.getElementById('f4-status-sub').textContent='';setTimeout(()=>showResult(winnerIdx,winner,loser,isMe,`${winner} 完成了四子連線！`),800);return;}
-  if(F4.board[F4.rows-1].every(v=>v!==0)){F4.gameOver=true;F4.draw=true;addLog('f4-log','sys','棋盤已滿，平局！');f4RenderBoard();setStatusDot('f4-status-dot','over');document.getElementById('f4-status-text').textContent='平局';document.getElementById('f4-status-sub').textContent='';setTimeout(()=>{document.getElementById('result-emoji').textContent='🤝';document.getElementById('result-title').textContent='平局！';document.getElementById('result-title').style.color='var(--accent4)';document.getElementById('result-msg').textContent='棋盤已滿，勢均力敵！';document.getElementById('result-overlay').classList.add('show');},800);return;}
+  if(winCells){
+    F4.gameOver=true;const winnerIdx=player,winner=name,loserIdx=player===1?2:1,loser=loserIdx===1?F4.p1Name:F4.p2Name;
+    addLog('f4-log','sys',`${winner} 四子連線！獲勝🎉`);
+    const isMe=(F4.mode==='cpu'&&winnerIdx===1)||(F4.mode!=='cpu'&&winnerIdx===F4.myPlayer);
+    f4RenderBoard(winCells);updatePlayerTags('f4-p1-tag','f4-p2-tag',F4.currentPlayer);
+    setStatusDot('f4-status-dot','over');document.getElementById('f4-status-text').textContent='遊戲結束';document.getElementById('f4-status-sub').textContent='';
+    setTimeout(()=>showResult(winnerIdx,winner,loser,isMe,`${winner} 完成了四子連線！`),800);return;
+  }
+  if(F4.board[F4.rows-1].every(v=>v!==0)){
+    F4.gameOver=true;F4.draw=true;addLog('f4-log','sys','棋盤已滿，平局！');
+    f4RenderBoard();setStatusDot('f4-status-dot','over');document.getElementById('f4-status-text').textContent='平局';document.getElementById('f4-status-sub').textContent='';
+    setTimeout(()=>{document.getElementById('result-emoji').textContent='🤝';document.getElementById('result-title').textContent='平局！';document.getElementById('result-title').style.color='var(--accent4)';document.getElementById('result-msg').textContent='棋盤已滿，勢均力敵！';document.getElementById('result-overlay').classList.add('show');},800);return;
+  }
   F4.currentPlayer=F4.currentPlayer===1?2:1;f4UpdateStatus();
   if(F4.mode==='cpu'&&F4.currentPlayer===2)setTimeout(f4CpuTurn,400+Math.random()*400);
   else if(F4.mode!=='cpu'&&F4.currentPlayer!==F4.myPlayer)startRoomPolling(F4.roomCode,room=>{const mv=Object.values(room.moves||{});if(mv.length>F4.lastSeen){const m=mv[F4.lastSeen];F4.lastSeen=mv.length;stopPolling();f4ApplyMove(m.player,m.col,true);}});
