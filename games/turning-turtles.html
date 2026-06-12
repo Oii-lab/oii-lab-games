@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Turning Turtles — 演算法互動遊戲集</title>
+<link rel="stylesheet" href="../shared/style.css">
+<style>
+  .turtle-row{display:flex;justify-content:center;flex-wrap:wrap;gap:10px;margin:20px 0;}
+  .turtle-cell{display:flex;flex-direction:column;align-items:center;gap:4px;}
+  .turtle-btn{width:56px;height:56px;border-radius:12px;border:2px solid var(--border);background:var(--surface);font-size:28px;cursor:pointer;transition:all 0.18s;position:relative;}
+  .turtle-btn.up{border-color:var(--accent);background:rgba(0,229,255,0.08);box-shadow:0 0 12px rgba(0,229,255,0.2);}
+  .turtle-btn.down{opacity:0.45;}
+  .turtle-btn:hover:not(:disabled){transform:scale(1.08);border-color:var(--accent2);}
+  .turtle-btn:disabled{cursor:not-allowed;}
+  .turtle-btn.must-flip{border-color:var(--accent2);box-shadow:0 0 14px rgba(255,64,129,0.4);animation:mustPulse 0.8s ease infinite alternate;}
+  @keyframes mustPulse{from{box-shadow:0 0 8px rgba(255,64,129,0.3)}to{box-shadow:0 0 18px rgba(255,64,129,0.7)}}
+  .turtle-idx{font-size:10px;color:var(--text-dim);font-family:'Orbitron',monospace;}
+  .grundy-display{text-align:center;margin:10px 0;font-family:'Orbitron',monospace;}
+  .grundy-val{font-size:28px;font-weight:900;}
+  .grundy-val.nonzero{color:var(--accent);}
+  .grundy-val.zero{color:var(--accent2);}
+  .grundy-label{font-size:11px;color:var(--text-dim);margin-top:2px;}
+  .flip-hint{font-size:12px;color:var(--text-dim);text-align:center;margin:8px 0;min-height:20px;}
+  .selected-badge{position:absolute;top:-6px;right:-6px;width:16px;height:16px;border-radius:50%;background:var(--accent2);font-size:9px;display:flex;align-items:center;justify-content:center;color:#000;font-weight:900;}
+</style>
+</head>
+<body>
+<canvas id="confetti-canvas"></canvas>
+<div class="container">
+
+<header>
+  <div class="title">🐢 Turning Turtles</div>
+  <div class="subtitle">翻轉烏龜 &nbsp;·&nbsp; Sprague-Grundy &nbsp;·&nbsp; XOR Strategy</div>
+</header>
+
+<div style="text-align:center;margin-bottom:20px">
+  <a href="../index.html" style="font-size:12px;color:var(--text-dim);text-decoration:none;letter-spacing:0.1em;text-transform:uppercase;padding:8px 14px;border:1px solid var(--border);border-radius:8px;transition:all 0.2s;display:inline-block;"
+    onmouseover="this.style.color='var(--accent)';this.style.borderColor='var(--accent)'"
+    onmouseout="this.style.color='var(--text-dim)';this.style.borderColor='var(--border)'">← 返回選單</a>
+</div>
+
+<div class="rules-block">
+  <div class="rules-title">📖 遊戲規則</div>
+  <div class="rules-body">
+    <div class="rules-item move">
+      <div class="ri-label">每回合</div>
+      <div class="ri-text">選一隻<strong>朝上的烏龜</strong>翻面（必翻），同時可以選擇翻轉它<strong>左邊任意一隻</strong>烏龜</div>
+    </div>
+    <div class="rules-item win">
+      <div class="ri-label">贏的條件</div>
+      <div class="ri-text">翻下<strong>最後一隻朝上烏龜</strong>的人<strong>贏</strong></div>
+    </div>
+    <div class="rules-item tip">
+      <div class="ri-label">挑戰</div>
+      <div class="ri-text">先玩幾局，觀察畫面上的 Grundy XOR 數字和輸贏有什麼關係 👇</div>
+    </div>
+  </div>
+</div>
+
+<!-- 設定 -->
+<div class="panel active" id="panel-setup">
+  <div class="panel-title">⚙️ 遊戲設定</div>
+  <div class="mode-tabs">
+    <div class="mode-tab active" id="tttab-cpu" onclick="setModeTab('tt','cpu')">🖥️ 單人對戰（電腦）</div>
+    <div class="mode-tab" id="tttab-create" onclick="setModeTab('tt','create')">🏠 開房間</div>
+    <div class="mode-tab" id="tttab-join" onclick="setModeTab('tt','join')">🔗 加入房間</div>
+  </div>
+  <div id="ttmode-cpu">
+    <div class="input-group"><label>你的名稱</label><input id="tt-cpu-name" placeholder="玩家" maxlength="16"></div>
+    <div class="input-group"><label>烏龜數量</label>
+      <select id="tt-count">
+        <option value="6">6 隻（入門）</option>
+        <option value="8" selected>8 隻（經典）</option>
+        <option value="10">10 隻</option>
+      </select></div>
+    <div class="input-group"><label>電腦難度</label>
+      <select id="tt-cpu-diff">
+        <option value="easy">😊 簡單（偶爾隨機走）</option>
+        <option value="hard" selected>😈 困難（Grundy XOR 最優）</option>
+      </select></div>
+    <div class="input-group"><label>先手</label>
+      <select id="tt-cpu-first">
+        <option value="player">玩家先手</option>
+        <option value="cpu">電腦先手</option>
+        <option value="random">隨機</option>
+      </select></div>
+    <div class="btn-row"><button class="btn btn-primary btn-lg" onclick="ttBeginCpu()">🚀 開始遊戲</button></div>
+  </div>
+  <div id="ttmode-create" style="display:none">
+    <div class="step active" id="ttcreate-s1">
+      <div class="input-group"><label>你的名稱</label><input id="tt-host-name" placeholder="房主" maxlength="16"></div>
+      <div class="input-group"><label>烏龜數量</label>
+        <select id="tt-room-count">
+          <option value="6">6 隻</option>
+          <option value="8" selected>8 隻</option>
+          <option value="10">10 隻</option>
+        </select></div>
+      <div class="input-group"><label>先手</label>
+        <select id="tt-room-first">
+          <option value="host">房主先手</option>
+          <option value="guest">訪客先手</option>
+          <option value="random">隨機</option>
+        </select></div>
+      <div class="btn-row"><button class="btn btn-primary" onclick="ttCreateRoom()">🏠 建立房間</button></div>
+    </div>
+    <div class="step" id="ttcreate-s2">
+      <div class="room-code-box"><div class="code-label">房間代碼</div><div class="code-val" id="tt-room-code-display">----</div><div class="code-hint">分享給朋友</div></div>
+      <div class="status-bar" style="margin-top:8px"><span class="spinner"></span><span class="status-text">等待對手加入…</span></div>
+      <div class="btn-row">
+        <button class="btn btn-outline btn-sm" onclick="copyCode('tt-room-code-display')">📋 複製</button>
+        <button class="btn btn-sm" onclick="ttCancelRoom()">❌ 取消</button>
+      </div>
+    </div>
+  </div>
+  <div id="ttmode-join" style="display:none">
+    <div class="input-group"><label>你的名稱</label><input id="tt-guest-name" placeholder="玩家" maxlength="16"></div>
+    <div class="input-group"><label>房間代碼</label>
+      <input id="tt-join-code" placeholder="XXXX" maxlength="4" style="letter-spacing:0.3em;font-family:'Orbitron',monospace;font-size:20px;" oninput="this.value=this.value.toUpperCase()"></div>
+    <div id="tt-join-err" style="color:var(--accent2);font-size:12px;display:none;margin-bottom:8px;"></div>
+    <div class="btn-row"><button class="btn btn-primary" onclick="ttJoinRoom()">🔗 加入</button></div>
+  </div>
+</div>
+
+<!-- 遊戲 -->
+<div class="panel" id="panel-game">
+  <div class="panel-title" id="tt-game-label">🐢 Turning Turtles</div>
+  <div class="players-row">
+    <div class="player-tag" id="tt-p1-tag"><div class="p-name" id="tt-p1-name">—</div><div class="p-label">玩家1</div></div>
+    <div style="display:flex;align-items:center;color:var(--text-dim);font-size:11px;font-family:'Orbitron',monospace;">VS</div>
+    <div class="player-tag" id="tt-p2-tag"><div class="p-name" id="tt-p2-name">—</div><div class="p-label">玩家2</div></div>
+  </div>
+  <div class="status-bar">
+    <div class="status-dot" id="tt-status-dot"></div>
+    <div style="flex:1"><div class="status-text" id="tt-status-text">準備中</div><div class="status-sub" id="tt-status-sub"></div></div>
+  </div>
+
+  <div class="grundy-display">
+    <div class="grundy-val" id="tt-grundy-val">0</div>
+    <div class="grundy-label">Grundy XOR ＝ 0 表示當前玩家必輸</div>
+  </div>
+
+  <div class="flip-hint" id="tt-flip-hint"></div>
+  <div class="turtle-row" id="tt-turtles"></div>
+
+  <div style="text-align:center;margin:8px 0;" id="tt-confirm-area"></div>
+
+  <div class="game-log" id="tt-log"></div>
+  <div class="btn-row" style="margin-top:14px">
+    <button class="btn btn-sm" onclick="goHome()">⚙️ 重新設定</button>
+  </div>
+</div>
+
+<!-- 演算法解析連結 -->
+<div style="text-align:center;margin:24px 0 8px;">
+  <a href="turning-turtles-algo.html"
+    style="display:inline-flex;align-items:center;gap:10px;padding:14px 28px;
+      background:var(--surface);border:1px solid var(--border);border-radius:12px;
+      text-decoration:none;color:var(--text);font-size:14px;transition:all 0.2s;letter-spacing:0.03em;"
+    onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'"
+    onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text)'">
+    🧠 <strong>看演算法解析</strong> &nbsp;— Sprague-Grundy · XOR 策略 · Nim 的連結
+  </a>
+</div>
+
+</div>
+
+<div id="disconnect-overlay" style="display:none;position:fixed;inset:0;background:rgba(10,10,15,0.92);z-index:150;backdrop-filter:blur(6px);align-items:center;justify-content:center;">
+  <div style="background:var(--surface);border:1px solid var(--accent2);border-radius:20px;padding:36px;text-align:center;max-width:320px;width:90%;">
+    <div style="font-size:48px;margin-bottom:12px;">😔</div>
+    <div style="font-family:'Orbitron',monospace;font-size:16px;font-weight:900;color:var(--accent2);margin-bottom:10px;">對手已離開</div>
+    <div style="font-size:13px;color:var(--text-dim);margin-bottom:24px;">房間已關閉。</div>
+    <button class="btn btn-primary" onclick="dismissDisconnect()" style="width:100%">⚙️ 回設定</button>
+  </div>
+</div>
+<div class="result-overlay" id="result-overlay">
+  <div class="result-box">
+    <span class="result-emoji" id="result-emoji">🏆</span>
+    <div class="result-title" id="result-title">勝利！</div>
+    <div class="result-msg" id="result-msg"></div>
+    <div class="btn-row" style="justify-content:center">
+      <button class="btn btn-primary" onclick="playAgain()">🔄 再玩一局</button>
+      <button class="btn btn-outline" onclick="goHome()">⚙️ 重新設定</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="../shared/firebase.js"></script>
+<script src="../shared/ui.js"></script>
+<script>
+function goHome(){
+  document.getElementById('result-overlay').classList.remove('show');
+  stopPolling();if(CUR.roomCode){cleanupRoom(CUR.roomCode);CUR.roomCode=null;}
+  document.getElementById('ttcreate-s1').classList.add('active');
+  document.getElementById('ttcreate-s2').classList.remove('active');
+  TT.selectedMain=-1;TT.selectedExtra=-1;
+  CUR.game=null;showPanel('panel-setup');
+}
+function playAgain(){
+  document.getElementById('result-overlay').classList.remove('show');
+  stopPolling();if(CUR.roomCode){cleanupRoom(CUR.roomCode);CUR.roomCode=null;}
+  if(CUR.lastSettings)_ttStart(CUR.lastSettings);else goHome();
+}
+
+// 烏龜狀態：turtles[i] = true(朝上) / false(朝下)，index 0 = 最左邊
+// Grundy value of position i (0-indexed from left) = i+1 when only 1 flip allowed
+// But since we can flip rightmost + optionally one to its left:
+// Grundy value of a single face-up turtle at position i (0=leftmost) = i
+// Wait - standard Turning Turtles:
+//   positions indexed from RIGHT, starting at 1
+//   must flip coin at position j (rightmost chosen), can also flip any coin at pos < j
+//   Grundy(position j) = j-1 (0-indexed from right = j-1)
+// So if we index from LEFT (0=leftmost), position from right = (n-1-i)
+// Grundy value of turtle at index i (from left) = (n-1-i) where n=total turtles
+// But since we can flip any extra coin to the LEFT of the chosen one,
+// the standard result: G = XOR of positions (1-indexed from right) of all face-up turtles
+// Position from right (1-indexed) of turtle at left-index i = (n - i)
+
+const TT={
+  turtles:[],n:8,currentPlayer:1,p1Name:'玩家',p2Name:'電腦',
+  mode:null,myPlayer:1,cpuDiff:'hard',roomCode:null,lastSeen:0,gameOver:false,
+  selectedMain:-1,selectedExtra:-1
+};
+
+function ttGetGrundy(){
+  // Grundy XOR = XOR of (position from right, 1-indexed) for all face-up turtles
+  let xor=0;
+  for(let i=0;i<TT.n;i++){
+    if(TT.turtles[i]){
+      const posFromRight=TT.n-i; // 1-indexed from right
+      xor^=posFromRight;
+    }
+  }
+  return xor;
+}
+
+function ttBeginCpu(){
+  const n=+document.getElementById('tt-count').value;
+  let turtles;
+  do{turtles=Array.from({length:n},()=>Math.random()<0.6);}
+  while(turtles.filter(Boolean).length<2);
+  _ttStart({game:'turning-turtles',mode:'cpu',
+    name:document.getElementById('tt-cpu-name').value.trim()||'玩家',
+    turtles,diff:document.getElementById('tt-cpu-diff').value,
+    firstSel:document.getElementById('tt-cpu-first').value});
+}
+
+function _ttStart(s){
+  stopPolling();CUR.game='turning-turtles';CUR.lastSettings={...s,turtles:[...s.turtles]};
+  TT.mode=s.mode;TT.turtles=[...s.turtles];TT.n=s.turtles.length;TT.cpuDiff=s.diff||'hard';
+  TT.p1Name=s.name||s.hostName||'玩家';
+  TT.p2Name=TT.mode==='cpu'?`電腦（${TT.cpuDiff==='hard'?'Grundy最優':'隨機走法'}）`:(s.guestName||'訪客');
+  TT.myPlayer=s.myPlayer||1;TT.gameOver=false;TT.roomCode=s.roomCode||null;TT.lastSeen=0;
+  TT.selectedMain=-1;TT.selectedExtra=-1;
+  TT.currentPlayer=s.firstPlayer||resolveFirst(s.firstSel||'player');
+  _ttInitUI();showPanel('panel-game');
+  document.getElementById('tt-game-label').textContent='🐢 Turning Turtles'+(TT.mode!=='cpu'?(TT.myPlayer===1?' (房主)':' (訪客)'):'');
+  if(TT.mode==='cpu'&&TT.currentPlayer===2){ttUpdateStatus();setTimeout(ttCpuTurn,900);}
+  else ttUpdateStatus();
+  if(TT.mode!=='cpu'&&TT.currentPlayer!==TT.myPlayer)
+    startRoomPolling(TT.roomCode,room=>{
+      const mv=Object.values(room.moves||{});
+      if(mv.length>TT.lastSeen){const m=mv[TT.lastSeen];TT.lastSeen=mv.length;stopPolling();ttApplyMove(m.player,m.main,m.extra,true);}
+    });
+}
+
+function _ttInitUI(){
+  document.getElementById('tt-p1-name').textContent=TT.p1Name;
+  document.getElementById('tt-p2-name').textContent=TT.p2Name;
+  document.getElementById('tt-log').innerHTML='';
+  const upCount=TT.turtles.filter(Boolean).length;
+  addLog('tt-log','sys',`開始！${TT.n}隻烏龜，${upCount}隻朝上。翻下最後一隻朝上烏龜者贏。`);
+  ttRenderTurtles();ttUpdateGrundy();ttUpdateStatus();
+}
+
+function ttRenderTurtles(){
+  const row=document.getElementById('tt-turtles');row.innerHTML='';
+  const isMyTurn=TT.mode==='cpu'?TT.currentPlayer===1:TT.currentPlayer===TT.myPlayer;
+  const canAct=isMyTurn&&!TT.gameOver;
+
+  TT.turtles.forEach((up,i)=>{
+    const cell=document.createElement('div');cell.className='turtle-cell';
+    const btn=document.createElement('button');btn.className='turtle-btn'+(up?' up':' down');
+    btn.textContent=up?'🐢':'🥚';
+    btn.title=up?`位置${i+1}（朝上）`:`位置${i+1}（朝下）`;
+
+    // 顯示選中狀態
+    if(i===TT.selectedMain){
+      btn.classList.add('must-flip');
+      const badge=document.createElement('div');badge.className='selected-badge';badge.textContent='✓';
+      btn.appendChild(badge);
+    }
+    if(i===TT.selectedExtra){
+      btn.style.borderColor='var(--accent4)';btn.style.boxShadow='0 0 12px rgba(100,255,100,0.4)';
+      const badge=document.createElement('div');badge.className='selected-badge';badge.style.background='var(--accent4)';badge.textContent='+';
+      btn.appendChild(badge);
+    }
+
+    if(canAct){
+      btn.onclick=()=>ttHandleClick(i);
+    }else{
+      btn.disabled=true;
+    }
+
+    const idx=document.createElement('div');idx.className='turtle-idx';
+    idx.textContent=`${i+1}`;
+    cell.appendChild(btn);cell.appendChild(idx);
+    row.appendChild(cell);
+  });
+
+  // 確認按鈕
+  const confirmArea=document.getElementById('tt-confirm-area');confirmArea.innerHTML='';
+  if(canAct&&TT.selectedMain!==-1){
+    const btn=document.createElement('button');btn.className='btn btn-primary btn-sm';
+    btn.textContent=TT.selectedExtra!==-1?`翻轉位置${TT.selectedMain+1}和${TT.selectedExtra+1}`:`只翻轉位置${TT.selectedMain+1}`;
+    btn.onclick=ttConfirmMove;
+    confirmArea.appendChild(btn);
+    if(TT.selectedExtra!==-1){
+      const cancelExtra=document.createElement('button');cancelExtra.className='btn btn-sm';cancelExtra.style.marginLeft='8px';
+      cancelExtra.textContent='取消附加翻轉';cancelExtra.onclick=()=>{TT.selectedExtra=-1;ttRenderTurtles();ttUpdateHint();};
+      confirmArea.appendChild(cancelExtra);
+    }
+  }
+}
+
+function ttHandleClick(i){
+  if(TT.gameOver)return;
+  const isMyTurn=TT.mode==='cpu'?TT.currentPlayer===1:TT.currentPlayer===TT.myPlayer;
+  if(!isMyTurn)return;
+
+  if(TT.selectedMain===-1){
+    // 第一步：選主翻（必須是朝上的）
+    if(!TT.turtles[i]){
+      document.getElementById('tt-flip-hint').textContent='⚠️ 必須選一隻朝上的烏龜翻面';return;
+    }
+    TT.selectedMain=i;TT.selectedExtra=-1;
+    ttRenderTurtles();ttUpdateHint();
+  }else if(i===TT.selectedMain){
+    // 點同一隻：取消選擇
+    TT.selectedMain=-1;TT.selectedExtra=-1;
+    ttRenderTurtles();ttUpdateHint();
+  }else if(i<TT.selectedMain){
+    // 選左邊的烏龜作為附加翻轉
+    if(TT.selectedExtra===i){TT.selectedExtra=-1;}
+    else{TT.selectedExtra=i;}
+    ttRenderTurtles();ttUpdateHint();
+  }else{
+    // 點右邊：改選主翻
+    if(!TT.turtles[i]){
+      document.getElementById('tt-flip-hint').textContent='⚠️ 必須選一隻朝上的烏龜翻面';return;
+    }
+    TT.selectedMain=i;TT.selectedExtra=-1;
+    ttRenderTurtles();ttUpdateHint();
+  }
+}
+
+function ttUpdateHint(){
+  const hint=document.getElementById('tt-flip-hint');
+  if(TT.selectedMain===-1){
+    hint.textContent='點擊一隻🐢朝上的烏龜作為主翻轉目標';
+  }else if(TT.selectedExtra===-1){
+    hint.textContent=`已選位置${TT.selectedMain+1}。可再選左邊任一隻附加翻轉，或直接確認。`;
+  }else{
+    hint.textContent=`將翻轉位置${TT.selectedMain+1}（主）和位置${TT.selectedExtra+1}（附加）。`;
+  }
+}
+
+async function ttConfirmMove(){
+  if(TT.selectedMain===-1)return;
+  const main=TT.selectedMain,extra=TT.selectedExtra;
+  TT.selectedMain=-1;TT.selectedExtra=-1;
+  if(TT.mode!=='cpu'){
+    const _r=await getRoom(TT.roomCode);if(!_r)return;
+    await pushMove(TT.roomCode,{player:TT.myPlayer,main,extra});TT.lastSeen++;
+  }
+  ttApplyMove(TT.myPlayer,main,extra,true);
+}
+
+function ttApplyMove(player,main,extra,animate){
+  const name=player===1?TT.p1Name:TT.p2Name;
+  let logMsg=`${name} 翻轉位置${main+1}`;
+  if(extra!==-1)logMsg+=`，附加翻轉位置${extra+1}`;
+  addLog('tt-log',player===1?'p1':'p2',logMsg);
+
+  // 執行翻轉
+  TT.turtles[main]=!TT.turtles[main];
+  if(extra!==-1)TT.turtles[extra]=!TT.turtles[extra];
+
+  // 檢查結束：沒有朝上的烏龜
+  const upCount=TT.turtles.filter(Boolean).length;
+  ttRenderTurtles();ttUpdateGrundy();
+
+  if(upCount===0){
+    TT.gameOver=true;
+    const winnerIdx=player,winner=name,loserIdx=player===1?2:1,loser=loserIdx===1?TT.p1Name:TT.p2Name;
+    ttUpdateStatus();addLog('tt-log','sys',`${winner} 翻下最後一隻朝上烏龜！獲勝🎉`);
+    const isMe=(TT.mode==='cpu'&&winnerIdx===1)||(TT.mode!=='cpu'&&winnerIdx===TT.myPlayer);
+    setTimeout(()=>showResult(winnerIdx,winner,loser,isMe,`${winner} 翻下了最後一隻朝上的烏龜。`),700);return;
+  }
+
+  TT.currentPlayer=TT.currentPlayer===1?2:1;ttUpdateStatus();
+  if(TT.mode==='cpu'&&TT.currentPlayer===2)setTimeout(ttCpuTurn,600+Math.random()*700);
+  else if(TT.mode!=='cpu'&&TT.currentPlayer!==TT.myPlayer)
+    startRoomPolling(TT.roomCode,room=>{
+      const mv=Object.values(room.moves||{});
+      if(mv.length>TT.lastSeen){const m=mv[TT.lastSeen];TT.lastSeen=mv.length;stopPolling();ttApplyMove(m.player,m.main,m.extra,true);}
+    });
+}
+
+function ttUpdateGrundy(){
+  const xor=ttGetGrundy();
+  const el=document.getElementById('tt-grundy-val');
+  el.textContent=xor;
+  el.className='grundy-val '+(xor===0?'zero':'nonzero');
+}
+
+function ttUpdateStatus(){
+  const isMyTurn=TT.mode==='cpu'?TT.currentPlayer===1:TT.currentPlayer===TT.myPlayer;
+  updatePlayerTags('tt-p1-tag','tt-p2-tag',TT.currentPlayer);
+  if(TT.gameOver){
+    setStatusDot('tt-status-dot','over');
+    document.getElementById('tt-status-text').textContent='遊戲結束';
+    document.getElementById('tt-status-sub').textContent='';
+    document.getElementById('tt-flip-hint').textContent='';
+    return;
+  }
+  if(isMyTurn){
+    setStatusDot('tt-status-dot','your-turn');
+    document.getElementById('tt-status-text').textContent='你的回合';
+    const xor=ttGetGrundy();
+    document.getElementById('tt-status-sub').textContent=xor===0?'⚠️ 你在必輸位置（Grundy XOR=0）':'✅ 你在必贏位置！找到讓 XOR=0 的走法';
+    ttUpdateHint();
+  }else{
+    setStatusDot('tt-status-dot','waiting');
+    document.getElementById('tt-status-text').textContent=`${TT.currentPlayer===1?TT.p1Name:TT.p2Name} 的回合`;
+    document.getElementById('tt-status-sub').textContent=TT.mode==='cpu'?'電腦計算中…':'等待對手…';
+    document.getElementById('tt-flip-hint').textContent='';
+  }
+}
+
+function ttCpuTurn(){
+  if(TT.gameOver)return;
+  // 簡單模式：25% 最優，75% 隨機
+  const move=TT.cpuDiff==='easy'&&Math.random()>0.25?ttRandomMove():ttOptimalMove();
+  setTimeout(()=>ttApplyMove(2,move.main,move.extra,true),200);
+}
+
+function ttRandomMove(){
+  const upIdxs=TT.turtles.map((v,i)=>v?i:-1).filter(i=>i>=0);
+  const main=upIdxs[Math.floor(Math.random()*upIdxs.length)];
+  // 隨機決定是否附加翻轉左邊
+  const leftIdxs=Array.from({length:main},(_,i)=>i);
+  const extra=leftIdxs.length>0&&Math.random()<0.5?leftIdxs[Math.floor(Math.random()*leftIdxs.length)]:-1;
+  return{main,extra};
+}
+
+function ttOptimalMove(){
+  const xor=ttGetGrundy();
+  if(xor===0)return ttRandomMove(); // 敗局，隨便走
+
+  // 找一個走法讓 Grundy XOR 變成 0
+  // 策略：主翻位置 j（從右 1-indexed = n-j），附加翻轉位置 k（可選）
+  for(let main=0;main<TT.n;main++){
+    if(!TT.turtles[main])continue;
+    const posMain=TT.n-main; // 1-indexed from right
+
+    // 只翻 main
+    const newXor1=xor^posMain; // 翻掉這個朝上烏龜
+    // 如果翻完後這位置變朝下，xor 中去掉這個位置
+    // 但如果 main 原本朝上，翻後朝下，XOR 去掉 posMain
+    // 如果找到 newXor1===0，這個走法就是最優
+    if(newXor1===0)return{main,extra:-1};
+
+    // 附加翻轉左邊位置 k
+    for(let extra=0;extra<main;extra++){
+      const posExtra=TT.n-extra; // 1-indexed from right
+      let newXor2=xor^posMain; // 先去掉 main（翻朝下）
+      if(TT.turtles[extra]){
+        newXor2^=posExtra; // extra 原本朝上，翻後朝下，去掉
+      }else{
+        newXor2^=posExtra; // extra 原本朝下，翻後朝上，加上
+      }
+      if(newXor2===0)return{main,extra};
+    }
+  }
+  return ttRandomMove();
+}
+
+async function ttCreateRoom(){
+  const n=+document.getElementById('tt-room-count').value;
+  let turtles;
+  do{turtles=Array.from({length:n},()=>Math.random()<0.6);}
+  while(turtles.filter(Boolean).length<2);
+  const hostName=document.getElementById('tt-host-name').value.trim()||'房主';
+  const firstPlayer=resolveFirst(document.getElementById('tt-room-first').value);
+  const code=await uniqueCode();
+  await setRoom(code,{code,game:'turning-turtles',hostName,turtles,firstPlayer,guest:false,guestName:null,started:false,moves:[],created:Date.now()});
+  CUR.roomCode=code;TT.roomCode=code;
+  document.getElementById('tt-room-code-display').textContent=code;
+  registerHostDisconnect(code);
+  document.getElementById('ttcreate-s1').classList.remove('active');
+  document.getElementById('ttcreate-s2').classList.add('active');
+  startRoomPolling(code,room=>{
+    if(room.guest){stopPolling();_ttStart({game:'turning-turtles',mode:'host',hostName,guestName:room.guestName,turtles,myPlayer:1,roomCode:code,firstPlayer});}
+  });
+}
+async function ttCancelRoom(){
+  stopPolling();if(CUR.roomCode){cleanupRoom(CUR.roomCode);CUR.roomCode=null;}
+  document.getElementById('ttcreate-s1').classList.add('active');
+  document.getElementById('ttcreate-s2').classList.remove('active');
+}
+async function ttJoinRoom(){
+  const guestName=document.getElementById('tt-guest-name').value.trim()||'訪客';
+  const code=document.getElementById('tt-join-code').value.trim().toUpperCase();
+  const err=document.getElementById('tt-join-err');err.style.display='none';
+  if(code.length!==4){err.textContent='請輸入4位代碼';err.style.display='block';return;}
+  const room=await getRoom(code);
+  if(!room||room.game!=='turning-turtles'){err.textContent='找不到此烏龜房間';err.style.display='block';return;}
+  if(room.guest||room.started){err.textContent='房間已滿';err.style.display='block';return;}
+  await updateRoom(code,{guest:true,guestName,started:true});CUR.roomCode=code;
+  _ttStart({game:'turning-turtles',mode:'guest',hostName:room.hostName,guestName,name:guestName,turtles:[...room.turtles],myPlayer:2,roomCode:code,firstPlayer:room.firstPlayer});
+}
+</script>
+</body>
+</html>

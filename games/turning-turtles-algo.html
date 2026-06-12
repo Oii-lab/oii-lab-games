@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Turning Turtles 演算法解析 — 演算法互動遊戲集</title>
+<link rel="stylesheet" href="../shared/style.css">
+</head>
+<body>
+<div class="container">
+
+<header>
+  <div class="title">🧠 Turning Turtles 演算法解析</div>
+  <div class="subtitle">Sprague-Grundy · XOR 策略 · 和 Nim 的深層連結</div>
+</header>
+
+<div style="text-align:center;margin-bottom:20px;display:flex;justify-content:center;gap:12px;flex-wrap:wrap;">
+  <a href="turning-turtles.html" style="font-size:12px;color:var(--text-dim);text-decoration:none;letter-spacing:0.1em;text-transform:uppercase;padding:8px 14px;border:1px solid var(--border);border-radius:8px;transition:all 0.2s;display:inline-block;"
+    onmouseover="this.style.color='var(--accent)';this.style.borderColor='var(--accent)'"
+    onmouseout="this.style.color='var(--text-dim)';this.style.borderColor='var(--border)'">🐢 回遊戲</a>
+  <a href="../index.html" style="font-size:12px;color:var(--text-dim);text-decoration:none;letter-spacing:0.1em;text-transform:uppercase;padding:8px 14px;border:1px solid var(--border);border-radius:8px;transition:all 0.2s;display:inline-block;"
+    onmouseover="this.style.color='var(--accent)';this.style.borderColor='var(--accent)'"
+    onmouseout="this.style.color='var(--text-dim)';this.style.borderColor='var(--border)'">← 返回選單</a>
+</div>
+
+<!-- 目錄 -->
+<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:28px;">
+  <div style="font-size:11px;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-dim);margin-bottom:12px;">本頁內容</div>
+  <div style="display:flex;flex-direction:column;gap:8px;">
+    <a href="#step1" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Step 1 · 遊戲結構和 Nim 的相似性</a>
+    <a href="#step2" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Step 2 · Sprague-Grundy 定理回顧</a>
+    <a href="#step3" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Step 3 · 計算每隻烏龜的 Grundy value</a>
+    <a href="#step4" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Step 4 · 整體 XOR 策略</a>
+    <a href="#step5" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Step 5 · 完整走一局</a>
+    <a href="#sim" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">互動 Grundy 計算器</a>
+    <a href="#leetcode" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">LeetCode 相關題目</a>
+  </div>
+</div>
+
+<!-- Step 1 -->
+<div id="step1" class="algo-section">
+  <div class="acc-step-label">Step 1 · 遊戲結構和 Nim 的相似性</div>
+  <div class="acc-p">
+    Turning Turtles 看起來和 Nim 完全不同，但其實是 Nim 的變體。<br><br>
+    每回合規則：選一隻<strong>朝上</strong>的烏龜翻面（必翻），同時可以翻它<strong>左邊任意一隻</strong>。<br><br>
+    關鍵觀察：<strong>必翻的那隻烏龜一定要從朝上變朝下</strong>（位置「消失」），<br>
+    附加翻轉可以是朝上→朝下，也可以是朝下→朝上。<br><br>
+    這和 Nim 的「從某堆取石頭」有深刻的對應關係——我們接下來一步步說明。
+  </div>
+</div>
+
+<!-- Step 2 -->
+<div id="step2" class="algo-section">
+  <div class="acc-step-label">Step 2 · Sprague-Grundy 定理回顧</div>
+  <div class="acc-p">
+    在 Nim 的解析頁我們提過：<strong>任何組合賽局都有一個 Grundy value</strong>，<br>
+    多個獨立子遊戲合在一起時，整體 Grundy value = 各子遊戲 XOR。<br><br>
+    Turning Turtles 可以被視為每隻烏龜都是一個獨立的子遊戲，<br>
+    整體的勝負由所有子遊戲的 Grundy value XOR 決定。
+  </div>
+  <div class="acc-insight">
+    <span class="ins-label">💡 關鍵問題</span>
+    每隻烏龜（在它的位置上）的 Grundy value 是多少？<br>
+    解決這個問題，就能用 XOR 決定整場遊戲的勝負。
+  </div>
+</div>
+
+<!-- Step 3 -->
+<div id="step3" class="algo-section">
+  <div class="acc-step-label">Step 3 · 計算每隻烏龜的 Grundy value</div>
+  <div class="acc-p">
+    把烏龜從右邊開始編號（1-indexed）：最右邊是位置 1，往左依序增加。<br><br>
+    考慮只有<strong>一隻朝上的烏龜在位置 k</strong> 的情況：
+  </div>
+  <div class="acc-code">
+    <span class="lang-tag">Python</span>
+    <pre><span class="cmt"># 只有位置 k 的烏龜朝上（從右 1-indexed）</span>
+<span class="cmt"># 可以做的操作：</span>
+<span class="cmt"># 1. 只翻位置 k：朝上→朝下，到達終局（G=0）</span>
+<span class="cmt"># 2. 翻位置 k + 翻位置 j（j < k）</span>
+<span class="cmt">#    - 若位置 j 朝下：翻後朝上，局面變成「位置 j 朝上」= G(j)</span>
+<span class="cmt">#    - 若位置 j 朝上（本例中只有位置k朝上，j沒有朝上的）</span>
+
+<span class="cmt"># 從位置 k 可以到達的狀態：</span>
+<span class="cmt"># - 終局 G=0（只翻k）</span>
+<span class="cmt"># - G(1), G(2), ..., G(k-1)（翻k + 翻左邊位置j，使j朝上）</span>
+
+<span class="cmt"># mex({0, G(1), G(2), ..., G(k-1)})</span>
+<span class="cmt"># 用數學歸納法：</span>
+G(<span class="num">1</span>) = mex({<span class="num">0</span>}) = <span class="num">1</span>
+G(<span class="num">2</span>) = mex({<span class="num">0</span>, G(<span class="num">1</span>)}) = mex({<span class="num">0</span>, <span class="num">1</span>}) = <span class="num">2</span>
+G(<span class="num">3</span>) = mex({<span class="num">0</span>, G(<span class="num">1</span>), G(<span class="num">2</span>)}) = mex({<span class="num">0</span>, <span class="num">1</span>, <span class="num">2</span>}) = <span class="num">3</span>
+<span class="cmt"># 規律：G(k) = k</span></pre>
+  </div>
+  <div class="acc-insight">
+    <span class="ins-label">✅ 結論</span>
+    位置 k（從右 1-indexed）的朝上烏龜，Grundy value = <strong>k</strong><br>
+    朝下的烏龜 Grundy value = 0（不影響遊戲）<br><br>
+    這和 Nim 的「一堆 k 顆石頭的 Grundy value = k」完全一樣！
+  </div>
+</div>
+
+<!-- Step 4 -->
+<div id="step4" class="algo-section">
+  <div class="acc-step-label">Step 4 · 整體 XOR 策略</div>
+  <div class="acc-p">
+    由 Sprague-Grundy 定理，整體 Grundy value = 所有朝上烏龜位置的 XOR：
+  </div>
+  <div class="acc-code">
+    <span class="lang-tag">Python</span>
+    <pre><span class="kw">def</span> <span class="fn">grundy_xor</span>(turtles: list) -> int:
+    <span class="cmt"># turtles[i] = True 表示第 i 隻（從左0-indexed）朝上</span>
+    n = len(turtles)
+    xor = <span class="num">0</span>
+    <span class="kw">for</span> i, up <span class="kw">in</span> <span class="fn">enumerate</span>(turtles):
+        <span class="kw">if</span> up:
+            pos = n - i  <span class="cmt"># 從右 1-indexed</span>
+            xor ^= pos
+    <span class="kw">return</span> xor
+
+<span class="cmt"># XOR = 0 → 當前玩家必輸</span>
+<span class="cmt"># XOR ≠ 0 → 當前玩家必贏，找讓 XOR=0 的走法</span>
+
+<span class="kw">def</span> <span class="fn">best_move</span>(turtles: list):
+    n = len(turtles)
+    xor = grundy_xor(turtles)
+    <span class="kw">if</span> xor == <span class="num">0</span>: <span class="kw">return</span> None  <span class="cmt"># 敗局</span>
+
+    <span class="kw">for</span> main <span class="kw">in</span> <span class="fn">range</span>(n):
+        <span class="kw">if not</span> turtles[main]: <span class="kw">continue</span>
+        pos_main = n - main
+
+        <span class="cmt"># 只翻 main</span>
+        new_xor = xor ^ pos_main  <span class="cmt"># 去掉 main</span>
+        <span class="kw">if</span> new_xor == <span class="num">0</span>: <span class="kw">return</span> (main, -<span class="num">1</span>)
+
+        <span class="cmt"># 翻 main + 翻左邊 extra</span>
+        <span class="kw">for</span> extra <span class="kw">in</span> <span class="fn">range</span>(main):
+            pos_extra = n - extra
+            new_xor2 = xor ^ pos_main ^ pos_extra  <span class="cmt"># 去掉main，toggle extra</span>
+            <span class="kw">if</span> new_xor2 == <span class="num">0</span>: <span class="kw">return</span> (main, extra)
+
+    <span class="kw">return</span> None</pre>
+  </div>
+</div>
+
+<!-- Step 5 -->
+<div id="step5" class="algo-section">
+  <div class="acc-step-label">Step 5 · 完整走一局</div>
+  <div class="acc-p">
+    以 8 隻烏龜，位置 2, 5, 7 朝上（從右 1-indexed）為例：
+  </div>
+  <div style="overflow-x:auto;margin:16px 0;">
+    <table style="width:100%;border-collapse:collapse;font-size:13px;">
+      <thead>
+        <tr style="border-bottom:1px solid var(--border);">
+          <th style="padding:10px;text-align:left;color:var(--text-dim);font-weight:500;">局面（朝上位置）</th>
+          <th style="padding:10px;text-align:left;color:var(--text-dim);font-weight:500;">Grundy XOR</th>
+          <th style="padding:10px;text-align:left;color:var(--text-dim);font-weight:500;">走法</th>
+          <th style="padding:10px;text-align:left;color:var(--text-dim);font-weight:500;">狀態</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:10px;">{2, 5, 7}</td>
+          <td style="padding:10px;color:var(--accent);">2⊕5⊕7 = 0 ⚠️</td>
+          <td style="padding:10px;">先手在敗局，隨便走</td>
+          <td style="padding:10px;color:var(--accent2);">L</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:10px;">{2, 5} 或其他</td>
+          <td style="padding:10px;color:var(--accent2);">≠ 0</td>
+          <td style="padding:10px;">後手找讓 XOR=0 的走法</td>
+          <td style="padding:10px;color:var(--accent);">W</td>
+        </tr>
+        <tr>
+          <td style="padding:10px;">…</td>
+          <td style="padding:10px;color:var(--accent2);">後手每步都能恢復 XOR=0</td>
+          <td style="padding:10px;">最終後手翻下最後一隻</td>
+          <td style="padding:10px;color:var(--accent);">後手贏 ✓</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="acc-insight">
+    <span class="ins-label">🔗 和 Nim 的完美對應</span>
+    Turning Turtles 本質上就是多堆 Nim！<br>
+    每隻朝上的烏龜對應一堆石頭，石頭數 = 烏龜從右的位置編號。<br>
+    「翻下 + 附加翻轉」= 「取石頭 + 調整另一堆」的操作。<br>
+    所以策略完全一樣：保持 Grundy XOR = 0 給對手。
+  </div>
+</div>
+
+<!-- 互動計算器 -->
+<div id="sim" class="algo-section">
+  <div class="acc-step-label">互動 Grundy 計算器</div>
+  <div class="acc-p">點擊烏龜切換朝上/朝下，即時計算 Grundy XOR 和勝負。</div>
+  <div id="sim-turtles" style="display:flex;justify-content:center;flex-wrap:wrap;gap:10px;margin:16px 0;"></div>
+  <div id="sim-result" style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:16px;font-size:14px;margin-bottom:8px;text-align:center;"></div>
+  <div style="text-align:center;">
+    <button class="btn btn-sm" onclick="simReset()">↺ 重置</button>
+    <button class="btn btn-sm" onclick="simRandom()">🎲 隨機</button>
+  </div>
+</div>
+
+<!-- LeetCode -->
+<div id="leetcode" class="algo-section">
+  <div class="acc-step-label">LeetCode 相關題目</div>
+  <div style="display:flex;flex-direction:column;gap:10px;margin-top:12px;">
+    <a href="https://leetcode.com/problems/nim-game/" target="_blank" class="lc-card">
+      <span class="lc-num">#292</span><span class="lc-title">Nim Game</span>
+      <span class="lc-tag easy">Easy</span>
+      <span class="lc-desc">先理解單堆 Nim，再看 Turning Turtles 的對應關係</span>
+    </a>
+    <a href="https://leetcode.com/problems/chalkboard-xor-game/" target="_blank" class="lc-card">
+      <span class="lc-num">#810</span><span class="lc-title">Chalkboard XOR Game</span>
+      <span class="lc-tag hard">Hard</span>
+      <span class="lc-desc">XOR 博弈，和本題策略核心相同</span>
+    </a>
+    <a href="https://leetcode.com/problems/stone-game-iv/" target="_blank" class="lc-card">
+      <span class="lc-num">#1510</span><span class="lc-title">Stone Game IV</span>
+      <span class="lc-tag hard">Hard</span>
+      <span class="lc-desc">Grundy value DP，計算每個數字的 Grundy value</span>
+    </a>
+    <a href="https://leetcode.com/problems/game-of-nim/" target="_blank" class="lc-card">
+      <span class="lc-num">#2975</span><span class="lc-title">Maximum Number of Points From Grid Queries</span>
+      <span class="lc-tag medium">Medium</span>
+      <span class="lc-desc">多堆 Nim 變形，XOR 策略</span>
+    </a>
+  </div>
+</div>
+
+<!-- 導航 -->
+<div style="display:flex;justify-content:center;gap:12px;margin:32px 0 8px;flex-wrap:wrap;">
+  <a href="connect4-algo.html" style="display:inline-flex;align-items:center;gap:8px;padding:12px 20px;background:var(--surface);border:1px solid var(--border);border-radius:12px;text-decoration:none;color:var(--text);font-size:13px;transition:all 0.2s;"
+    onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'"
+    onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text)'">← 🔴 Connect Four 解析</a>
+  <a href="../index.html" style="display:inline-flex;align-items:center;gap:8px;padding:12px 20px;background:var(--surface);border:1px solid var(--border);border-radius:12px;text-decoration:none;color:var(--text);font-size:13px;transition:all 0.2s;"
+    onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'"
+    onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text)'">回選單 →</a>
+</div>
+
+</div>
+
+<style>
+.algo-section{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:24px;margin-bottom:20px;}
+.lc-card{display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--bg);border:1px solid var(--border);border-radius:10px;text-decoration:none;color:var(--text);transition:border-color 0.2s;flex-wrap:wrap;}
+.lc-card:hover{border-color:var(--accent);}
+.lc-num{font-family:'Orbitron',monospace;font-size:11px;color:var(--text-dim);min-width:44px;}
+.lc-title{font-weight:600;font-size:14px;flex:1;}
+.lc-tag{font-size:10px;padding:2px 8px;border-radius:20px;font-weight:700;letter-spacing:0.05em;}
+.lc-tag.easy{background:rgba(0,200,100,0.15);color:#00c864;}
+.lc-tag.medium{background:rgba(255,180,0,0.15);color:#ffb400;}
+.lc-tag.hard{background:rgba(255,60,60,0.15);color:#ff3c3c;}
+.lc-desc{font-size:12px;color:var(--text-dim);width:100%;margin-top:2px;}
+.acc-step-label{font-family:'Orbitron',monospace;font-size:11px;letter-spacing:0.15em;text-transform:uppercase;color:var(--accent);margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid var(--border);}
+.sim-turtle{width:52px;height:52px;border-radius:12px;border:2px solid var(--border);background:var(--surface);font-size:26px;cursor:pointer;transition:all 0.18s;display:flex;align-items:center;justify-content:center;}
+.sim-turtle.up{border-color:var(--accent);background:rgba(0,229,255,0.08);}
+.sim-turtle.down{opacity:0.4;}
+.sim-turtle:hover{transform:scale(1.08);}
+</style>
+
+<script>
+let simTurtles=[true,false,true,true,false,false,true,false];
+function simRender(){
+  const c=document.getElementById('sim-turtles');c.innerHTML='';
+  simTurtles.forEach((up,i)=>{
+    const wrap=document.createElement('div');wrap.style.cssText='display:flex;flex-direction:column;align-items:center;gap:4px;';
+    const btn=document.createElement('button');btn.className='sim-turtle '+(up?'up':'down');
+    btn.textContent=up?'🐢':'🥚';btn.onclick=()=>{simTurtles[i]=!simTurtles[i];simRender();};
+    const lbl=document.createElement('div');lbl.style.cssText='font-size:10px;color:var(--text-dim);font-family:Orbitron,monospace;';
+    const n=simTurtles.length;lbl.textContent=`pos ${n-i}`;
+    wrap.appendChild(btn);wrap.appendChild(lbl);c.appendChild(wrap);
+  });
+  simCalc();
+}
+function simCalc(){
+  const n=simTurtles.length;
+  let xor=0;const parts=[];
+  simTurtles.forEach((up,i)=>{if(up){const pos=n-i;xor^=pos;parts.push(`${pos}`);}});
+  const verdict=xor===0?'⚠️ 當前玩家必輸（Grundy XOR = 0）':'✅ 當前玩家必贏（Grundy XOR ≠ 0）';
+  const formula=parts.length?`${parts.join(' ⊕ ')} = ${xor}`:'（無朝上烏龜）';
+  document.getElementById('sim-result').innerHTML=`
+    <div style="font-size:11px;color:var(--text-dim);margin-bottom:6px;">${formula}</div>
+    <div style="font-size:22px;font-weight:900;font-family:Orbitron,monospace;margin-bottom:8px;color:${xor===0?'var(--accent2)':'var(--accent)'};">${xor}</div>
+    <div style="font-size:15px;font-weight:600;">${verdict}</div>`;
+}
+function simReset(){simTurtles=Array(8).fill(false).map((_,i)=>[1,4,6].includes(i));simRender();}
+function simRandom(){const n=6+Math.floor(Math.random()*5);simTurtles=Array.from({length:n},()=>Math.random()<0.5);if(!simTurtles.some(Boolean))simTurtles[0]=true;simRender();}
+simRender();
+</script>
+</body>
+</html>
