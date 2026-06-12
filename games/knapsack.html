@@ -10,7 +10,6 @@
   .mode-switch{display:flex;gap:10px;margin-bottom:20px;justify-content:center;}
   .mode-switch-btn{padding:10px 24px;border-radius:10px;border:2px solid var(--border);background:var(--surface);color:var(--text-dim);font-size:13px;font-weight:700;cursor:pointer;transition:all 0.2s;}
   .mode-switch-btn.active{border-color:var(--accent);color:var(--accent);background:rgba(0,229,255,0.08);}
-
   .capacity-bar{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 18px;margin-bottom:16px;}
   .cap-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
   .cap-label{font-size:12px;color:var(--text-dim);}
@@ -20,7 +19,6 @@
   .cap-track{height:8px;background:var(--surface2);border-radius:4px;overflow:hidden;}
   .cap-fill{height:100%;border-radius:4px;background:var(--accent);transition:width 0.3s;}
   .cap-fill.over{background:var(--accent2);}
-
   .items-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-bottom:16px;}
   .item-card{background:var(--surface);border:2px solid var(--border);border-radius:12px;padding:14px;text-align:center;cursor:pointer;transition:all 0.2s;user-select:none;}
   .item-card:hover{border-color:var(--accent);transform:translateY(-2px);}
@@ -31,16 +29,13 @@
   .item-stats{display:flex;justify-content:center;gap:10px;font-size:11px;}
   .item-weight{color:var(--accent2);}
   .item-value{color:var(--accent);}
-
   .result-panel{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:16px;}
   .result-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
   .result-label{font-size:12px;color:var(--text-dim);}
   .result-val{font-family:'Orbitron',monospace;font-size:16px;font-weight:900;}
-
   .timer-display{text-align:center;font-family:'Orbitron',monospace;font-size:36px;font-weight:900;margin:8px 0;}
   .timer-display.urgent{color:var(--accent2);animation:timerPulse 0.5s ease infinite alternate;}
   @keyframes timerPulse{from{opacity:1}to{opacity:0.5}}
-
   .score-pct{font-size:48px;font-weight:900;font-family:'Orbitron',monospace;text-align:center;margin:12px 0;}
   .score-pct.perfect{color:var(--accent);}
   .score-pct.good{color:var(--accent4);}
@@ -52,10 +47,10 @@
 <div class="container">
 
 <header>
-    <div class="title">
-  <img src="../assets/icons/01Knapsack.png" style="height:60px;vertical-align:middle;margin-right:8px;">
-  背包問題
-</div>
+  <div class="title">
+    <img src="../assets/icons/01Knapsack.png" style="height:60px;vertical-align:middle;margin-right:8px;">
+    背包問題
+  </div>
   <div class="subtitle">0/1 Knapsack &nbsp;·&nbsp; Dynamic Programming &nbsp;·&nbsp; O(n·W)</div>
 </header>
 
@@ -83,15 +78,14 @@
   </div>
 </div>
 
-<!-- 模式切換 -->
-<div class="mode-switch">
-  <button class="mode-switch-btn active" id="btn-challenge" onclick="switchMode('challenge')">🎯 挑戰模式</button>
-  <button class="mode-switch-btn" id="btn-speed" onclick="switchMode('speed')">⏱️ 競速模式</button>
-</div>
-
 <!-- 設定 -->
 <div class="panel active" id="panel-setup">
   <div class="panel-title">⚙️ 遊戲設定</div>
+  <!-- 模式切換 -->
+  <div class="mode-switch">
+    <button class="mode-switch-btn active" id="btn-challenge" onclick="switchMode('challenge')">🎯 挑戰模式</button>
+    <button class="mode-switch-btn" id="btn-speed" onclick="switchMode('speed')">⏱️ 競速模式</button>
+  </div>
   <div class="input-group"><label>物品數量</label>
     <select id="ks-item-count">
       <option value="6">6 件（入門）</option>
@@ -120,14 +114,10 @@
 <!-- 遊戲 -->
 <div class="panel" id="panel-game">
   <div class="panel-title" id="ks-game-label">🎒 背包問題</div>
-
-  <!-- 競速計時器 -->
   <div id="ks-timer-area" style="display:none;">
     <div class="timer-display" id="ks-timer">60</div>
     <div style="font-size:11px;color:var(--text-dim);text-align:center;margin-bottom:12px;">剩餘時間</div>
   </div>
-
-  <!-- 容量顯示 -->
   <div class="capacity-bar">
     <div class="cap-row">
       <span class="cap-label">背包容量</span>
@@ -135,31 +125,23 @@
     </div>
     <div class="cap-track"><div class="cap-fill" id="ks-cap-fill" style="width:0%"></div></div>
   </div>
-
-  <!-- 當前得分 -->
   <div class="result-panel">
     <div class="result-row">
       <span class="result-label">已選總重量</span>
-      <span class="result-val" id="ks-cur-weight">0</span>
+      <span class="result-val" id="ks-cur-weight" style="font-family:'Orbitron',monospace;">0</span>
     </div>
     <div class="result-row">
       <span class="result-label">已選總價值</span>
-      <span class="result-val" style="color:var(--accent)" id="ks-cur-value">0</span>
+      <span class="result-val" style="color:var(--accent);font-family:'Orbitron',monospace;" id="ks-cur-value">0</span>
     </div>
   </div>
-
-  <!-- 物品 -->
   <div style="font-size:12px;color:var(--text-dim);margin-bottom:8px;">點擊物品選取/取消（超過容量時無法選取）</div>
   <div class="items-grid" id="ks-items"></div>
-
-  <!-- 提交按鈕 -->
   <div class="btn-row" id="ks-submit-area">
     <button class="btn btn-primary" onclick="ksSubmit()">✅ 提交答案</button>
     <button class="btn btn-sm" onclick="ksClear()">🗑️ 清空</button>
     <button class="btn btn-sm" onclick="goHome()">⚙️ 重設</button>
   </div>
-
-  <!-- 結果 -->
   <div id="ks-result-area" style="display:none;">
     <div class="score-pct" id="ks-score-pct">100%</div>
     <div class="result-panel">
@@ -241,24 +223,17 @@ function ksBegin(){
   const n=+document.getElementById('ks-item-count').value;
   KS.capacity=+document.getElementById('ks-capacity').value;
   KS.timerLimit=+document.getElementById('ks-time-limit').value||60;
-
-  // 隨機選n件物品，確保有解
   const shuffled=[...ITEMS_POOL].sort(()=>Math.random()-0.5);
   KS.items=shuffled.slice(0,n).map((it,i)=>({...it,id:i}));
   KS.selected=new Array(n).fill(false);
   KS.gameOver=false;
-
-  // 算最優解
   const {val,which}=ksSolveDP(KS.items,KS.capacity);
   KS.optVal=val;KS.optItems=which;
-
   document.getElementById('ks-game-label').textContent=`🎒 背包問題（容量 ${KS.capacity}）`;
   document.getElementById('ks-timer-area').style.display=KS.mode==='speed'?'':'none';
   document.getElementById('ks-submit-area').style.display='flex';
   document.getElementById('ks-result-area').style.display='none';
-
   ksRenderItems();ksUpdateCapacity();
-
   if(KS.mode==='speed'){
     KS.timerLeft=KS.timerLimit;
     ksUpdateTimer();
@@ -267,7 +242,6 @@ function ksBegin(){
       if(KS.timerLeft<=0){clearInterval(KS.timerInterval);ksSubmit();}
     },1000);
   }
-
   showPanel('panel-game');
 }
 
@@ -281,7 +255,6 @@ function ksSolveDP(items,W){
       if(c>=w&&dp[i-1][c-w]+v>dp[i][c])dp[i][c]=dp[i-1][c-w]+v;
     }
   }
-  // 回溯找選了哪些
   const which=[];let c=W;
   for(let i=n;i>=1;i--){
     if(dp[i][c]!==dp[i-1][c]){which.push(i-1);c-=items[i-1].w;}
@@ -336,25 +309,20 @@ function ksSubmit(){
   clearInterval(KS.timerInterval);
   const yourVal=KS.items.reduce((s,it,i)=>s+(KS.selected[i]?it.v:0),0);
   const pct=KS.optVal>0?Math.round(yourVal/KS.optVal*100):100;
-
   document.getElementById('ks-submit-area').style.display='none';
   document.getElementById('ks-result-area').style.display='block';
   document.getElementById('ks-your-val').textContent=yourVal;
   document.getElementById('ks-opt-val').textContent=KS.optVal;
   document.getElementById('ks-opt-items').textContent=KS.optItems.map(i=>KS.items[i].emoji+KS.items[i].name).join('、');
-
   const pctEl=document.getElementById('ks-score-pct');
   pctEl.textContent=pct+'%';
   pctEl.className='score-pct '+(pct===100?'perfect':pct>=80?'good':'ok');
-
   let msg='';
   if(pct===100)msg='🎉 完美！你找到了最優解，和 DP 一樣！';
   else if(pct>=80)msg='👍 不錯！你很接近最優解了。';
   else if(pct>=60)msg='🤔 還有改進空間，看看 DP 怎麼思考。';
   else msg='💡 直覺不夠用這次，試試看學 DP 的系統化方法？';
   document.getElementById('ks-result-msg').textContent=msg;
-
-  // 高亮最優解
   const grid=document.getElementById('ks-items');
   grid.querySelectorAll('.item-card').forEach((card,i)=>{
     card.classList.remove('selected');
