@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Coin Row 演算法解析 — 演算法互動遊戲集</title>
+<link rel="stylesheet" href="../shared/style.css">
+</head>
+<body>
+<div class="container">
+
+<header>
+  <div class="title">🧠 Coin Row 演算法解析</div>
+  <div class="subtitle">貪心為什麼失敗 · 區間 DP · O(n²) 最優解</div>
+</header>
+
+<div style="text-align:center;margin-bottom:20px;display:flex;justify-content:center;gap:12px;flex-wrap:wrap;">
+  <a href="coin-row.html" style="font-size:12px;color:var(--text-dim);text-decoration:none;letter-spacing:0.1em;text-transform:uppercase;padding:8px 14px;border:1px solid var(--border);border-radius:8px;transition:all 0.2s;display:inline-block;"
+    onmouseover="this.style.color='var(--accent)';this.style.borderColor='var(--accent)'"
+    onmouseout="this.style.color='var(--text-dim)';this.style.borderColor='var(--border)'">🪙 回遊戲</a>
+  <a href="../index.html" style="font-size:12px;color:var(--text-dim);text-decoration:none;letter-spacing:0.1em;text-transform:uppercase;padding:8px 14px;border:1px solid var(--border);border-radius:8px;transition:all 0.2s;display:inline-block;"
+    onmouseover="this.style.color='var(--accent)';this.style.borderColor='var(--accent)'"
+    onmouseout="this.style.color='var(--text-dim)';this.style.borderColor='var(--border)'">← 返回選單</a>
+</div>
+
+<!-- 目錄 -->
+<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:28px;">
+  <div style="font-size:11px;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-dim);margin-bottom:12px;">本頁內容</div>
+  <div style="display:flex;flex-direction:column;gap:8px;">
+    <a href="#step1" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Step 1 · 貪心策略為什麼失效</a>
+    <a href="#step2" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Step 2 · 遞迴思維：縮小問題規模</a>
+    <a href="#step3" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Step 3 · 區間 DP：定義與轉移</a>
+    <a href="#step4" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Step 4 · 完整填表過程</a>
+    <a href="#step5" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Step 5 · 複雜度分析</a>
+    <a href="#sim" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">互動 DP 模擬</a>
+    <a href="#leetcode" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">LeetCode 相關題目</a>
+  </div>
+</div>
+
+<!-- Step 1 -->
+<div id="step1" class="algo-section">
+  <div class="acc-step-label">Step 1 · 貪心策略為什麼失效</div>
+  <div class="acc-p">
+    第一直覺：「每次取左右兩端較大的那個」，也就是貪心策略。<br>
+    但這是<strong>錯的</strong>，一個反例就能推翻它：
+  </div>
+  <div style="background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:20px;margin:16px 0;font-size:14px;line-height:2;">
+    硬幣：<strong>3, 5, 1, 15, 2, 4</strong><br><br>
+    <strong>貪心策略（每次取較大端）：</strong><br>
+    玩家取 4（右）→ 電腦取 3（左）→ 玩家取 2（右）→ 電腦取 5（左）→ 玩家取 15（右）→ 電腦取 1（左）<br>
+    玩家得分：4+2+15 = <span style="color:var(--accent2)">21</span>，電腦得分：3+5+1 = 9<br><br>
+    看起來贏了？但如果電腦也用最優策略：<br>
+    玩家取 4（右）→ 電腦取 3（左）→ 玩家取 15（右，現在應取！）→ …<br><br>
+    <strong>最優策略：</strong>玩家取 3（左）→ 電腦取 4（右）→ 玩家取 5（左）→ 電腦取 2（右）→ 玩家取 15（左）→ 電腦取 1（右）<br>
+    玩家得分：3+5+15 = <span style="color:var(--accent)">23</span>，電腦得分：4+2+1 = 7
+  </div>
+  <div class="acc-insight">
+    <span class="ins-label">💡 關鍵洞察</span>
+    你取的每一步都會影響<strong>對手能取什麼</strong>，進而影響你下一步能取什麼。<br>
+    這種「當前決策影響未來選項」的問題，貪心看不到全局，必須用 DP。
+  </div>
+</div>
+
+<!-- Step 2 -->
+<div id="step2" class="algo-section">
+  <div class="acc-step-label">Step 2 · 遞迴思維：縮小問題規模</div>
+  <div class="acc-p">
+    DP 的起點是「把大問題拆成小問題」。<br><br>
+    面對硬幣 <code>coins[i..j]</code>，當前玩家有兩種選擇：<br>
+    ・取左端 <code>coins[i]</code> → 對手面對 <code>coins[i+1..j]</code><br>
+    ・取右端 <code>coins[j]</code> → 對手面對 <code>coins[i..j-1]</code><br><br>
+    對手也是最優玩家，所以對手會讓<strong>我接下來能拿的最少</strong>。<br>
+    我的總得分 = 現在取的 + 對手走完後我能取的最多。
+  </div>
+  <div class="acc-code">
+    <span class="lang-tag">Python</span>
+    <pre><span class="kw">def</span> <span class="fn">best_score</span>(coins, i, j) -> int:
+    <span class="cmt">"""當前玩家在 coins[i..j] 中能拿到的最大分數"""</span>
+    <span class="kw">if</span> i > j: <span class="kw">return</span> <span class="num">0</span>
+    <span class="kw">if</span> i == j: <span class="kw">return</span> coins[i]
+
+    <span class="cmt"># 取左端：對手面對 [i+1..j]，對手最優後我面對較差的那個</span>
+    take_left = coins[i] + <span class="fn">min</span>(
+        <span class="fn">best_score</span>(coins, i+<span class="num">2</span>, j),   <span class="cmt"># 對手取了 i+1</span>
+        <span class="fn">best_score</span>(coins, i+<span class="num">1</span>, j-<span class="num">1</span>)  <span class="cmt"># 對手取了 j</span>
+    )
+
+    <span class="cmt"># 取右端：對手面對 [i..j-1]</span>
+    take_right = coins[j] + <span class="fn">min</span>(
+        <span class="fn">best_score</span>(coins, i+<span class="num">1</span>, j-<span class="num">1</span>),  <span class="cmt"># 對手取了 i</span>
+        <span class="fn">best_score</span>(coins, i, j-<span class="num">2</span>)    <span class="cmt"># 對手取了 j-1</span>
+    )
+
+    <span class="kw">return</span> <span class="fn">max</span>(take_left, take_right)</pre>
+  </div>
+  <div class="acc-insight">
+    <span class="ins-label">⚠️ 問題</span>
+    這個遞迴有大量重複計算，複雜度是指數級的。<br>
+    解法：把計算過的結果存起來——這就是 Memoization，也是 DP 的核心。
+  </div>
+</div>
+
+<!-- Step 3 -->
+<div id="step3" class="algo-section">
+  <div class="acc-step-label">Step 3 · 區間 DP：定義與轉移</div>
+  <div class="acc-p">
+    把遞迴的結果存在二維表格裡：
+  </div>
+  <div class="acc-code">
+    <span class="lang-tag">Python</span>
+    <pre><span class="cmt"># dp[i][j] = 當前玩家在 coins[i..j] 中能拿到的最大分數</span>
+
+<span class="cmt"># 邊界條件</span>
+dp[i][i] = coins[i]   <span class="cmt"># 只剩一枚，全拿</span>
+dp[i][j] = <span class="num">0</span>  <span class="kw">if</span> i > j  <span class="cmt"># 沒有硬幣</span>
+
+<span class="cmt"># 轉移方程</span>
+dp[i][j] = <span class="fn">max</span>(
+    coins[i] + <span class="fn">min</span>(dp[i+<span class="num">2</span>][j], dp[i+<span class="num">1</span>][j-<span class="num">1</span>]),  <span class="cmt"># 取左端</span>
+    coins[j] + <span class="fn">min</span>(dp[i+<span class="num">1</span>][j-<span class="num">1</span>], dp[i][j-<span class="num">2</span>])   <span class="cmt"># 取右端</span>
+)</pre>
+  </div>
+  <div class="acc-p" style="margin-top:16px;">
+    <strong>為什麼是 min？</strong><br>
+    取左端 <code>coins[i]</code> 後，對手面對 <code>[i+1..j]</code>，對手也最優，<br>
+    對手會讓我剩下的最少（對手取 i+1 或 j，留給我較差的那個）。<br>
+    所以我能保證拿到的是：<code>coins[i] + min(dp[i+2][j], dp[i+1][j-1])</code>
+  </div>
+</div>
+
+<!-- Step 4 -->
+<div id="step4" class="algo-section">
+  <div class="acc-step-label">Step 4 · 完整填表過程</div>
+  <div class="acc-p">以 coins = [3, 5, 1, 4] 為例，填 dp 表：</div>
+  <div style="overflow-x:auto;margin:16px 0;">
+    <table style="border-collapse:collapse;font-size:13px;min-width:100%;">
+      <thead>
+        <tr style="border-bottom:1px solid var(--border);">
+          <th style="padding:10px;color:var(--text-dim);font-weight:500;">i\j</th>
+          <th style="padding:10px;color:var(--text-dim);font-weight:500;">j=0 (3)</th>
+          <th style="padding:10px;color:var(--text-dim);font-weight:500;">j=1 (5)</th>
+          <th style="padding:10px;color:var(--text-dim);font-weight:500;">j=2 (1)</th>
+          <th style="padding:10px;color:var(--text-dim);font-weight:500;">j=3 (4)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:10px;color:var(--text-dim);">i=0</td>
+          <td style="padding:10px;font-weight:700;color:var(--accent);">3</td>
+          <td style="padding:10px;font-weight:700;color:var(--accent);">5</td>
+          <td style="padding:10px;font-weight:700;color:var(--accent);">6</td>
+          <td style="padding:10px;font-weight:700;color:var(--accent);">7</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:10px;color:var(--text-dim);">i=1</td>
+          <td style="padding:10px;color:var(--text-dim);">—</td>
+          <td style="padding:10px;font-weight:700;color:var(--accent);">5</td>
+          <td style="padding:10px;font-weight:700;color:var(--accent);">5</td>
+          <td style="padding:10px;font-weight:700;color:var(--accent);">9</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:10px;color:var(--text-dim);">i=2</td>
+          <td style="padding:10px;color:var(--text-dim);">—</td>
+          <td style="padding:10px;color:var(--text-dim);">—</td>
+          <td style="padding:10px;font-weight:700;color:var(--accent);">1</td>
+          <td style="padding:10px;font-weight:700;color:var(--accent);">4</td>
+        </tr>
+        <tr>
+          <td style="padding:10px;color:var(--text-dim);">i=3</td>
+          <td style="padding:10px;color:var(--text-dim);">—</td>
+          <td style="padding:10px;color:var(--text-dim);">—</td>
+          <td style="padding:10px;color:var(--text-dim);">—</td>
+          <td style="padding:10px;font-weight:700;color:var(--accent);">4</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="acc-p">
+    <strong>dp[0][3] = 7</strong>：先手最多能拿 7 點，後手拿 3+5+1+4-7 = 6 點，先手贏。<br><br>
+    驗算 dp[0][3]：<br>
+    取左(3)：3 + min(dp[2][3], dp[1][2]) = 3 + min(4, 5) = 7 ✓<br>
+    取右(4)：4 + min(dp[1][2], dp[0][1]) = 4 + min(5, 5) = 9 ✗（怎麼比 7 大？）<br><br>
+    實際上取右(4) = 9 才是最優！先手取右4，再取左5，得到 9 點。
+  </div>
+  <div class="acc-insight">
+    <span class="ins-label">✅ 填表順序</span>
+    必須從短區間往長區間填（len=1 → len=2 → … → len=n），<br>
+    因為長區間的計算依賴短區間的結果。
+  </div>
+</div>
+
+<!-- Step 5 -->
+<div id="step5" class="algo-section">
+  <div class="acc-step-label">Step 5 · 複雜度分析</div>
+  <div class="acc-code">
+    <span class="lang-tag">Python</span>
+    <pre><span class="kw">def</span> <span class="fn">coin_row_dp</span>(coins: list) -> int:
+    n = <span class="fn">len</span>(coins)
+    <span class="kw">if</span> n == <span class="num">0</span>: <span class="kw">return</span> <span class="num">0</span>
+    dp = [[<span class="num">0</span>] * n <span class="kw">for</span> _ <span class="kw">in</span> <span class="fn">range</span>(n)]
+
+    <span class="cmt"># 長度 1</span>
+    <span class="kw">for</span> i <span class="kw">in</span> <span class="fn">range</span>(n):
+        dp[i][i] = coins[i]
+
+    <span class="cmt"># 長度 2 到 n</span>
+    <span class="kw">for</span> length <span class="kw">in</span> <span class="fn">range</span>(<span class="num">2</span>, n+<span class="num">1</span>):
+        <span class="kw">for</span> i <span class="kw">in</span> <span class="fn">range</span>(n - length + <span class="num">1</span>):
+            j = i + length - <span class="num">1</span>
+            take_left = coins[i] + <span class="fn">min</span>(
+                dp[i+<span class="num">2</span>][j] <span class="kw">if</span> i+<span class="num">2</span> <= j <span class="kw">else</span> <span class="num">0</span>,
+                dp[i+<span class="num">1</span>][j-<span class="num">1</span>] <span class="kw">if</span> i+<span class="num">1</span> <= j-<span class="num">1</span> <span class="kw">else</span> <span class="num">0</span>
+            )
+            take_right = coins[j] + <span class="fn">min</span>(
+                dp[i+<span class="num">1</span>][j-<span class="num">1</span>] <span class="kw">if</span> i+<span class="num">1</span> <= j-<span class="num">1</span> <span class="kw">else</span> <span class="num">0</span>,
+                dp[i][j-<span class="num">2</span>] <span class="kw">if</span> i <= j-<span class="num">2</span> <span class="kw">else</span> <span class="num">0</span>
+            )
+            dp[i][j] = <span class="fn">max</span>(take_left, take_right)
+
+    <span class="kw">return</span> dp[<span class="num">0</span>][n-<span class="num">1</span>]  <span class="cmt"># 先手能拿到的最大分</span>
+
+<span class="cmt"># 時間複雜度：O(n²)（填 n×n 的表，每格 O(1)）</span>
+<span class="cmt"># 空間複雜度：O(n²)（dp 表）</span></pre>
+  </div>
+  <div style="overflow-x:auto;margin:16px 0;">
+    <table style="width:100%;border-collapse:collapse;font-size:13px;">
+      <thead>
+        <tr style="border-bottom:1px solid var(--border);">
+          <th style="padding:10px;text-align:left;color:var(--text-dim);font-weight:500;">策略</th>
+          <th style="padding:10px;text-align:left;color:var(--text-dim);font-weight:500;">時間</th>
+          <th style="padding:10px;text-align:left;color:var(--text-dim);font-weight:500;">空間</th>
+          <th style="padding:10px;text-align:left;color:var(--text-dim);font-weight:500;">最優</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:10px;">貪心</td><td style="padding:10px;">O(n)</td>
+          <td style="padding:10px;">O(1)</td><td style="padding:10px;color:var(--accent2);">❌ 不一定</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:10px;">暴力遞迴</td><td style="padding:10px;">O(2ⁿ)</td>
+          <td style="padding:10px;">O(n)</td><td style="padding:10px;color:var(--accent);">✅ 是</td>
+        </tr>
+        <tr>
+          <td style="padding:10px;">區間 DP</td><td style="padding:10px;">O(n²)</td>
+          <td style="padding:10px;">O(n²)</td><td style="padding:10px;color:var(--accent);">✅ 是</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- 互動 DP 模擬 -->
+<div id="sim" class="algo-section">
+  <div class="acc-step-label">互動 DP 模擬</div>
+  <div class="acc-p">輸入硬幣面值，即時計算 dp 表和最優策略。</div>
+  <div style="margin:16px 0;">
+    <label style="font-size:13px;color:var(--text-dim);">硬幣（空格分隔）</label><br>
+    <input id="sim-input" value="3 5 1 15 2 4" style="margin-top:8px;width:100%;max-width:320px;background:var(--surface);border:1px solid var(--border);color:var(--text);padding:10px 12px;border-radius:8px;font-size:14px;" oninput="simCalc()">
+  </div>
+  <div id="sim-coins-display" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;"></div>
+  <div id="sim-result" style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:16px;font-size:13px;"></div>
+  <div style="overflow-x:auto;">
+    <div id="sim-table-wrap"></div>
+  </div>
+</div>
+
+<!-- LeetCode -->
+<div id="leetcode" class="algo-section">
+  <div class="acc-step-label">LeetCode 相關題目</div>
+  <div style="display:flex;flex-direction:column;gap:10px;margin-top:12px;">
+    <a href="https://leetcode.com/problems/stone-game/" target="_blank" class="lc-card">
+      <span class="lc-num">#877</span><span class="lc-title">Stone Game</span>
+      <span class="lc-tag medium">Medium</span>
+      <span class="lc-desc">Coin Row 的直接變體，先手是否必勝</span>
+    </a>
+    <a href="https://leetcode.com/problems/predict-the-winner/" target="_blank" class="lc-card">
+      <span class="lc-num">#486</span><span class="lc-title">Predict the Winner</span>
+      <span class="lc-tag medium">Medium</span>
+      <span class="lc-desc">完全相同的問題，判斷先手是否能贏</span>
+    </a>
+    <a href="https://leetcode.com/problems/stone-game-vii/" target="_blank" class="lc-card">
+      <span class="lc-num">#1690</span><span class="lc-title">Stone Game VII</span>
+      <span class="lc-tag medium">Medium</span>
+      <span class="lc-desc">取石頭後得分是剩餘總和，區間 DP 進階</span>
+    </a>
+    <a href="https://leetcode.com/problems/burst-balloons/" target="_blank" class="lc-card">
+      <span class="lc-num">#312</span><span class="lc-title">Burst Balloons</span>
+      <span class="lc-tag hard">Hard</span>
+      <span class="lc-desc">經典區間 DP，最後戳破氣球</span>
+    </a>
+    <a href="https://leetcode.com/problems/minimum-cost-tree-from-leaf-values/" target="_blank" class="lc-card">
+      <span class="lc-num">#1130</span><span class="lc-title">Minimum Cost Tree From Leaf Values</span>
+      <span class="lc-tag medium">Medium</span>
+      <span class="lc-desc">區間 DP 或貪心，理解兩種思路的差異</span>
+    </a>
+  </div>
+</div>
+
+<!-- 導航 -->
+<div style="display:flex;justify-content:center;gap:12px;margin:32px 0 8px;flex-wrap:wrap;">
+  <a href="turning-turtles-algo.html" style="display:inline-flex;align-items:center;gap:8px;padding:12px 20px;background:var(--surface);border:1px solid var(--border);border-radius:12px;text-decoration:none;color:var(--text);font-size:13px;transition:all 0.2s;"
+    onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'"
+    onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text)'">← 🐢 Turning Turtles 解析</a>
+  <a href="../index.html" style="display:inline-flex;align-items:center;gap:8px;padding:12px 20px;background:var(--surface);border:1px solid var(--border);border-radius:12px;text-decoration:none;color:var(--text);font-size:13px;transition:all 0.2s;"
+    onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'"
+    onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text)'">回選單 →</a>
+</div>
+
+</div>
+
+<style>
+.algo-section{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:24px;margin-bottom:20px;}
+.lc-card{display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--bg);border:1px solid var(--border);border-radius:10px;text-decoration:none;color:var(--text);transition:border-color 0.2s;flex-wrap:wrap;}
+.lc-card:hover{border-color:var(--accent);}
+.lc-num{font-family:'Orbitron',monospace;font-size:11px;color:var(--text-dim);min-width:44px;}
+.lc-title{font-weight:600;font-size:14px;flex:1;}
+.lc-tag{font-size:10px;padding:2px 8px;border-radius:20px;font-weight:700;letter-spacing:0.05em;}
+.lc-tag.easy{background:rgba(0,200,100,0.15);color:#00c864;}
+.lc-tag.medium{background:rgba(255,180,0,0.15);color:#ffb400;}
+.lc-tag.hard{background:rgba(255,60,60,0.15);color:#ff3c3c;}
+.lc-desc{font-size:12px;color:var(--text-dim);width:100%;margin-top:2px;}
+.acc-step-label{font-family:'Orbitron',monospace;font-size:11px;letter-spacing:0.15em;text-transform:uppercase;color:var(--accent);margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid var(--border);}
+.sim-coin{display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#ffd54f,#f57f17);border:2px solid #ffb300;font-weight:900;font-size:13px;color:#1a1a00;font-family:'Orbitron',monospace;}
+</style>
+
+<script>
+function simCalc(){
+  const raw=document.getElementById('sim-input').value.trim();
+  const coins=raw.split(/\s+/).map(Number).filter(n=>!isNaN(n)&&n>0);
+  if(coins.length<2||coins.length>10){
+    document.getElementById('sim-result').textContent='請輸入 2～10 個正整數';return;
+  }
+
+  // 顯示硬幣
+  const cd=document.getElementById('sim-coins-display');cd.innerHTML='';
+  coins.forEach(c=>{const el=document.createElement('div');el.className='sim-coin';el.textContent=c;cd.appendChild(el);});
+
+  // 建 dp 表
+  const n=coins.length;
+  const dp=Array.from({length:n},()=>Array(n).fill(0));
+  for(let i=0;i<n;i++)dp[i][i]=coins[i];
+  for(let len=2;len<=n;len++){
+    for(let i=0;i<=n-len;i++){
+      const j=i+len-1;
+      const tl=coins[i]+Math.min(i+2<=j?dp[i+2][j]:0,i+1<=j-1?dp[i+1][j-1]:0);
+      const tr=coins[j]+Math.min(i+1<=j-1?dp[i+1][j-1]:0,i<=j-2?dp[i][j-2]:0);
+      dp[i][j]=Math.max(tl,tr);
+    }
+  }
+
+  const best=dp[0][n-1];
+  const total=coins.reduce((a,b)=>a+b,0);
+  document.getElementById('sim-result').innerHTML=`
+    <div style="margin-bottom:6px;">總金額：<strong>${total}</strong></div>
+    <div style="margin-bottom:6px;">先手最優得分：<strong style="color:var(--accent)">${best}</strong></div>
+    <div style="margin-bottom:6px;">後手得分：<strong style="color:var(--accent2)">${total-best}</strong></div>
+    <div>${best>total-best?'✅ 先手勝':best<total-best?'❌ 先手輸':'🤝 平局'}</div>`;
+
+  // 顯示 dp 表
+  const wrap=document.getElementById('sim-table-wrap');wrap.innerHTML='';
+  const table=document.createElement('table');table.style.cssText='border-collapse:collapse;font-size:12px;';
+  const head=document.createElement('tr');
+  const th0=document.createElement('th');th0.style.cssText='padding:8px;color:var(--text-dim);';th0.textContent='i\\j';head.appendChild(th0);
+  for(let j=0;j<n;j++){const th=document.createElement('th');th.style.cssText='padding:8px;color:var(--text-dim);';th.textContent=`${j}(${coins[j]})`;head.appendChild(th);}
+  table.appendChild(head);
+  for(let i=0;i<n;i++){
+    const tr=document.createElement('tr');tr.style.borderTop='1px solid var(--border)';
+    const td0=document.createElement('td');td0.style.cssText='padding:8px;color:var(--text-dim);';td0.textContent=`${i}(${coins[i]})`;tr.appendChild(td0);
+    for(let j=0;j<n;j++){
+      const td=document.createElement('td');td.style.cssText='padding:8px;text-align:center;';
+      if(i>j){td.textContent='—';td.style.color='var(--text-dim)';}
+      else{td.textContent=dp[i][j];td.style.fontWeight='700';if(i===0&&j===n-1)td.style.color='var(--accent)';}
+      tr.appendChild(td);
+    }
+    table.appendChild(tr);
+  }
+  wrap.appendChild(table);
+}
+simCalc();
+</script>
+</body>
+</html>
