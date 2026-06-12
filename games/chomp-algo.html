@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chomp 演算法解析 — 演算法互動遊戲集</title>
+<link rel="stylesheet" href="../shared/style.css">
+</head>
+<body>
+<div class="container">
+
+<header>
+  <div class="title">🧠 Chomp 演算法解析</div>
+  <div class="subtitle">Minimax · Memoization · Zermelo 定理 · 數學開放問題</div>
+</header>
+
+<div style="text-align:center;margin-bottom:20px;display:flex;justify-content:center;gap:12px;flex-wrap:wrap;">
+  <a href="chomp.html" style="font-size:12px;color:var(--text-dim);text-decoration:none;letter-spacing:0.1em;text-transform:uppercase;padding:8px 14px;border:1px solid var(--border);border-radius:8px;transition:all 0.2s;display:inline-block;"
+    onmouseover="this.style.color='var(--accent)';this.style.borderColor='var(--accent)'"
+    onmouseout="this.style.color='var(--text-dim)';this.style.borderColor='var(--border)'">🍫 回遊戲</a>
+  <a href="../index.html" style="font-size:12px;color:var(--text-dim);text-decoration:none;letter-spacing:0.1em;text-transform:uppercase;padding:8px 14px;border:1px solid var(--border);border-radius:8px;transition:all 0.2s;display:inline-block;"
+    onmouseover="this.style.color='var(--accent)';this.style.borderColor='var(--accent)'"
+    onmouseout="this.style.color='var(--text-dim)';this.style.borderColor='var(--border)'">← 返回選單</a>
+</div>
+
+<!-- 目錄 -->
+<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:28px;">
+  <div style="font-size:11px;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-dim);margin-bottom:12px;">本頁內容</div>
+  <div style="display:flex;flex-direction:column;gap:8px;">
+    <a href="#step1" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Step 1 · 和前面遊戲最大的不同</a>
+    <a href="#step2" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Step 2 · Zermelo 定理：先手必勝的存在性證明</a>
+    <a href="#step3" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Step 3 · Minimax 搜尋</a>
+    <a href="#step4" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Step 4 · Memoization 為什麼關鍵</a>
+    <a href="#step5" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Step 5 · 為什麼是開放問題</a>
+    <a href="#leetcode" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">LeetCode 相關題目</a>
+  </div>
+</div>
+
+<!-- Step 1 -->
+<div id="step1" class="algo-section">
+  <div class="acc-step-label">Step 1 · 和前面遊戲最大的不同</div>
+  <div class="acc-p">
+    Bachet、Nim、Wythoff 都有 <strong>O(1) 或 O(N) 的公式</strong>，可以瞬間判斷輸贏。<br><br>
+    Chomp 完全不同：<strong>目前數學界沒有任何已知公式</strong>。<br>
+    唯一已知的是「先手必勝」這個存在性結果，但沒人知道先手應該怎麼走。<br><br>
+    電腦只能用 <strong>Minimax 搜尋</strong>：把所有可能的走法都試一遍，找到必勝的那步。
+  </div>
+  <div class="acc-insight">
+    <span class="ins-label">🤯 Chomp 的特殊地位</span>
+    這是一個你可以輕鬆玩、規則很簡單，但連最頂尖的數學家都不知道完整策略的遊戲。<br>
+    困難模式的電腦在大棋盤上也可能走錯——因為這個問題連電腦都要花很長時間搜尋。
+  </div>
+</div>
+
+<!-- Step 2 -->
+<div id="step2" class="algo-section">
+  <div class="acc-step-label">Step 2 · Zermelo 定理：先手必勝的存在性證明</div>
+  <div class="acc-p">
+    雖然不知道策略，但我們能<strong>證明先手必勝一定存在</strong>。<br>
+    這用的是 <strong>策略竊取論證（Strategy Stealing Argument）</strong>：
+  </div>
+  <div style="background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:20px;margin:16px 0;">
+    <div style="font-size:13px;line-height:1.9;">
+      <strong>假設後手有必勝策略 S</strong><br><br>
+      先手第一步吃掉右上角的一塊（任意走法）<br>
+      ↓<br>
+      現在先手處於一個「後手的位置」，可以開始執行策略 S<br>
+      ↓<br>
+      但等等——先手已經多吃了一塊，比「後手剛開始」的狀態多做了一步<br>
+      多吃一塊只會讓局面「更少」，在 Chomp 中這只有可能更好（永遠不會讓你更不利）<br>
+      ↓<br>
+      所以先手也能執行 S，而且效果至少一樣好<br>
+      ↓<br>
+      <strong>矛盾！後手不可能有必勝策略 → 先手必勝 ✓</strong>
+    </div>
+  </div>
+  <div class="acc-insight">
+    <span class="ins-label">💡 存在性 ≠ 可建構性</span>
+    這個證明只告訴我們「先手必勝策略存在」，但完全沒有說策略是什麼。<br>
+    這在數學上很常見：證明某東西存在，但不知道它長什麼樣子。
+  </div>
+</div>
+
+<!-- Step 3 -->
+<div id="step3" class="algo-section">
+  <div class="acc-step-label">Step 3 · Minimax 搜尋</div>
+  <div class="acc-p">
+    沒有公式，只能搜尋。Minimax 的核心思想很直接：
+  </div>
+  <div class="acc-code">
+    <span class="lang-tag">Python</span>
+    <pre><span class="kw">def</span> <span class="fn">is_losing</span>(board) -> bool:
+    <span class="cmt">"""當前玩家是否在必輸位置"""</span>
+
+    <span class="cmt"># 只剩毒格 → 被迫吃 → 必輸</span>
+    non_poison = [(r,c) <span class="kw">for</span> r,c <span class="kw">in</span> board <span class="kw">if</span> (r,c) != (<span class="num">0</span>,<span class="num">0</span>)]
+    <span class="kw">if not</span> non_poison:
+        <span class="kw">return</span> True
+
+    <span class="cmt"># 嘗試每一種走法</span>
+    <span class="kw">for</span> (r, c) <span class="kw">in</span> non_poison:
+        <span class="cmt"># 吃掉 (r,c) 及右上方所有格</span>
+        after = frozenset(
+            (rr, cc) <span class="kw">for</span> rr, cc <span class="kw">in</span> board
+            <span class="kw">if not</span> (rr >= r <span class="kw">and</span> cc >= c)
+        )
+        <span class="cmt"># 如果這步能讓對手進入必輸位置，我就贏了</span>
+        <span class="kw">if</span> <span class="fn">is_losing</span>(after):
+            <span class="kw">return</span> False  <span class="cmt"># 我能贏 → 我不是必輸</span>
+
+    <span class="cmt"># 所有走法都讓對手贏 → 我必輸</span>
+    <span class="kw">return</span> True</pre>
+  </div>
+  <div class="acc-p" style="margin-top:16px;">
+    注意這裡沒有「最大化/最小化」的顯式邏輯，因為兩個玩家都在「找能讓對手必輸的走法」，<br>
+    本質上是同一件事——這是 Minimax 在零和博弈中的簡化形式。
+  </div>
+</div>
+
+<!-- Step 4 -->
+<div id="step4" class="algo-section">
+  <div class="acc-step-label">Step 4 · Memoization 為什麼關鍵</div>
+  <div class="acc-p">
+    不加 Memoization，時間複雜度是 <strong>O(走法數!)</strong>，棋盤稍大就根本跑不完。<br><br>
+    關鍵觀察：<strong>不同的走法順序可能到達相同的棋盤狀態</strong>。
+  </div>
+  <div style="background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:20px;margin:16px 0;font-size:13px;line-height:1.8;">
+    例如 3×3 棋盤：<br>
+    走法 A → 走法 B → 棋盤狀態 X<br>
+    走法 B → 走法 A → 棋盤狀態 X（相同！）<br><br>
+    沒有 Memo：兩條路都重新計算狀態 X<br>
+    有 Memo：第二次遇到 X 直接查表，O(1) 回答
+  </div>
+  <div class="acc-code">
+    <span class="lang-tag">Python</span>
+    <pre><span class="kw">from</span> functools <span class="kw">import</span> lru_cache
+
+@lru_cache(maxsize=<span class="kw">None</span>)
+<span class="kw">def</span> <span class="fn">is_losing</span>(board: frozenset) -> bool:
+    <span class="cmt"># 完全相同，但加了 @lru_cache</span>
+    <span class="cmt"># frozenset 是 hashable，可以當 cache key</span>
+    non_poison = {(r,c) <span class="kw">for</span> r,c <span class="kw">in</span> board <span class="kw">if</span> (r,c) != (<span class="num">0</span>,<span class="num">0</span>)}
+    <span class="kw">if not</span> non_poison: <span class="kw">return</span> True
+    <span class="kw">for</span> (r, c) <span class="kw">in</span> non_poison:
+        after = frozenset((rr,cc) <span class="kw">for</span> rr,cc <span class="kw">in</span> board <span class="kw">if not</span>(rr>=r <span class="kw">and</span> cc>=c))
+        <span class="kw">if</span> <span class="fn">is_losing</span>(after): <span class="kw">return</span> False
+    <span class="kw">return</span> True
+
+<span class="cmt"># 複雜度：O(唯一棋盤狀態數 × 平均合法走法數)</span>
+<span class="cmt"># 3×3：幾十個狀態，瞬間完成</span>
+<span class="cmt"># 5×4：幾千個狀態，約 0.1 秒</span>
+<span class="cmt"># 7×5：幾十萬狀態，可能需要數秒</span></pre>
+  </div>
+  <div class="acc-insight">
+    <span class="ins-label">🔬 JS 版的差異</span>
+    遊戲中的 JS 實作用字串當 key（board 轉成 "0101|1111|…"），<br>
+    原理完全相同，只是 Python 的 <code>frozenset</code> 換成字串 hash。<br>
+    大棋盤（7×5 以上）搜尋時間會明顯增加，這是 Chomp 的本質限制。
+  </div>
+</div>
+
+<!-- Step 5 -->
+<div id="step5" class="algo-section">
+  <div class="acc-step-label">Step 5 · 為什麼是開放問題</div>
+  <div class="acc-p">
+    Chomp 被數學界列為<strong>未解問題</strong>，原因在於棋盤狀態數的爆炸性增長：
+  </div>
+  <div style="overflow-x:auto;margin:16px 0;">
+    <table style="width:100%;border-collapse:collapse;font-size:13px;">
+      <thead>
+        <tr style="border-bottom:1px solid var(--border);">
+          <th style="padding:10px;text-align:left;color:var(--text-dim);font-weight:500;">棋盤</th>
+          <th style="padding:10px;text-align:left;color:var(--text-dim);font-weight:500;">格子數</th>
+          <th style="padding:10px;text-align:left;color:var(--text-dim);font-weight:500;">有效狀態數（約）</th>
+          <th style="padding:10px;text-align:left;color:var(--text-dim);font-weight:500;">狀態</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:10px;">2×N</td><td style="padding:10px;">2N</td>
+          <td style="padding:10px;">O(N²)</td>
+          <td style="padding:10px;color:var(--accent);">✅ 已有公式</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:10px;">3×N</td><td style="padding:10px;">3N</td>
+          <td style="padding:10px;">O(N³)</td>
+          <td style="padding:10px;color:var(--accent);">✅ 已有公式</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:10px;">4×4</td><td style="padding:10px;">16</td>
+          <td style="padding:10px;">數千</td>
+          <td style="padding:10px;color:var(--accent);">✅ 電腦可解</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:10px;">5×5</td><td style="padding:10px;">25</td>
+          <td style="padding:10px;">數萬</td>
+          <td style="padding:10px;color:var(--accent);">✅ 電腦可解</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:10px;">N×N（大）</td><td style="padding:10px;">N²</td>
+          <td style="padding:10px;">指數級</td>
+          <td style="padding:10px;color:var(--accent2);">❌ 無公式，電腦也解不了</td>
+        </tr>
+        <tr>
+          <td style="padding:10px;">一般 M×N</td><td style="padding:10px;">MN</td>
+          <td style="padding:10px;">指數級</td>
+          <td style="padding:10px;color:var(--accent2);">❌ 開放問題</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="acc-p">
+    關鍵差異在於：Nim 和 Bachet 有<strong>代數結構</strong>（XOR、模運算），<br>
+    讓問題可以被「壓縮」成公式。<br>
+    Chomp 的棋盤形狀是「Young diagram」（楊圖），目前沒有發現類似的代數結構。
+  </div>
+  <div class="acc-insight">
+    <span class="ins-label">📚 延伸閱讀</span>
+    Chomp 由 David Gale 在 1974 年提出，至今 50 年仍未解決。<br>
+    已知有公式的特例：1×N（平凡）、2×N、3×N、正方形 N×N（先手走 (2,2) 必贏，但為什麼未知）。
+  </div>
+</div>
+
+<!-- LeetCode -->
+<div id="leetcode" class="algo-section">
+  <div class="acc-step-label">LeetCode 相關題目</div>
+  <div class="acc-p">Chomp 本身沒有對應題目，但 Minimax 和 Memoization 是核心技術：</div>
+  <div style="display:flex;flex-direction:column;gap:10px;margin-top:12px;">
+    <a href="https://leetcode.com/problems/predict-the-winner/" target="_blank" class="lc-card">
+      <span class="lc-num">#486</span><span class="lc-title">Predict the Winner</span>
+      <span class="lc-tag medium">Medium</span>
+      <span class="lc-desc">Minimax 入門，和 Chomp 相同的遞迴思維</span>
+    </a>
+    <a href="https://leetcode.com/problems/can-i-win/" target="_blank" class="lc-card">
+      <span class="lc-num">#464</span><span class="lc-title">Can I Win</span>
+      <span class="lc-tag medium">Medium</span>
+      <span class="lc-desc">Bitmask Memoization，狀態壓縮的關鍵技巧</span>
+    </a>
+    <a href="https://leetcode.com/problems/flip-game-ii/" target="_blank" class="lc-card">
+      <span class="lc-num">#294</span><span class="lc-title">Flip Game II</span>
+      <span class="lc-tag medium">Medium</span>
+      <span class="lc-desc">Backtracking + Memo，和 Chomp 結構最像</span>
+    </a>
+    <a href="https://leetcode.com/problems/cat-and-mouse/" target="_blank" class="lc-card">
+      <span class="lc-num">#913</span><span class="lc-title">Cat and Mouse</span>
+      <span class="lc-tag hard">Hard</span>
+      <span class="lc-desc">圖上博弈，Minimax 進階版</span>
+    </a>
+    <a href="https://leetcode.com/problems/stone-game-ix/" target="_blank" class="lc-card">
+      <span class="lc-num">#1872</span><span class="lc-title">Stone Game IX</span>
+      <span class="lc-tag medium">Medium</span>
+      <span class="lc-desc">博弈 + 數學分析，需要找規律</span>
+    </a>
+  </div>
+</div>
+
+<!-- 導航 -->
+<div style="display:flex;justify-content:center;gap:12px;margin:32px 0 8px;flex-wrap:wrap;">
+  <a href="wythoff-algo.html" style="display:inline-flex;align-items:center;gap:8px;padding:12px 20px;background:var(--surface);border:1px solid var(--border);border-radius:12px;text-decoration:none;color:var(--text);font-size:13px;transition:all 0.2s;"
+    onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'"
+    onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text)'">← φ Wythoff 解析</a>
+  <a href="../index.html" style="display:inline-flex;align-items:center;gap:8px;padding:12px 20px;background:var(--surface);border:1px solid var(--border);border-radius:12px;text-decoration:none;color:var(--text);font-size:13px;transition:all 0.2s;"
+    onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'"
+    onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text)'">回選單 →</a>
+</div>
+
+</div>
+
+<style>
+.algo-section{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:24px;margin-bottom:20px;}
+.lc-card{display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--bg);border:1px solid var(--border);border-radius:10px;text-decoration:none;color:var(--text);transition:border-color 0.2s;flex-wrap:wrap;}
+.lc-card:hover{border-color:var(--accent);}
+.lc-num{font-family:'Orbitron',monospace;font-size:11px;color:var(--text-dim);min-width:44px;}
+.lc-title{font-weight:600;font-size:14px;flex:1;}
+.lc-tag{font-size:10px;padding:2px 8px;border-radius:20px;font-weight:700;letter-spacing:0.05em;}
+.lc-tag.easy{background:rgba(0,200,100,0.15);color:#00c864;}
+.lc-tag.medium{background:rgba(255,180,0,0.15);color:#ffb400;}
+.lc-tag.hard{background:rgba(255,60,60,0.15);color:#ff3c3c;}
+.lc-desc{font-size:12px;color:var(--text-dim);width:100%;margin-top:2px;}
+.acc-step-label{font-family:'Orbitron',monospace;font-size:11px;letter-spacing:0.15em;text-transform:uppercase;color:var(--accent);margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid var(--border);}
+</style>
+</body>
+</html>
