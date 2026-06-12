@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="../favicon.png">
+<title>背包問題 演算法解析 — 演算法互動遊戲集</title>
+<link rel="stylesheet" href="../shared/style.css">
+</head>
+<body>
+<div class="container">
+
+<header>
+  <div class="title">🧠 背包問題 演算法解析</div>
+  <div class="subtitle">暴力搜尋 → DP 填表 → O(n·W) → 回溯最優解</div>
+</header>
+
+<div style="text-align:center;margin-bottom:20px;display:flex;justify-content:center;gap:12px;flex-wrap:wrap;">
+  <a href="knapsack.html" style="font-size:12px;color:var(--text-dim);text-decoration:none;letter-spacing:0.1em;text-transform:uppercase;padding:8px 14px;border:1px solid var(--border);border-radius:8px;transition:all 0.2s;display:inline-block;"
+    onmouseover="this.style.color='var(--accent)';this.style.borderColor='var(--accent)'"
+    onmouseout="this.style.color='var(--text-dim)';this.style.borderColor='var(--border)'">🎒 回遊戲</a>
+  <a href="../index.html" style="font-size:12px;color:var(--text-dim);text-decoration:none;letter-spacing:0.1em;text-transform:uppercase;padding:8px 14px;border:1px solid var(--border);border-radius:8px;transition:all 0.2s;display:inline-block;"
+    onmouseover="this.style.color='var(--accent)';this.style.borderColor='var(--accent)'"
+    onmouseout="this.style.color='var(--text-dim)';this.style.borderColor='var(--border)'">← 返回選單</a>
+</div>
+
+<!-- 目錄 -->
+<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:28px;">
+  <div style="font-size:11px;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-dim);margin-bottom:12px;">本頁內容</div>
+  <div style="display:flex;flex-direction:column;gap:8px;">
+    <a href="#step1" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Step 1 · 問題定義</a>
+    <a href="#step2" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Step 2 · 暴力搜尋：為什麼行不通</a>
+    <a href="#step3" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Step 3 · DP 的核心思維</a>
+    <a href="#step4" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Step 4 · 轉移方程與填表</a>
+    <a href="#step5" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Step 5 · 回溯找出最優解</a>
+    <a href="#sim" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">互動 DP 填表模擬</a>
+    <a href="#leetcode" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">LeetCode 相關題目</a>
+  </div>
+</div>
+
+<!-- Step 1 -->
+<div id="step1" class="algo-section">
+  <div class="acc-step-label">Step 1 · 問題定義</div>
+  <div class="acc-p">
+    有 n 件物品，每件有重量 <code>w[i]</code> 和價值 <code>v[i]</code>。<br>
+    背包容量為 W，每件物品只能取一次（0 或 1），求最大總價值。<br><br>
+    形式化：選一個子集 S，使得 <code>Σw[i] ≤ W</code> 且 <code>Σv[i]</code> 最大。
+  </div>
+  <div style="overflow-x:auto;margin:16px 0;">
+    <table style="width:100%;border-collapse:collapse;font-size:13px;">
+      <thead>
+        <tr style="border-bottom:1px solid var(--border);">
+          <th style="padding:10px;text-align:left;color:var(--text-dim);font-weight:500;">物品</th>
+          <th style="padding:10px;text-align:center;color:var(--text-dim);font-weight:500;">重量</th>
+          <th style="padding:10px;text-align:center;color:var(--text-dim);font-weight:500;">價值</th>
+          <th style="padding:10px;text-align:center;color:var(--text-dim);font-weight:500;">價值/重量</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:10px;">⚔️ 寶劍</td><td style="padding:10px;text-align:center;">5</td><td style="padding:10px;text-align:center;">10</td><td style="padding:10px;text-align:center;">2.0</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:10px;">💎 寶石</td><td style="padding:10px;text-align:center;">2</td><td style="padding:10px;text-align:center;">6</td><td style="padding:10px;text-align:center;">3.0</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:10px;">⛑️ 頭盔</td><td style="padding:10px;text-align:center;">6</td><td style="padding:10px;text-align:center;">11</td><td style="padding:10px;text-align:center;">1.8</td>
+        </tr>
+        <tr>
+          <td style="padding:10px;">🧪 藥水</td><td style="padding:10px;text-align:center;">1</td><td style="padding:10px;text-align:center;">3</td><td style="padding:10px;text-align:center;">3.0</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="acc-insight">
+    <span class="ins-label">⚠️ 貪心失效</span>
+    「每次取價值/重量最高的」不一定對。<br>
+    容量 W=8：貪心取寶石(2)+藥水(1)+寶劍(5)=重8，價值19。<br>
+    但最優是寶石(2)+藥水(1)+頭盔(6)=重9，超了！<br>
+    所以最優是寶劍(5)+寶石(2)+藥水(1)=重8，價值19——這次貪心剛好對，但不總是。
+  </div>
+</div>
+
+<!-- Step 2 -->
+<div id="step2" class="algo-section">
+  <div class="acc-step-label">Step 2 · 暴力搜尋：為什麼行不通</div>
+  <div class="acc-p">
+    最直接的想法：枚舉所有子集，找最大價值且不超重的那個。
+  </div>
+  <div class="acc-code">
+    <span class="lang-tag">Python</span>
+    <pre><span class="kw">def</span> <span class="fn">brute_force</span>(items, W):
+    n = <span class="fn">len</span>(items)
+    best = <span class="num">0</span>
+    <span class="kw">for</span> mask <span class="kw">in</span> <span class="fn">range</span>(<span class="num">1</span> << n):  <span class="cmt"># 2^n 種子集</span>
+        w = v = <span class="num">0</span>
+        <span class="kw">for</span> i <span class="kw">in</span> <span class="fn">range</span>(n):
+            <span class="kw">if</span> mask & (<span class="num">1</span> << i):
+                w += items[i].w
+                v += items[i].v
+        <span class="kw">if</span> w <= W: best = <span class="fn">max</span>(best, v)
+    <span class="kw">return</span> best
+
+<span class="cmt"># 時間複雜度：O(2^n × n)</span>
+<span class="cmt"># n=20：約 2000 萬次，還行</span>
+<span class="cmt"># n=40：約 1 兆次，太慢</span>
+<span class="cmt"># n=100：根本跑不完</span></pre>
+  </div>
+</div>
+
+<!-- Step 3 -->
+<div id="step3" class="algo-section">
+  <div class="acc-step-label">Step 3 · DP 的核心思維</div>
+  <div class="acc-p">
+    DP 的關鍵：<strong>把大問題拆成小問題，避免重複計算。</strong><br><br>
+    考慮第 i 件物品，只有兩種選擇：<br>
+    ・<strong>不選</strong>：問題變成「前 i-1 件物品，容量 W」的子問題<br>
+    ・<strong>選</strong>（前提是 w[i] ≤ W）：問題變成「前 i-1 件物品，容量 W-w[i]」再加上 v[i]<br><br>
+    這兩個子問題都比原問題小，而且可能被重複用到——存起來就是 DP。
+  </div>
+  <div class="acc-insight">
+    <span class="ins-label">💡 最優子結構</span>
+    背包問題有「最優子結構」：整體最優解包含子問題的最優解。<br>
+    這是 DP 能用的必要條件——如果子問題的最優解組合起來不是整體最優，DP 就不能用。
+  </div>
+</div>
+
+<!-- Step 4 -->
+<div id="step4" class="algo-section">
+  <div class="acc-step-label">Step 4 · 轉移方程與填表</div>
+  <div class="acc-p">
+    定義 <code>dp[i][w]</code> = 前 i 件物品、容量 w 時的最大價值：
+  </div>
+  <div class="acc-code">
+    <span class="lang-tag">Python</span>
+    <pre><span class="cmt"># 邊界條件</span>
+dp[<span class="num">0</span>][w] = <span class="num">0</span>  <span class="cmt"># 沒有物品，價值為0</span>
+dp[i][<span class="num">0</span>] = <span class="num">0</span>  <span class="cmt"># 容量為0，什麼也放不下</span>
+
+<span class="cmt"># 轉移方程</span>
+<span class="kw">if</span> w < items[i].w:
+    dp[i][w] = dp[i-<span class="num">1</span>][w]          <span class="cmt"># 放不下，只能不選</span>
+<span class="kw">else</span>:
+    dp[i][w] = <span class="fn">max</span>(
+        dp[i-<span class="num">1</span>][w],               <span class="cmt"># 不選第 i 件</span>
+        dp[i-<span class="num">1</span>][w - items[i].w] + items[i].v  <span class="cmt"># 選第 i 件</span>
+    )
+
+<span class="cmt"># 完整實作</span>
+<span class="kw">def</span> <span class="fn">knapsack</span>(items, W):
+    n = <span class="fn">len</span>(items)
+    dp = [[<span class="num">0</span>]*(W+<span class="num">1</span>) <span class="kw">for</span> _ <span class="kw">in</span> <span class="fn">range</span>(n+<span class="num">1</span>)]
+    <span class="kw">for</span> i <span class="kw">in</span> <span class="fn">range</span>(<span class="num">1</span>, n+<span class="num">1</span>):
+        <span class="kw">for</span> w <span class="kw">in</span> <span class="fn">range</span>(W+<span class="num">1</span>):
+            dp[i][w] = dp[i-<span class="num">1</span>][w]
+            <span class="kw">if</span> w >= items[i-<span class="num">1</span>].w:
+                dp[i][w] = <span class="fn">max</span>(dp[i][w],
+                    dp[i-<span class="num">1</span>][w - items[i-<span class="num">1</span>].w] + items[i-<span class="num">1</span>].v)
+    <span class="kw">return</span> dp[n][W]
+
+<span class="cmt"># 時間複雜度：O(n × W)</span>
+<span class="cmt"># 空間複雜度：O(n × W)，可優化到 O(W)</span></pre>
+  </div>
+</div>
+
+<!-- Step 5 -->
+<div id="step5" class="algo-section">
+  <div class="acc-step-label">Step 5 · 回溯找出最優解</div>
+  <div class="acc-p">
+    dp 表填完後只知道最大價值，還需要「回溯」找出選了哪些物品：
+  </div>
+  <div class="acc-code">
+    <span class="lang-tag">Python</span>
+    <pre><span class="kw">def</span> <span class="fn">traceback</span>(dp, items, W):
+    selected = []
+    w = W
+    <span class="kw">for</span> i <span class="kw">in</span> <span class="fn">range</span>(<span class="fn">len</span>(items), <span class="num">0</span>, -<span class="num">1</span>):
+        <span class="kw">if</span> dp[i][w] != dp[i-<span class="num">1</span>][w]:
+            <span class="cmt"># 第 i 件被選了（否則值應該和上一行一樣）</span>
+            selected.append(i-<span class="num">1</span>)
+            w -= items[i-<span class="num">1</span>].w
+    <span class="kw">return</span> selected
+
+<span class="cmt"># 從最後一行往回追蹤：</span>
+<span class="cmt"># 如果 dp[i][w] != dp[i-1][w]，代表第 i 件被選了</span>
+<span class="cmt"># 然後容量減去該物品重量，繼續往上追蹤</span></pre>
+  </div>
+  <div class="acc-insight">
+    <span class="ins-label">📐 空間優化</span>
+    如果只需要最大價值（不需要回溯），可以把 dp 壓縮成一維：<br>
+    <code>dp[w] = max(dp[w], dp[w - items[i].w] + items[i].v)</code><br>
+    注意：要從大到小更新 w，避免同一件物品被選多次。
+  </div>
+</div>
+
+<!-- 互動 DP 填表 -->
+<div id="sim" class="algo-section">
+  <div class="acc-step-label">互動 DP 填表模擬</div>
+  <div class="acc-p">設定物品和容量，一格一格看 dp 表怎麼填。</div>
+
+  <div style="display:flex;gap:12px;flex-wrap:wrap;margin:16px 0;align-items:flex-end;">
+    <div>
+      <label style="font-size:12px;color:var(--text-dim);">容量 W</label><br>
+      <input id="sim-W" type="number" min="1" max="20" value="8"
+        style="margin-top:6px;background:var(--surface);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:8px;width:80px;font-size:16px;">
+    </div>
+    <button class="btn btn-sm" onclick="simReset()">↺ 重置</button>
+    <button class="btn btn-primary btn-sm" onclick="simNext()">下一格 →</button>
+    <button class="btn btn-sm" onclick="simFill()">全部填完</button>
+  </div>
+
+  <div id="sim-items-display" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;"></div>
+  <div id="sim-explain" style="font-size:13px;color:var(--text-dim);min-height:36px;margin-bottom:12px;padding:10px;background:var(--bg);border-radius:8px;border:1px solid var(--border);"></div>
+  <div style="overflow-x:auto;">
+    <div id="sim-table"></div>
+  </div>
+</div>
+
+<!-- LeetCode -->
+<div id="leetcode" class="algo-section">
+  <div class="acc-step-label">LeetCode 相關題目</div>
+  <div style="display:flex;flex-direction:column;gap:10px;margin-top:12px;">
+    <a href="https://leetcode.com/problems/partition-equal-subset-sum/" target="_blank" class="lc-card">
+      <span class="lc-num">#416</span><span class="lc-title">Partition Equal Subset Sum</span>
+      <span class="lc-tag medium">Medium</span>
+      <span class="lc-desc">0/1 背包的直接應用，能否分成兩個等和子集</span>
+    </a>
+    <a href="https://leetcode.com/problems/last-stone-weight-ii/" target="_blank" class="lc-card">
+      <span class="lc-num">#1049</span><span class="lc-title">Last Stone Weight II</span>
+      <span class="lc-tag medium">Medium</span>
+      <span class="lc-desc">轉化為背包問題，最小化差值</span>
+    </a>
+    <a href="https://leetcode.com/problems/target-sum/" target="_blank" class="lc-card">
+      <span class="lc-num">#494</span><span class="lc-title">Target Sum</span>
+      <span class="lc-tag medium">Medium</span>
+      <span class="lc-desc">背包變形，加減號分配問題</span>
+    </a>
+    <a href="https://leetcode.com/problems/ones-and-zeroes/" target="_blank" class="lc-card">
+      <span class="lc-num">#474</span><span class="lc-title">Ones and Zeroes</span>
+      <span class="lc-tag medium">Medium</span>
+      <span class="lc-desc">二維背包，同時限制兩種資源</span>
+    </a>
+    <a href="https://leetcode.com/problems/coin-change/" target="_blank" class="lc-card">
+      <span class="lc-num">#322</span><span class="lc-title">Coin Change</span>
+      <span class="lc-tag medium">Medium</span>
+      <span class="lc-desc">完全背包（每枚硬幣可用無限次），和 0/1 背包的差異</span>
+    </a>
+  </div>
+</div>
+
+<!-- 導航 -->
+<div style="display:flex;justify-content:center;gap:12px;margin:32px 0 8px;flex-wrap:wrap;">
+  <a href="coin-row-algo.html" style="display:inline-flex;align-items:center;gap:8px;padding:12px 20px;background:var(--surface);border:1px solid var(--border);border-radius:12px;text-decoration:none;color:var(--text);font-size:13px;transition:all 0.2s;"
+    onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'"
+    onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text)'">← 🪙 Coin Row 解析</a>
+  <a href="../index.html" style="display:inline-flex;align-items:center;gap:8px;padding:12px 20px;background:var(--surface);border:1px solid var(--border);border-radius:12px;text-decoration:none;color:var(--text);font-size:13px;transition:all 0.2s;"
+    onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'"
+    onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text)'">回選單 →</a>
+</div>
+
+</div>
+
+<style>
+.algo-section{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:24px;margin-bottom:20px;}
+.lc-card{display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--bg);border:1px solid var(--border);border-radius:10px;text-decoration:none;color:var(--text);transition:border-color 0.2s;flex-wrap:wrap;}
+.lc-card:hover{border-color:var(--accent);}
+.lc-num{font-family:'Orbitron',monospace;font-size:11px;color:var(--text-dim);min-width:44px;}
+.lc-title{font-weight:600;font-size:14px;flex:1;}
+.lc-tag{font-size:10px;padding:2px 8px;border-radius:20px;font-weight:700;letter-spacing:0.05em;}
+.lc-tag.easy{background:rgba(0,200,100,0.15);color:#00c864;}
+.lc-tag.medium{background:rgba(255,180,0,0.15);color:#ffb400;}
+.lc-tag.hard{background:rgba(255,60,60,0.15);color:#ff3c3c;}
+.lc-desc{font-size:12px;color:var(--text-dim);width:100%;margin-top:2px;}
+.acc-step-label{font-family:'Orbitron',monospace;font-size:11px;letter-spacing:0.15em;text-transform:uppercase;color:var(--accent);margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid var(--border);}
+.dp-cell{width:40px;height:40px;display:flex;align-items:center;justify-content:center;border:1px solid var(--border);font-size:12px;font-weight:700;transition:all 0.2s;}
+.dp-cell.filled{background:rgba(0,229,255,0.08);color:var(--accent);}
+.dp-cell.current{background:rgba(255,64,129,0.15);border-color:var(--accent2);color:var(--accent2);}
+.dp-cell.header{background:var(--surface2);color:var(--text-dim);font-size:10px;}
+</style>
+
+<script>
+const SIM_ITEMS=[
+  {name:'寶劍',emoji:'⚔️',w:5,v:10},
+  {name:'寶石',emoji:'💎',w:2,v:6},
+  {name:'頭盔',emoji:'⛑️',w:6,v:11},
+  {name:'藥水',emoji:'🧪',w:1,v:3},
+];
+let simW=8,simDp=[],simStep=0,simN=SIM_ITEMS.length;
+
+function simReset(){
+  simW=+document.getElementById('sim-W').value||8;
+  simN=SIM_ITEMS.length;
+  simDp=Array.from({length:simN+1},()=>Array(simW+1).fill(null));
+  for(let w=0;w<=simW;w++)simDp[0][w]=0;
+  simStep=0;
+  simRenderItems();simRenderTable();
+  document.getElementById('sim-explain').textContent='點擊「下一格」開始逐步填表';
+}
+
+function simRenderItems(){
+  const c=document.getElementById('sim-items-display');c.innerHTML='';
+  SIM_ITEMS.forEach(it=>{
+    const el=document.createElement('div');
+    el.style.cssText='display:inline-flex;align-items:center;gap:6px;padding:6px 10px;background:var(--surface);border:1px solid var(--border);border-radius:8px;font-size:12px;';
+    el.innerHTML=`${it.emoji} ${it.name} <span style="color:var(--accent2)">w=${it.w}</span> <span style="color:var(--accent)">v=${it.v}</span>`;
+    c.appendChild(el);
+  });
+}
+
+function simRenderTable(){
+  const wrap=document.getElementById('sim-table');wrap.innerHTML='';
+  const table=document.createElement('div');
+  table.style.cssText='display:inline-grid;gap:2px;';
+  table.style.gridTemplateColumns=`repeat(${simW+2},40px)`;
+
+  // 標頭行
+  const h0=document.createElement('div');h0.className='dp-cell header';h0.textContent='i\\w';table.appendChild(h0);
+  for(let w=0;w<=simW;w++){const h=document.createElement('div');h.className='dp-cell header';h.textContent=w;table.appendChild(h);}
+
+  // 資料行
+  for(let i=0;i<=simN;i++){
+    const rowH=document.createElement('div');rowH.className='dp-cell header';
+    rowH.textContent=i===0?'∅':`${SIM_ITEMS[i-1].emoji}`;table.appendChild(rowH);
+    for(let w=0;w<=simW;w++){
+      const cell=document.createElement('div');
+      const curI=Math.floor(simStep/(simW+1));const curW=simStep%(simW+1);
+      if(simDp[i][w]!==null){
+        cell.className='dp-cell filled';cell.textContent=simDp[i][w];
+        if(i===curI&&w===curW&&simStep>0)cell.classList.add('current');
+      }else{
+        cell.className='dp-cell';cell.textContent='?';
+      }
+      table.appendChild(cell);
+    }
+  }
+  wrap.appendChild(table);
+}
+
+function simNext(){
+  const totalCells=(simN)*(simW+1);
+  if(simStep>=totalCells){document.getElementById('sim-explain').textContent='✅ 填表完成！最優解 = dp['+simN+']['+simW+'] = '+simDp[simN][simW];return;}
+  const i=Math.floor(simStep/(simW+1))+1;
+  const w=simStep%(simW+1);
+  const it=SIM_ITEMS[i-1];
+  let explain='';
+  if(w<it.w){
+    simDp[i][w]=simDp[i-1][w];
+    explain=`dp[${i}][${w}]：容量${w} < 物品重量${it.w}，放不下 ${it.emoji}，繼承上方 dp[${i-1}][${w}]=${simDp[i][w]}`;
+  }else{
+    const noTake=simDp[i-1][w];
+    const take=simDp[i-1][w-it.w]+it.v;
+    simDp[i][w]=Math.max(noTake,take);
+    explain=`dp[${i}][${w}]：不選${it.emoji}=${noTake}，選${it.emoji}=dp[${i-1}][${w-it.w}]+${it.v}=${take}，取 max=${simDp[i][w]}`;
+  }
+  document.getElementById('sim-explain').textContent=explain;
+  simStep++;
+  simRenderTable();
+}
+
+function simFill(){
+  const totalCells=(simN)*(simW+1);
+  while(simStep<totalCells)simNext();
+}
+
+document.getElementById('sim-W').oninput=simReset;
+simReset();
+</script>
+</body>
+</html>

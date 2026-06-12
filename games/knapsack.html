@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="../favicon.png">
+<title>背包問題 — 演算法互動遊戲集</title>
+<link rel="stylesheet" href="../shared/style.css">
+<style>
+  .mode-switch{display:flex;gap:10px;margin-bottom:20px;justify-content:center;}
+  .mode-switch-btn{padding:10px 24px;border-radius:10px;border:2px solid var(--border);background:var(--surface);color:var(--text-dim);font-size:13px;font-weight:700;cursor:pointer;transition:all 0.2s;}
+  .mode-switch-btn.active{border-color:var(--accent);color:var(--accent);background:rgba(0,229,255,0.08);}
+
+  .capacity-bar{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 18px;margin-bottom:16px;}
+  .cap-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+  .cap-label{font-size:12px;color:var(--text-dim);}
+  .cap-val{font-family:'Orbitron',monospace;font-size:18px;font-weight:900;}
+  .cap-val.over{color:var(--accent2);}
+  .cap-val.ok{color:var(--accent);}
+  .cap-track{height:8px;background:var(--surface2);border-radius:4px;overflow:hidden;}
+  .cap-fill{height:100%;border-radius:4px;background:var(--accent);transition:width 0.3s;}
+  .cap-fill.over{background:var(--accent2);}
+
+  .items-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-bottom:16px;}
+  .item-card{background:var(--surface);border:2px solid var(--border);border-radius:12px;padding:14px;text-align:center;cursor:pointer;transition:all 0.2s;user-select:none;}
+  .item-card:hover{border-color:var(--accent);transform:translateY(-2px);}
+  .item-card.selected{border-color:var(--accent);background:rgba(0,229,255,0.08);box-shadow:0 0 12px rgba(0,229,255,0.2);}
+  .item-card.disabled{opacity:0.4;cursor:not-allowed;pointer-events:none;}
+  .item-emoji{font-size:28px;margin-bottom:6px;}
+  .item-name{font-size:11px;font-weight:700;color:var(--text);margin-bottom:6px;font-family:'Orbitron',monospace;}
+  .item-stats{display:flex;justify-content:center;gap:10px;font-size:11px;}
+  .item-weight{color:var(--accent2);}
+  .item-value{color:var(--accent);}
+
+  .result-panel{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:16px;}
+  .result-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+  .result-label{font-size:12px;color:var(--text-dim);}
+  .result-val{font-family:'Orbitron',monospace;font-size:16px;font-weight:900;}
+
+  .timer-display{text-align:center;font-family:'Orbitron',monospace;font-size:36px;font-weight:900;margin:8px 0;}
+  .timer-display.urgent{color:var(--accent2);animation:timerPulse 0.5s ease infinite alternate;}
+  @keyframes timerPulse{from{opacity:1}to{opacity:0.5}}
+
+  .score-pct{font-size:48px;font-weight:900;font-family:'Orbitron',monospace;text-align:center;margin:12px 0;}
+  .score-pct.perfect{color:var(--accent);}
+  .score-pct.good{color:var(--accent4);}
+  .score-pct.ok{color:var(--text-dim);}
+</style>
+</head>
+<body>
+<canvas id="confetti-canvas"></canvas>
+<div class="container">
+
+<header>
+  <div class="title">🎒 背包問題</div>
+  <div class="subtitle">0/1 Knapsack &nbsp;·&nbsp; Dynamic Programming &nbsp;·&nbsp; O(n·W)</div>
+</header>
+
+<div style="text-align:center;margin-bottom:20px">
+  <a href="../index.html" style="font-size:12px;color:var(--text-dim);text-decoration:none;letter-spacing:0.1em;text-transform:uppercase;padding:8px 14px;border:1px solid var(--border);border-radius:8px;transition:all 0.2s;display:inline-block;"
+    onmouseover="this.style.color='var(--accent)';this.style.borderColor='var(--accent)'"
+    onmouseout="this.style.color='var(--text-dim)';this.style.borderColor='var(--border)'">← 返回選單</a>
+</div>
+
+<div class="rules-block">
+  <div class="rules-title">📖 遊戲規則</div>
+  <div class="rules-body">
+    <div class="rules-item move">
+      <div class="ri-label">目標</div>
+      <div class="ri-text">選擇物品放入背包，<strong>不超過容量</strong>的前提下讓<strong>總價值最大</strong></div>
+    </div>
+    <div class="rules-item lose">
+      <div class="ri-label">限制</div>
+      <div class="ri-text">每件物品<strong>只能取一次</strong>（0/1 背包），超過容量無效</div>
+    </div>
+    <div class="rules-item tip">
+      <div class="ri-label">挑戰</div>
+      <div class="ri-text">你能找到最優解嗎？直覺和 DP 的答案一樣嗎？ 👇</div>
+    </div>
+  </div>
+</div>
+
+<!-- 模式切換 -->
+<div class="mode-switch">
+  <button class="mode-switch-btn active" id="btn-challenge" onclick="switchMode('challenge')">🎯 挑戰模式</button>
+  <button class="mode-switch-btn" id="btn-speed" onclick="switchMode('speed')">⏱️ 競速模式</button>
+</div>
+
+<!-- 設定 -->
+<div class="panel active" id="panel-setup">
+  <div class="panel-title">⚙️ 遊戲設定</div>
+  <div class="input-group"><label>物品數量</label>
+    <select id="ks-item-count">
+      <option value="6">6 件（入門）</option>
+      <option value="8" selected>8 件（經典）</option>
+      <option value="10">10 件</option>
+    </select></div>
+  <div class="input-group"><label>背包容量</label>
+    <select id="ks-capacity">
+      <option value="15">15（小）</option>
+      <option value="20" selected>20（中）</option>
+      <option value="30">30（大）</option>
+    </select></div>
+  <div id="speed-time-group" style="display:none;">
+    <div class="input-group"><label>競速時限</label>
+      <select id="ks-time-limit">
+        <option value="30">30 秒</option>
+        <option value="60" selected>60 秒</option>
+        <option value="90">90 秒</option>
+      </select></div>
+  </div>
+  <div class="btn-row">
+    <button class="btn btn-primary btn-lg" onclick="ksBegin()">🚀 開始</button>
+  </div>
+</div>
+
+<!-- 遊戲 -->
+<div class="panel" id="panel-game">
+  <div class="panel-title" id="ks-game-label">🎒 背包問題</div>
+
+  <!-- 競速計時器 -->
+  <div id="ks-timer-area" style="display:none;">
+    <div class="timer-display" id="ks-timer">60</div>
+    <div style="font-size:11px;color:var(--text-dim);text-align:center;margin-bottom:12px;">剩餘時間</div>
+  </div>
+
+  <!-- 容量顯示 -->
+  <div class="capacity-bar">
+    <div class="cap-row">
+      <span class="cap-label">背包容量</span>
+      <span class="cap-val" id="ks-cap-display">0 / 20</span>
+    </div>
+    <div class="cap-track"><div class="cap-fill" id="ks-cap-fill" style="width:0%"></div></div>
+  </div>
+
+  <!-- 當前得分 -->
+  <div class="result-panel">
+    <div class="result-row">
+      <span class="result-label">已選總重量</span>
+      <span class="result-val" id="ks-cur-weight">0</span>
+    </div>
+    <div class="result-row">
+      <span class="result-label">已選總價值</span>
+      <span class="result-val" style="color:var(--accent)" id="ks-cur-value">0</span>
+    </div>
+  </div>
+
+  <!-- 物品 -->
+  <div style="font-size:12px;color:var(--text-dim);margin-bottom:8px;">點擊物品選取/取消（超過容量時無法選取）</div>
+  <div class="items-grid" id="ks-items"></div>
+
+  <!-- 提交按鈕 -->
+  <div class="btn-row" id="ks-submit-area">
+    <button class="btn btn-primary" onclick="ksSubmit()">✅ 提交答案</button>
+    <button class="btn btn-sm" onclick="ksClear()">🗑️ 清空</button>
+    <button class="btn btn-sm" onclick="goHome()">⚙️ 重設</button>
+  </div>
+
+  <!-- 結果 -->
+  <div id="ks-result-area" style="display:none;">
+    <div class="score-pct" id="ks-score-pct">100%</div>
+    <div class="result-panel">
+      <div class="result-row">
+        <span class="result-label">你的答案</span>
+        <span class="result-val" id="ks-your-val">—</span>
+      </div>
+      <div class="result-row">
+        <span class="result-label">DP 最優解</span>
+        <span class="result-val" style="color:var(--accent)" id="ks-opt-val">—</span>
+      </div>
+      <div class="result-row" id="ks-opt-items-row">
+        <span class="result-label">最優選法</span>
+        <span style="font-size:12px;color:var(--text-dim)" id="ks-opt-items">—</span>
+      </div>
+    </div>
+    <div style="font-size:13px;color:var(--text-dim);text-align:center;margin-bottom:12px;" id="ks-result-msg"></div>
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="ksBegin()">🔄 再來一局</button>
+      <button class="btn btn-sm" onclick="goHome()">⚙️ 重設</button>
+    </div>
+  </div>
+</div>
+
+<!-- 演算法解析連結 -->
+<div style="text-align:center;margin:24px 0 8px;">
+  <a href="knapsack-algo.html"
+    style="display:inline-flex;align-items:center;gap:10px;padding:14px 28px;
+      background:var(--surface);border:1px solid var(--border);border-radius:12px;
+      text-decoration:none;color:var(--text);font-size:14px;transition:all 0.2s;letter-spacing:0.03em;"
+    onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'"
+    onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text)'">
+    🧠 <strong>看演算法解析</strong> &nbsp;— DP 填表 · O(n·W) · 回溯最優解
+  </a>
+</div>
+
+</div>
+
+<script src="../shared/firebase.js"></script>
+<script src="../shared/ui.js"></script>
+<script>
+const ITEMS_POOL=[
+  {name:'寶劍',emoji:'⚔️',w:5,v:10},
+  {name:'盾牌',emoji:'🛡️',w:4,v:8},
+  {name:'藥水',emoji:'🧪',w:1,v:3},
+  {name:'金幣',emoji:'🪙',w:2,v:5},
+  {name:'魔法書',emoji:'📖',w:3,v:7},
+  {name:'弓箭',emoji:'🏹',w:4,v:9},
+  {name:'寶石',emoji:'💎',w:2,v:6},
+  {name:'頭盔',emoji:'⛑️',w:6,v:11},
+  {name:'披風',emoji:'🧣',w:3,v:6},
+  {name:'燈籠',emoji:'🏮',w:1,v:2},
+  {name:'地圖',emoji:'🗺️',w:2,v:4},
+  {name:'火炬',emoji:'🔦',w:1,v:3},
+];
+
+const KS={
+  mode:'challenge',
+  items:[],capacity:20,selected:[],
+  optVal:0,optItems:[],
+  timerLimit:60,timerLeft:60,timerInterval:null,
+  gameOver:false
+};
+
+function switchMode(m){
+  KS.mode=m;
+  document.getElementById('btn-challenge').classList.toggle('active',m==='challenge');
+  document.getElementById('btn-speed').classList.toggle('active',m==='speed');
+  document.getElementById('speed-time-group').style.display=m==='speed'?'':'none';
+}
+
+function goHome(){
+  clearInterval(KS.timerInterval);
+  showPanel('panel-setup');
+}
+
+function ksBegin(){
+  clearInterval(KS.timerInterval);
+  const n=+document.getElementById('ks-item-count').value;
+  KS.capacity=+document.getElementById('ks-capacity').value;
+  KS.timerLimit=+document.getElementById('ks-time-limit').value||60;
+
+  // 隨機選n件物品，確保有解
+  const shuffled=[...ITEMS_POOL].sort(()=>Math.random()-0.5);
+  KS.items=shuffled.slice(0,n).map((it,i)=>({...it,id:i}));
+  KS.selected=new Array(n).fill(false);
+  KS.gameOver=false;
+
+  // 算最優解
+  const {val,which}=ksSolveDP(KS.items,KS.capacity);
+  KS.optVal=val;KS.optItems=which;
+
+  document.getElementById('ks-game-label').textContent=`🎒 背包問題（容量 ${KS.capacity}）`;
+  document.getElementById('ks-timer-area').style.display=KS.mode==='speed'?'':'none';
+  document.getElementById('ks-submit-area').style.display='flex';
+  document.getElementById('ks-result-area').style.display='none';
+
+  ksRenderItems();ksUpdateCapacity();
+
+  if(KS.mode==='speed'){
+    KS.timerLeft=KS.timerLimit;
+    ksUpdateTimer();
+    KS.timerInterval=setInterval(()=>{
+      KS.timerLeft--;ksUpdateTimer();
+      if(KS.timerLeft<=0){clearInterval(KS.timerInterval);ksSubmit();}
+    },1000);
+  }
+
+  showPanel('panel-game');
+}
+
+function ksSolveDP(items,W){
+  const n=items.length;
+  const dp=Array.from({length:n+1},()=>Array(W+1).fill(0));
+  for(let i=1;i<=n;i++){
+    const {w,v}=items[i-1];
+    for(let c=0;c<=W;c++){
+      dp[i][c]=dp[i-1][c];
+      if(c>=w&&dp[i-1][c-w]+v>dp[i][c])dp[i][c]=dp[i-1][c-w]+v;
+    }
+  }
+  // 回溯找選了哪些
+  const which=[];let c=W;
+  for(let i=n;i>=1;i--){
+    if(dp[i][c]!==dp[i-1][c]){which.push(i-1);c-=items[i-1].w;}
+  }
+  return{val:dp[n][W],which};
+}
+
+function ksRenderItems(){
+  const grid=document.getElementById('ks-items');grid.innerHTML='';
+  const curWeight=KS.items.reduce((s,it,i)=>s+(KS.selected[i]?it.w:0),0);
+  KS.items.forEach((it,i)=>{
+    const card=document.createElement('div');
+    card.className='item-card'+(KS.selected[i]?' selected':'');
+    const wouldOver=!KS.selected[i]&&curWeight+it.w>KS.capacity;
+    if(wouldOver)card.classList.add('disabled');
+    card.innerHTML=`<div class="item-emoji">${it.emoji}</div>
+      <div class="item-name">${it.name}</div>
+      <div class="item-stats">
+        <span class="item-weight">⚖️ ${it.w}</span>
+        <span class="item-value">💰 ${it.v}</span>
+      </div>`;
+    if(!wouldOver){card.onclick=()=>{KS.selected[i]=!KS.selected[i];ksRenderItems();ksUpdateCapacity();};}
+    grid.appendChild(card);
+  });
+}
+
+function ksUpdateCapacity(){
+  const w=KS.items.reduce((s,it,i)=>s+(KS.selected[i]?it.w:0),0);
+  const v=KS.items.reduce((s,it,i)=>s+(KS.selected[i]?it.v:0),0);
+  const pct=Math.min(w/KS.capacity*100,100);
+  const over=w>KS.capacity;
+  document.getElementById('ks-cap-display').textContent=`${w} / ${KS.capacity}`;
+  document.getElementById('ks-cap-display').className='cap-val '+(over?'over':'ok');
+  document.getElementById('ks-cap-fill').style.width=pct+'%';
+  document.getElementById('ks-cap-fill').className='cap-fill'+(over?' over':'');
+  document.getElementById('ks-cur-weight').textContent=w;
+  document.getElementById('ks-cur-value').textContent=v;
+}
+
+function ksUpdateTimer(){
+  const el=document.getElementById('ks-timer');
+  el.textContent=KS.timerLeft;
+  el.className='timer-display'+(KS.timerLeft<=10?' urgent':'');
+}
+
+function ksClear(){
+  KS.selected=new Array(KS.items.length).fill(false);
+  ksRenderItems();ksUpdateCapacity();
+}
+
+function ksSubmit(){
+  clearInterval(KS.timerInterval);
+  const yourVal=KS.items.reduce((s,it,i)=>s+(KS.selected[i]?it.v:0),0);
+  const pct=KS.optVal>0?Math.round(yourVal/KS.optVal*100):100;
+
+  document.getElementById('ks-submit-area').style.display='none';
+  document.getElementById('ks-result-area').style.display='block';
+  document.getElementById('ks-your-val').textContent=yourVal;
+  document.getElementById('ks-opt-val').textContent=KS.optVal;
+  document.getElementById('ks-opt-items').textContent=KS.optItems.map(i=>KS.items[i].emoji+KS.items[i].name).join('、');
+
+  const pctEl=document.getElementById('ks-score-pct');
+  pctEl.textContent=pct+'%';
+  pctEl.className='score-pct '+(pct===100?'perfect':pct>=80?'good':'ok');
+
+  let msg='';
+  if(pct===100)msg='🎉 完美！你找到了最優解，和 DP 一樣！';
+  else if(pct>=80)msg='👍 不錯！你很接近最優解了。';
+  else if(pct>=60)msg='🤔 還有改進空間，看看 DP 怎麼思考。';
+  else msg='💡 直覺不夠用這次，試試看學 DP 的系統化方法？';
+  document.getElementById('ks-result-msg').textContent=msg;
+
+  // 高亮最優解
+  const grid=document.getElementById('ks-items');
+  grid.querySelectorAll('.item-card').forEach((card,i)=>{
+    card.classList.remove('selected');
+    if(KS.optItems.includes(i))card.classList.add('selected');
+    card.style.pointerEvents='none';
+  });
+}
+</script>
+</body>
+</html>
