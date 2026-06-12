@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Connect Four 演算法解析 — 演算法互動遊戲集</title>
+<link rel="stylesheet" href="../shared/style.css">
+</head>
+<body>
+<div class="container">
+
+<header>
+  <div class="title">🧠 Connect Four 演算法解析</div>
+  <div class="subtitle">Minimax · Alpha-Beta Pruning · 啟發式評估函數</div>
+</header>
+
+<div style="text-align:center;margin-bottom:20px;display:flex;justify-content:center;gap:12px;flex-wrap:wrap;">
+  <a href="connect4.html" style="font-size:12px;color:var(--text-dim);text-decoration:none;letter-spacing:0.1em;text-transform:uppercase;padding:8px 14px;border:1px solid var(--border);border-radius:8px;transition:all 0.2s;display:inline-block;"
+    onmouseover="this.style.color='var(--accent)';this.style.borderColor='var(--accent)'"
+    onmouseout="this.style.color='var(--text-dim)';this.style.borderColor='var(--border)'">🔴 回遊戲</a>
+  <a href="../index.html" style="font-size:12px;color:var(--text-dim);text-decoration:none;letter-spacing:0.1em;text-transform:uppercase;padding:8px 14px;border:1px solid var(--border);border-radius:8px;transition:all 0.2s;display:inline-block;"
+    onmouseover="this.style.color='var(--accent)';this.style.borderColor='var(--accent)'"
+    onmouseout="this.style.color='var(--text-dim)';this.style.borderColor='var(--border)'">← 返回選單</a>
+</div>
+
+<!-- 目錄 -->
+<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:28px;">
+  <div style="font-size:11px;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-dim);margin-bottom:12px;">本頁內容</div>
+  <div style="display:flex;flex-direction:column;gap:8px;">
+    <a href="#step1" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Step 1 · 和 Chomp 的差異：為什麼需要深度限制</a>
+    <a href="#step2" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Step 2 · Minimax 博弈樹</a>
+    <a href="#step3" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Step 3 · Alpha-Beta Pruning</a>
+    <a href="#step4" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Step 4 · 啟發式評估函數</div></a>
+    <a href="#step5" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Step 5 · 走法排序：讓剪枝更有效</a>
+    <a href="#step6" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Step 6 · Connect Four 完全解（1988年）</a>
+    <a href="#leetcode" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">LeetCode 相關題目</a>
+  </div>
+</div>
+
+<!-- Step 1 -->
+<div id="step1" class="algo-section">
+  <div class="acc-step-label">Step 1 · 和 Chomp 的差異：為什麼需要深度限制</div>
+  <div class="acc-p">
+    Chomp 和 Connect Four 都用 Minimax，但有一個關鍵不同：<br><br>
+    <strong>Chomp</strong>：狀態數有限，可以搜尋到底（終局），得到精確答案。<br>
+    <strong>Connect Four</strong>：7×6 棋盤有超過 4 兆種可能局面，<strong>不可能搜尋到底</strong>。<br><br>
+    解法是加入<strong>深度限制（depth limit）</strong>：搜尋到指定深度後，用<strong>評估函數</strong>估計局面好壞，而非繼續搜尋。
+  </div>
+  <div style="overflow-x:auto;margin:16px 0;">
+    <table style="width:100%;border-collapse:collapse;font-size:13px;">
+      <thead>
+        <tr style="border-bottom:1px solid var(--border);">
+          <th style="padding:10px;text-align:left;color:var(--text-dim);font-weight:500;">搜尋深度</th>
+          <th style="padding:10px;text-align:left;color:var(--text-dim);font-weight:500;">節點數（約）</th>
+          <th style="padding:10px;text-align:left;color:var(--text-dim);font-weight:500;">時間（JS）</th>
+          <th style="padding:10px;text-align:left;color:var(--text-dim);font-weight:500;">強度</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:10px;">3</td><td style="padding:10px;">7³ ≈ 343</td>
+          <td style="padding:10px;">&lt;1ms</td><td style="padding:10px;color:var(--text-dim);">簡單</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:10px;">5</td><td style="padding:10px;">7⁵ ≈ 16,807</td>
+          <td style="padding:10px;">&lt;10ms</td><td style="padding:10px;color:var(--accent);">普通</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:10px;">7</td><td style="padding:10px;">7⁷ ≈ 823,543</td>
+          <td style="padding:10px;">~100ms</td><td style="padding:10px;color:var(--accent2);">困難</td>
+        </tr>
+        <tr>
+          <td style="padding:10px;">完整搜尋</td><td style="padding:10px;">&gt;4兆</td>
+          <td style="padding:10px;">幾小時</td><td style="padding:10px;color:var(--accent2);">完美</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="acc-insight">
+    <span class="ins-label">💡 有 Alpha-Beta 後</span>
+    Alpha-Beta 剪枝可以把節點數降到約 7^(d/2)，深度 7 只需約 2,800 個節點，速度快很多。
+  </div>
+</div>
+
+<!-- Step 2 -->
+<div id="step2" class="algo-section">
+  <div class="acc-step-label">Step 2 · Minimax 博弈樹</div>
+  <div class="acc-p">
+    Minimax 的核心：把遊戲展開成樹，兩個玩家輪流選擇：<br>
+    ・<strong>Max 層（我的回合）</strong>：選分數最高的走法<br>
+    ・<strong>Min 層（對手的回合）</strong>：選分數最低的走法（對對手最有利）
+  </div>
+  <div class="acc-code">
+    <span class="lang-tag">Python</span>
+    <pre><span class="kw">def</span> <span class="fn">minimax</span>(board, depth, maximizing):
+    <span class="cmt"># 終止條件</span>
+    <span class="kw">if</span> <span class="fn">is_win</span>(board, CPU):   <span class="kw">return</span> +<span class="num">100000</span>
+    <span class="kw">if</span> <span class="fn">is_win</span>(board, HUMAN): <span class="kw">return</span> -<span class="num">100000</span>
+    <span class="kw">if</span> <span class="fn">is_full</span>(board):        <span class="kw">return</span> <span class="num">0</span>
+    <span class="kw">if</span> depth == <span class="num">0</span>:           <span class="kw">return</span> <span class="fn">evaluate</span>(board)  <span class="cmt"># 深度到了，估分</span>
+
+    <span class="kw">if</span> maximizing:  <span class="cmt"># 我的回合，找最大分</span>
+        best = -<span class="fn">float</span>(<span class="str">'inf'</span>)
+        <span class="kw">for</span> col <span class="kw">in</span> <span class="fn">valid_cols</span>(board):
+            <span class="fn">drop</span>(board, col, CPU)
+            best = <span class="fn">max</span>(best, <span class="fn">minimax</span>(board, depth-<span class="num">1</span>, False))
+            <span class="fn">undo</span>(board, col)
+        <span class="kw">return</span> best
+    <span class="kw">else</span>:           <span class="cmt"># 對手回合，找最小分</span>
+        best = +<span class="fn">float</span>(<span class="str">'inf'</span>)
+        <span class="kw">for</span> col <span class="kw">in</span> <span class="fn">valid_cols</span>(board):
+            <span class="fn">drop</span>(board, col, HUMAN)
+            best = <span class="fn">min</span>(best, <span class="fn">minimax</span>(board, depth-<span class="num">1</span>, True))
+            <span class="fn">undo</span>(board, col)
+        <span class="kw">return</span> best</pre>
+  </div>
+</div>
+
+<!-- Step 3 -->
+<div id="step3" class="algo-section">
+  <div class="acc-step-label">Step 3 · Alpha-Beta Pruning</div>
+  <div class="acc-p">
+    Minimax 要搜尋所有分支，Alpha-Beta 加入兩個界限來跳過「不可能被選到」的分支：<br><br>
+    <strong>α（alpha）</strong>：Max 層目前找到的最佳分數（我能保證的下限）<br>
+    <strong>β（beta）</strong>：Min 層目前找到的最佳分數（對手允許的上限）<br><br>
+    當 <code>α ≥ β</code>，代表這個分支的結果對任一方都不會被選到，直接剪掉。
+  </div>
+  <div class="acc-code">
+    <span class="lang-tag">Python</span>
+    <pre><span class="kw">def</span> <span class="fn">alpha_beta</span>(board, depth, alpha, beta, maximizing):
+    <span class="kw">if</span> <span class="fn">is_win</span>(board, CPU):   <span class="kw">return</span> +<span class="num">100000</span> + depth  <span class="cmt"># 越快贏分越高</span>
+    <span class="kw">if</span> <span class="fn">is_win</span>(board, HUMAN): <span class="kw">return</span> -<span class="num">100000</span> - depth
+    <span class="kw">if</span> <span class="fn">is_full</span>(board):        <span class="kw">return</span> <span class="num">0</span>
+    <span class="kw">if</span> depth == <span class="num">0</span>:           <span class="kw">return</span> <span class="fn">evaluate</span>(board)
+
+    <span class="kw">if</span> maximizing:
+        value = -<span class="fn">float</span>(<span class="str">'inf'</span>)
+        <span class="kw">for</span> col <span class="kw">in</span> <span class="fn">valid_cols</span>(board):
+            <span class="fn">drop</span>(board, col, CPU)
+            value = <span class="fn">max</span>(value, <span class="fn">alpha_beta</span>(board, depth-<span class="num">1</span>, alpha, beta, False))
+            <span class="fn">undo</span>(board, col)
+            alpha = <span class="fn">max</span>(alpha, value)
+            <span class="kw">if</span> alpha >= beta: <span class="kw">break</span>  <span class="cmt"># β 剪枝：對手不會讓我走到這</span>
+        <span class="kw">return</span> value
+    <span class="kw">else</span>:
+        value = +<span class="fn">float</span>(<span class="str">'inf'</span>)
+        <span class="kw">for</span> col <span class="kw">in</span> <span class="fn">valid_cols</span>(board):
+            <span class="fn">drop</span>(board, col, HUMAN)
+            value = <span class="fn">min</span>(value, <span class="fn">alpha_beta</span>(board, depth-<span class="num">1</span>, alpha, beta, True))
+            <span class="fn">undo</span>(board, col)
+            beta = <span class="fn">min</span>(beta, value)
+            <span class="kw">if</span> alpha >= beta: <span class="kw">break</span>  <span class="cmt"># α 剪枝：我已有更好選擇</span>
+        <span class="kw">return</span> value</pre>
+  </div>
+  <div class="acc-insight">
+    <span class="ins-label">📐 剪枝效果</span>
+    沒有排序：最差 O(b^d)，最好 O(b^(d/2))<br>
+    有好的走法排序：接近最好情況 O(b^(d/2))<br>
+    也就是說，好的排序讓你用同樣時間搜尋<strong>雙倍深度</strong>。
+  </div>
+</div>
+
+<!-- Step 4 -->
+<div id="step4" class="algo-section">
+  <div class="acc-step-label">Step 4 · 啟發式評估函數</div>
+  <div class="acc-p">
+    深度到了不能再搜尋時，用評估函數打分。這裡用的是<strong>「四格視窗掃描」</strong>：<br>
+    把棋盤上每一個長度 4 的橫、縱、斜視窗都計算分數，加總起來。
+  </div>
+  <div class="acc-code">
+    <span class="lang-tag">Python</span>
+    <pre><span class="kw">def</span> <span class="fn">score_window</span>(window, cpu, human):
+    cpu_count   = window.count(cpu)
+    human_count = window.count(human)
+    empty       = window.count(<span class="num">0</span>)
+
+    <span class="kw">if</span> cpu_count == <span class="num">4</span>:             <span class="kw">return</span> +<span class="num">100</span>   <span class="cmt"># 連四（終局已處理，這裡備用）</span>
+    <span class="kw">if</span> cpu_count == <span class="num">3</span> <span class="kw">and</span> empty == <span class="num">1</span>: <span class="kw">return</span> +<span class="num">5</span>   <span class="cmt"># 三子+空格，威脅連四</span>
+    <span class="kw">if</span> cpu_count == <span class="num">2</span> <span class="kw">and</span> empty == <span class="num">2</span>: <span class="kw">return</span> +<span class="num">2</span>   <span class="cmt"># 兩子+兩空格，潛力</span>
+    <span class="kw">if</span> human_count == <span class="num">3</span> <span class="kw">and</span> empty == <span class="num">1</span>: <span class="kw">return</span> -<span class="num">4</span>  <span class="cmt"># 對手三子，緊急防守</span>
+    <span class="kw">return</span> <span class="num">0</span>
+
+<span class="kw">def</span> <span class="fn">evaluate</span>(board, cpu):
+    score = <span class="num">0</span>
+    center = len(board[<span class="num">0</span>]) // <span class="num">2</span>
+
+    <span class="cmt"># 中間列加權（中心控制更有利）</span>
+    <span class="kw">for</span> row <span class="kw">in</span> board:
+        <span class="kw">if</span> row[center] == cpu: score += <span class="num">3</span>
+
+    <span class="cmt"># 掃描所有四格視窗</span>
+    <span class="kw">for</span> window <span class="kw">in</span> <span class="fn">all_windows</span>(board):
+        score += <span class="fn">score_window</span>(window, cpu, human)
+
+    <span class="kw">return</span> score</pre>
+  </div>
+  <div class="acc-insight">
+    <span class="ins-label">⚠️ 評估函數的限制</span>
+    評估函數是「猜測」，不是精確值。<br>
+    設計不好的評估函數可能讓電腦走出看似有利但實際上的敗著。<br>
+    改進方向：加入更多模式（開放四、雙威脅）、或用機器學習訓練評估函數。
+  </div>
+</div>
+
+<!-- Step 5 -->
+<div id="step5" class="algo-section">
+  <div class="acc-step-label">Step 5 · 走法排序：讓剪枝更有效</div>
+  <div class="acc-p">
+    Alpha-Beta 的效果取決於走法的順序：<strong>越好的走法越先搜尋，剪掉的分支越多。</strong><br><br>
+    Connect Four 的最簡單排序技巧：<strong>從中間列開始搜尋</strong>。<br>
+    中間列通常是最強的走法（同時威脅多個方向），先搜尋它能更快建立好的 α/β 界限。
+  </div>
+  <div class="acc-code">
+    <span class="lang-tag">Python</span>
+    <pre><span class="kw">def</span> <span class="fn">valid_cols_ordered</span>(board):
+    cols = <span class="fn">valid_cols</span>(board)
+    center = len(board[<span class="num">0</span>]) // <span class="num">2</span>
+    <span class="cmt"># 按距離中心的距離排序（中心優先）</span>
+    <span class="kw">return</span> <span class="fn">sorted</span>(cols, key=<span class="kw">lambda</span> c: <span class="fn">abs</span>(c - center))
+
+<span class="cmt"># 7列棋盤中心=3，排序結果：[3, 2, 4, 1, 5, 0, 6]</span>
+<span class="cmt"># 進階技巧：可以先快速搜尋淺層，用結果排序再深搜（Iterative Deepening）</span></pre>
+  </div>
+</div>
+
+<!-- Step 6 -->
+<div id="step6" class="algo-section">
+  <div class="acc-step-label">Step 6 · Connect Four 完全解（1988年）</div>
+  <div class="acc-p">
+    1988 年，James Dow Allen 和 Victor Allis 各自獨立證明了 Connect Four 的完全解：
+  </div>
+  <div class="acc-insight" style="margin-bottom:16px;">
+    <span class="ins-label">🏆 完全解結果</span>
+    標準 7×6 棋盤：<strong>先手必勝</strong>，最優走法是<strong>投入第 4 列（中間列）</strong>
+  </div>
+  <div class="acc-p">
+    他們用的方法是「威脅序列分析」（Threat Combination），不是暴力搜尋：<br>
+    分析棋盤上所有潛在的四子連線威脅，找出能同時製造無法同時防守的雙重威脅的走法。<br><br>
+    這和我們遊戲中的 Alpha-Beta 不同——完全解是精確的，Alpha-Beta 在深度不足時只是近似。
+  </div>
+  <div style="overflow-x:auto;margin:16px 0;">
+    <table style="width:100%;border-collapse:collapse;font-size:13px;">
+      <thead>
+        <tr style="border-bottom:1px solid var(--border);">
+          <th style="padding:10px;text-align:left;color:var(--text-dim);font-weight:500;">棋盤</th>
+          <th style="padding:10px;text-align:left;color:var(--text-dim);font-weight:500;">結果</th>
+          <th style="padding:10px;text-align:left;color:var(--text-dim);font-weight:500;">先手最優第一步</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:10px;">7×6（標準）</td>
+          <td style="padding:10px;color:var(--accent);">先手必勝</td>
+          <td style="padding:10px;">第 4 列</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:10px;">6×5</td>
+          <td style="padding:10px;color:var(--accent2);">後手必勝</td>
+          <td style="padding:10px;">—</td>
+        </tr>
+        <tr>
+          <td style="padding:10px;">8×7</td>
+          <td style="padding:10px;color:var(--accent);">先手必勝</td>
+          <td style="padding:10px;">第 4 或 5 列</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- LeetCode -->
+<div id="leetcode" class="algo-section">
+  <div class="acc-step-label">LeetCode 相關題目</div>
+  <div style="display:flex;flex-direction:column;gap:10px;margin-top:12px;">
+    <a href="https://leetcode.com/problems/predict-the-winner/" target="_blank" class="lc-card">
+      <span class="lc-num">#486</span><span class="lc-title">Predict the Winner</span>
+      <span class="lc-tag medium">Medium</span>
+      <span class="lc-desc">Minimax 入門，先理解這個再看 Alpha-Beta</span>
+    </a>
+    <a href="https://leetcode.com/problems/guess-number-higher-or-lower-ii/" target="_blank" class="lc-card">
+      <span class="lc-num">#375</span><span class="lc-title">Guess Number Higher or Lower II</span>
+      <span class="lc-tag medium">Medium</span>
+      <span class="lc-desc">Minimax DP，最小化最壞情況</span>
+    </a>
+    <a href="https://leetcode.com/problems/cat-and-mouse/" target="_blank" class="lc-card">
+      <span class="lc-num">#913</span><span class="lc-title">Cat and Mouse</span>
+      <span class="lc-tag hard">Hard</span>
+      <span class="lc-desc">圖上博弈，BFS + Minimax，進階挑戰</span>
+    </a>
+    <a href="https://leetcode.com/problems/cat-and-mouse-ii/" target="_blank" class="lc-card">
+      <span class="lc-num">#1728</span><span class="lc-title">Cat and Mouse II</span>
+      <span class="lc-tag hard">Hard</span>
+      <span class="lc-desc">帶速度限制的博弈，DP + Minimax</span>
+    </a>
+    <a href="https://leetcode.com/problems/stone-game-vii/" target="_blank" class="lc-card">
+      <span class="lc-num">#1690</span><span class="lc-title">Stone Game VII</span>
+      <span class="lc-tag medium">Medium</span>
+      <span class="lc-desc">Minimax + DP 優化</span>
+    </a>
+  </div>
+</div>
+
+<!-- 導航 -->
+<div style="display:flex;justify-content:center;gap:12px;margin:32px 0 8px;flex-wrap:wrap;">
+  <a href="chomp-algo.html" style="display:inline-flex;align-items:center;gap:8px;padding:12px 20px;background:var(--surface);border:1px solid var(--border);border-radius:12px;text-decoration:none;color:var(--text);font-size:13px;transition:all 0.2s;"
+    onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'"
+    onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text)'">← 🍫 Chomp 解析</a>
+  <a href="../index.html" style="display:inline-flex;align-items:center;gap:8px;padding:12px 20px;background:var(--surface);border:1px solid var(--border);border-radius:12px;text-decoration:none;color:var(--text);font-size:13px;transition:all 0.2s;"
+    onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'"
+    onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text)'">回選單 →</a>
+</div>
+
+</div>
+
+<style>
+.algo-section{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:24px;margin-bottom:20px;}
+.lc-card{display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--bg);border:1px solid var(--border);border-radius:10px;text-decoration:none;color:var(--text);transition:border-color 0.2s;flex-wrap:wrap;}
+.lc-card:hover{border-color:var(--accent);}
+.lc-num{font-family:'Orbitron',monospace;font-size:11px;color:var(--text-dim);min-width:44px;}
+.lc-title{font-weight:600;font-size:14px;flex:1;}
+.lc-tag{font-size:10px;padding:2px 8px;border-radius:20px;font-weight:700;letter-spacing:0.05em;}
+.lc-tag.easy{background:rgba(0,200,100,0.15);color:#00c864;}
+.lc-tag.medium{background:rgba(255,180,0,0.15);color:#ffb400;}
+.lc-tag.hard{background:rgba(255,60,60,0.15);color:#ff3c3c;}
+.lc-desc{font-size:12px;color:var(--text-dim);width:100%;margin-top:2px;}
+.acc-step-label{font-family:'Orbitron',monospace;font-size:11px;letter-spacing:0.15em;text-transform:uppercase;color:var(--accent);margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid var(--border);}
+</style>
+</body>
+</html>
