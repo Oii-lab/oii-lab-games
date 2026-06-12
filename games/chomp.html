@@ -102,53 +102,16 @@
   </div>
 </div>
 
-<!-- 演算法解析 -->
-<div class="algo-accordion">
-  <button class="algo-accordion-trigger" onclick="toggleAlgo(this)">
-    <span>🧠 演算法解析 — Minimax + Memoization</span>
-    <span class="acc-arrow">▼</span>
-  </button>
-  <div class="algo-accordion-body">
-    <div class="acc-h2">為什麼用 Minimax？</div>
-    <div class="acc-p">
-      Chomp 沒有已知的 O(1) 公式（這是數學界的開放問題！），
-      所以電腦必須<strong>搜尋博弈樹</strong>：遞迴嘗試所有可能走法，找到必勝的那一步。
-    </div>
-    <div class="acc-code">
-      <span class="lang-tag">Python</span>
-      <pre><span class="kw">from</span> functools <span class="kw">import</span> lru_cache
-
-@lru_cache(maxsize=None)
-<span class="kw">def</span> <span class="fn">is_losing</span>(board: frozenset) -> bool:
-    <span class="cmt"># 只剩毒格 → 必須吃它 → 必輸</span>
-    non_poison = {(r,c) <span class="kw">for</span> r,c <span class="kw">in</span> board <span class="kw">if</span> (r,c) != (<span class="num">0</span>,<span class="num">0</span>)}
-    <span class="kw">if not</span> non_poison: <span class="kw">return</span> True
-
-    <span class="kw">for</span> (r, c) <span class="kw">in</span> non_poison:
-        <span class="cmt"># 吃掉 (r,c) 及右上方</span>
-        after = frozenset(
-            (rr, cc) <span class="kw">for</span> rr, cc <span class="kw">in</span> board
-            <span class="kw">if not</span> (rr >= r <span class="kw">and</span> cc >= c)
-        )
-        <span class="kw">if</span> <span class="fn">is_losing</span>(after):
-            <span class="kw">return</span> False  <span class="cmt"># 找到讓對手必輸的走法 → 我贏</span>
-
-    <span class="kw">return</span> True  <span class="cmt"># 所有走法都讓對手贏 → 我必輸</span></pre>
-    </div>
-    <div class="acc-insight">
-      <span class="ins-label">🔬 記憶化為什麼關鍵</span>
-      不同的走法序列可能產生<strong>相同的棋盤狀態</strong>。
-      用 <code>@lru_cache</code> 把算過的狀態存起來，
-      可以讓時間從 <strong>O(moves!)</strong> 降到 <strong>O(唯一狀態數 × 合法移動數)</strong>。
-    </div>
-    <div class="acc-insight">
-      <span class="ins-label">🤯 這個遊戲的特殊地位</span>
-      數學家已用 Zermelo 定理證明<strong>先手必勝</strong>，
-      但除了極少數特殊棋盤大小，<strong>沒有人知道具體策略</strong>——
-      困難模式的電腦在大棋盤上也可能走錯，因為這個問題連數學家都還沒解決。
-    </div>
-    <a href="../algo.html#minimax" class="acc-more" target="_blank">→ 完整解析（含 Alpha-Beta Pruning）</a>
-  </div>
+<!-- 演算法解析連結 -->
+<div style="text-align:center;margin:24px 0 8px;">
+  <a href="chomp-algo.html"
+    style="display:inline-flex;align-items:center;gap:10px;padding:14px 28px;
+      background:var(--surface);border:1px solid var(--border);border-radius:12px;
+      text-decoration:none;color:var(--text);font-size:14px;transition:all 0.2s;letter-spacing:0.03em;"
+    onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'"
+    onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text)'">
+    🧠 <strong>看演算法解析</strong> &nbsp;— Minimax · Memoization · 為什麼這是開放問題
+  </a>
 </div>
 
 </div>
@@ -178,7 +141,6 @@
 <script src="../shared/firebase.js"></script>
 <script src="../shared/ui.js"></script>
 <script>
-function toggleAlgo(btn){btn.classList.toggle('open');btn.nextElementSibling.classList.toggle('open');}
 function goHome(){document.getElementById('result-overlay').classList.remove('show');stopPolling();if(CUR.roomCode){cleanupRoom(CUR.roomCode);CUR.roomCode=null;}document.getElementById('chcreate-s1').classList.add('active');document.getElementById('chcreate-s2').classList.remove('active');CUR.game=null;showPanel('panel-setup');}
 function playAgain(){document.getElementById('result-overlay').classList.remove('show');stopPolling();if(CUR.roomCode){cleanupRoom(CUR.roomCode);CUR.roomCode=null;}if(CUR.lastSettings)_chompStart(CUR.lastSettings);else goHome();}
 const CH={rows:4,cols:5,board:null,currentPlayer:1,p1Name:'玩家',p2Name:'電腦',mode:null,myPlayer:1,cpuDiff:'hard',roomCode:null,lastSeen:0,gameOver:false};
@@ -198,7 +160,17 @@ function _chompStart(s){
 function _chompInitUI(){document.getElementById('ch-p1-name').textContent=CH.p1Name;document.getElementById('ch-p2-name').textContent=CH.p2Name;document.getElementById('ch-log').innerHTML='';addLog('ch-log','sys',`開始！點擊格子吃巧克力。左下角☠️是毒格——被迫吃毒格者輸！`);chRenderBoard();chUpdateStatus();}
 function chRenderBoard(){
   const board=document.getElementById('ch-board');board.innerHTML='';
-  for(let r=CH.rows-1;r>=0;r--){const row=document.createElement('div');row.className='chomp-row';for(let c=0;c<CH.cols;c++){const cell=document.createElement('div'),alive=CH.board[r][c];if(r===0&&c===0){cell.className=alive?'choc poison':'choc eaten';cell.textContent=alive?'☠️':'';}else{cell.className=alive?'choc alive':'choc eaten';cell.textContent=alive?'🟫':'';}if(alive){const cr=r,cc=c;cell.onclick=()=>chPlayerClick(cr,cc);}row.appendChild(cell);}board.appendChild(row);}
+  for(let r=CH.rows-1;r>=0;r--){
+    const row=document.createElement('div');row.className='chomp-row';
+    for(let c=0;c<CH.cols;c++){
+      const cell=document.createElement('div'),alive=CH.board[r][c];
+      if(r===0&&c===0){cell.className=alive?'choc poison':'choc eaten';cell.textContent=alive?'☠️':'';}
+      else{cell.className=alive?'choc alive':'choc eaten';cell.textContent=alive?'🟫':'';}
+      if(alive&&!(r===0&&c===0)){const cr=r,cc=c;cell.onclick=()=>chPlayerClick(cr,cc);}
+      row.appendChild(cell);
+    }
+    board.appendChild(row);
+  }
 }
 function chUpdateStatus(){
   const isMyTurn=CH.mode==='cpu'?CH.currentPlayer===1:CH.currentPlayer===CH.myPlayer;
@@ -208,25 +180,80 @@ function chUpdateStatus(){
   else{setStatusDot('ch-status-dot','waiting');document.getElementById('ch-status-text').textContent=`${CH.currentPlayer===1?CH.p1Name:CH.p2Name} 的回合`;document.getElementById('ch-status-sub').textContent=CH.mode==='cpu'?'電腦計算中…':'等待對手…';}
   document.getElementById('ch-board').style.pointerEvents=isMyTurn&&!CH.gameOver?'auto':'none';
 }
-async function chPlayerClick(r,c){if(CH.gameOver||!CH.board[r][c])return;if(CH.mode==='cpu'&&CH.currentPlayer!==1)return;if(CH.mode!=='cpu'&&CH.currentPlayer!==CH.myPlayer)return;if(CH.mode!=='cpu'){const _r=await getRoom(CH.roomCode);if(!_r)return;await pushMove(CH.roomCode,{player:CH.myPlayer,r,c});CH.lastSeen++;}chApplyMove(CH.myPlayer,r,c,true);}
+async function chPlayerClick(r,c){
+  if(CH.gameOver||!CH.board[r][c])return;
+  if(r===0&&c===0)return; // 不能主動點毒格
+  if(CH.mode==='cpu'&&CH.currentPlayer!==1)return;
+  if(CH.mode!=='cpu'&&CH.currentPlayer!==CH.myPlayer)return;
+  if(CH.mode!=='cpu'){const _r=await getRoom(CH.roomCode);if(!_r)return;await pushMove(CH.roomCode,{player:CH.myPlayer,r,c});CH.lastSeen++;}
+  chApplyMove(CH.myPlayer,r,c,true);
+}
 function chApplyMove(player,r,c,animate){
-  const name=player===1?CH.p1Name:CH.p2Name;addLog('ch-log',player===1?'p1':'p2',`${name} 吃了 (R${r+1},C${c+1}) 及右上方格`);
+  const name=player===1?CH.p1Name:CH.p2Name;
+  addLog('ch-log',player===1?'p1':'p2',`${name} 吃了 (R${r+1},C${c+1}) 及右上方格`);
   for(let rr=r;rr<CH.rows;rr++)for(let cc=c;cc<CH.cols;cc++)CH.board[rr][cc]=false;
-  let aliveNonPoison=false;for(let rr=0;rr<CH.rows;rr++)for(let cc=0;cc<CH.cols;cc++)if(CH.board[rr][cc]&&!(rr===0&&cc===0))aliveNonPoison=true;
+  // 檢查是否只剩毒格
+  let aliveNonPoison=false;
+  for(let rr=0;rr<CH.rows;rr++)for(let cc=0;cc<CH.cols;cc++)if(CH.board[rr][cc]&&!(rr===0&&cc===0))aliveNonPoison=true;
   chRenderBoard();
-  if(!aliveNonPoison){CH.gameOver=true;const winnerIdx=player,winner=winnerIdx===1?CH.p1Name:CH.p2Name,loserIdx=winnerIdx===1?2:1,loser=loserIdx===1?CH.p1Name:CH.p2Name;chUpdateStatus();addLog('ch-log','sys',`只剩毒格！${loser}被迫吃下，${winner}獲勝🎉`);const isMe=(CH.mode==='cpu'&&winnerIdx===1)||(CH.mode!=='cpu'&&winnerIdx===CH.myPlayer);setTimeout(()=>showResult(winnerIdx,winner,loser,isMe,`${loser}被迫吃下毒格☠️`),700);return;}
+  if(!aliveNonPoison){
+    CH.gameOver=true;
+    const winnerIdx=player,winner=winnerIdx===1?CH.p1Name:CH.p2Name,loserIdx=winnerIdx===1?2:1,loser=loserIdx===1?CH.p1Name:CH.p2Name;
+    chUpdateStatus();addLog('ch-log','sys',`只剩毒格！${loser}被迫吃下，${winner}獲勝🎉`);
+    const isMe=(CH.mode==='cpu'&&winnerIdx===1)||(CH.mode!=='cpu'&&winnerIdx===CH.myPlayer);
+    setTimeout(()=>showResult(winnerIdx,winner,loser,isMe,`${loser}被迫吃下毒格☠️`),700);return;
+  }
   CH.currentPlayer=CH.currentPlayer===1?2:1;chUpdateStatus();
   if(CH.mode==='cpu'&&CH.currentPlayer===2)setTimeout(chCpuTurn,700+Math.random()*800);
   else if(CH.mode!=='cpu'&&CH.currentPlayer!==CH.myPlayer)startRoomPolling(CH.roomCode,room=>{const mv=Object.values(room.moves||{});if(mv.length>CH.lastSeen){const m=mv[CH.lastSeen];CH.lastSeen=mv.length;stopPolling();chApplyMove(m.player,m.r,m.c,true);}});
 }
 function chCpuTurn(){if(CH.gameOver)return;const m=chCalcMove();setTimeout(()=>chApplyMove(2,m.r,m.c,true),300);}
-function chCalcMove(){if(CH.cpuDiff==='easy'&&Math.random()<0.5)return chRandomMove();return chSmartMove();}
-function chRandomMove(){const moves=[];for(let r=0;r<CH.rows;r++)for(let c=0;c<CH.cols;c++)if(CH.board[r][c]&&!(r===0&&c===0))moves.push({r,c});return moves[Math.floor(Math.random()*moves.length)]||{r:0,c:0};}
+function chCalcMove(){
+  // 簡單模式：25% 最優，75% 隨機
+  if(CH.cpuDiff==='easy'){
+    if(Math.random()<0.25)return chSmartMove();
+    return chRandomMove();
+  }
+  return chSmartMove();
+}
+function chRandomMove(){
+  const moves=[];
+  for(let r=0;r<CH.rows;r++)for(let c=0;c<CH.cols;c++)
+    if(CH.board[r][c]&&!(r===0&&c===0))moves.push({r,c});
+  return moves[Math.floor(Math.random()*moves.length)]||{r:0,c:0};
+}
 function chSmartMove(){
   const memo={};
-  function isLosing(board){const k=board.map(row=>row.map(v=>v?1:0).join('')).join('|');if(memo[k]!==undefined)return memo[k];let hasNonPoison=false;for(let r=0;r<board.length;r++)for(let c=0;c<board[r].length;c++)if(board[r][c]&&!(r===0&&c===0))hasNonPoison=true;if(!hasNonPoison){memo[k]=true;return true;}for(let r=0;r<board.length;r++){for(let c=0;c<board[r].length;c++){if(!board[r][c]||(r===0&&c===0))continue;const saved=board.map(row=>[...row]);for(let rr=r;rr<board.length;rr++)for(let cc=c;cc<board[rr].length;cc++)board[rr][cc]=false;const opp=isLosing(board);for(let rr=0;rr<board.length;rr++)for(let cc=0;cc<board[rr].length;cc++)board[rr][cc]=saved[rr][cc];if(opp){memo[k]=false;return false;}}}memo[k]=true;return true;}
+  function isLosing(board){
+    const k=board.map(row=>row.map(v=>v?1:0).join('')).join('|');
+    if(memo[k]!==undefined)return memo[k];
+    let hasNonPoison=false;
+    for(let r=0;r<board.length;r++)for(let c=0;c<board[r].length;c++)
+      if(board[r][c]&&!(r===0&&c===0))hasNonPoison=true;
+    if(!hasNonPoison){memo[k]=true;return true;}
+    for(let r=0;r<board.length;r++){
+      for(let c=0;c<board[r].length;c++){
+        if(!board[r][c]||(r===0&&c===0))continue;
+        const saved=board.map(row=>[...row]);
+        for(let rr=r;rr<board.length;rr++)for(let cc=c;cc<board[rr].length;cc++)board[rr][cc]=false;
+        const opp=isLosing(board);
+        for(let rr=0;rr<board.length;rr++)for(let cc=0;cc<board[rr].length;cc++)board[rr][cc]=saved[rr][cc];
+        if(opp){memo[k]=false;return false;}
+      }
+    }
+    memo[k]=true;return true;
+  }
   const board=CH.board.map(row=>[...row]);
-  for(let r=0;r<CH.rows;r++){for(let c=0;c<CH.cols;c++){if(!board[r][c]||(r===0&&c===0))continue;const saved=board.map(row=>[...row]);for(let rr=r;rr<board.length;rr++)for(let cc=c;cc<board[rr].length;cc++)board[rr][cc]=false;const opp=isLosing(board);for(let rr=0;rr<board.length;rr++)for(let cc=0;cc<board[rr].length;cc++)board[rr][cc]=saved[rr][cc];if(opp)return{r,c};}}
+  for(let r=0;r<CH.rows;r++){
+    for(let c=0;c<CH.cols;c++){
+      if(!board[r][c]||(r===0&&c===0))continue;
+      const saved=board.map(row=>[...row]);
+      for(let rr=r;rr<board.length;rr++)for(let cc=c;cc<board[rr].length;cc++)board[rr][cc]=false;
+      const opp=isLosing(board);
+      for(let rr=0;rr<board.length;rr++)for(let cc=0;cc<board[rr].length;cc++)board[rr][cc]=saved[rr][cc];
+      if(opp)return{r,c};
+    }
+  }
   return chRandomMove();
 }
 async function chompCreateRoom(){const hostName=document.getElementById('ch-host-name').value.trim()||'房主';const sz=document.getElementById('ch-room-size').value.split('x');const cols=+sz[0],rows=+sz[1];const firstPlayer=resolveFirst(document.getElementById('ch-room-first').value);const code=await uniqueCode();await setRoom(code,{code,game:'chomp',hostName,cols,rows,firstPlayer,guest:false,guestName:null,started:false,moves:[],created:Date.now()});CUR.roomCode=code;CH.roomCode=code;document.getElementById('ch-room-code-display').textContent=code;registerHostDisconnect(code);document.getElementById('chcreate-s1').classList.remove('active');document.getElementById('chcreate-s2').classList.add('active');startRoomPolling(code,room=>{if(room.guest){stopPolling();_chompStart({game:'chomp',mode:'host',hostName,guestName:room.guestName,cols,rows,myPlayer:1,roomCode:code,firstPlayer});}});}
