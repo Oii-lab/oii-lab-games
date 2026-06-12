@@ -323,12 +323,12 @@ function simRenderTable(){
     rowH.textContent=i===0?'∅':`${SIM_ITEMS[i-1].emoji}`;table.appendChild(rowH);
     for(let w=0;w<=simW;w++){
       const cell=document.createElement('div');
-      const curI=Math.floor(simStep/(simW+1));const curW=simStep%(simW+1);
+      const curI=Math.floor(simStep/(simW+1))+1;const curW=simStep%(simW+1);
       if(simDp[i][w]!==null){
         cell.className='dp-cell filled';cell.textContent=simDp[i][w];
-        if(i===curI&&w===curW&&simStep>0)cell.classList.add('current');
       }else{
         cell.className='dp-cell';cell.textContent='?';
+        if(i===curI&&w===curW)cell.classList.add('current');
       }
       table.appendChild(cell);
     }
