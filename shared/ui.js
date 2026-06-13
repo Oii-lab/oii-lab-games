@@ -45,7 +45,10 @@ function updatePlayerTags(p1Id, p2Id, cur) {
 }
 
 function showResult(winner, winnerName, loserName, isMe, flavor) {
-  document.getElementById('result-emoji').textContent = isMe ? '🏆' : '😔';
+  const resultEmoji = document.getElementById('result-emoji');
+  resultEmoji.innerHTML = isMe
+    ? '<img src="../assets/icons/winner.png" style="height:100px;">'
+    : '<img src="../assets/icons/loser.png" style="height:100px;">';
   const t = document.getElementById('result-title');
   t.textContent = isMe ? '勝利！' : '失敗';
   t.style.color = isMe ? 'var(--accent3)' : 'var(--accent2)';
@@ -53,6 +56,16 @@ function showResult(winner, winnerName, loserName, isMe, flavor) {
     isMe ? `恭喜 ${winnerName} 獲勝！\n${flavor}` : `${winnerName} 獲勝！\n${flavor}\n下次加油！`;
   document.getElementById('result-overlay').classList.add('show');
   if (isMe) launchConfetti();
+}
+
+function showDraw(msg) {
+  const resultEmoji = document.getElementById('result-emoji');
+  resultEmoji.innerHTML = '<img src="../assets/icons/draw.png" style="height:100px;">';
+  const t = document.getElementById('result-title');
+  t.textContent = '平局！';
+  t.style.color = 'var(--accent4)';
+  document.getElementById('result-msg').textContent = msg || '勢均力敵，再來一局！';
+  document.getElementById('result-overlay').classList.add('show');
 }
 
 function showDisconnect() {
