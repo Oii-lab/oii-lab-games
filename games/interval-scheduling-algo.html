@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="../favicon.png">
+<title>區間排程 演算法解析 — 演算法互動遊戲集</title>
+<link rel="stylesheet" href="../shared/style.css">
+<style>
+  .timeline-demo{position:relative;height:28px;background:var(--surface2);border-radius:6px;margin:8px 0;}
+  .tblock{position:absolute;height:100%;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#000;}
+</style>
+</head>
+<body>
+<div class="container">
+
+<header>
+  <div class="title">🧠 區間排程 演算法解析</div>
+  <div class="subtitle">為什麼貪心是最優 · 反例推翻錯誤策略 · O(n log n) 證明</div>
+</header>
+
+<div style="text-align:center;margin-bottom:20px;display:flex;justify-content:center;gap:12px;flex-wrap:wrap;">
+  <a href="interval-scheduling.html" style="font-size:12px;color:var(--text-dim);text-decoration:none;letter-spacing:0.1em;text-transform:uppercase;padding:8px 14px;border:1px solid var(--border);border-radius:8px;transition:all 0.2s;display:inline-block;"
+    onmouseover="this.style.color='var(--accent)';this.style.borderColor='var(--accent)'"
+    onmouseout="this.style.color='var(--text-dim)';this.style.borderColor='var(--border)'">📅 回遊戲</a>
+  <a href="../index.html" style="font-size:12px;color:var(--text-dim);text-decoration:none;letter-spacing:0.1em;text-transform:uppercase;padding:8px 14px;border:1px solid var(--border);border-radius:8px;transition:all 0.2s;display:inline-block;"
+    onmouseover="this.style.color='var(--accent)';this.style.borderColor='var(--accent)'"
+    onmouseout="this.style.color='var(--text-dim)';this.style.borderColor='var(--border)'">← 返回選單</a>
+</div>
+
+<!-- 目錄 -->
+<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:28px;">
+  <div style="font-size:11px;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-dim);margin-bottom:12px;">本頁內容</div>
+  <div style="display:flex;flex-direction:column;gap:8px;">
+    <a href="#step1" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Step 1 · 問題定義</a>
+    <a href="#step2" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Step 2 · 三種直覺策略的反例</a>
+    <a href="#step3" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Step 3 · 正確的貪心策略</a>
+    <a href="#step4" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Step 4 · 為什麼最早結束是最優：交換論證</a>
+    <a href="#step5" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Step 5 · 和背包問題的對比</a>
+    <a href="#sim" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">互動貪心模擬</a>
+    <a href="#leetcode" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">LeetCode 相關題目</a>
+  </div>
+</div>
+
+<!-- Step 1 -->
+<div id="step1" class="algo-section">
+  <div class="acc-step-label">Step 1 · 問題定義</div>
+  <div class="acc-p">
+    有 n 個活動，每個活動有開始時間 <code>s[i]</code> 和結束時間 <code>f[i]</code>。<br>
+    同一時間只能參加一個活動（不能重疊），求最多能參加幾個活動。<br><br>
+    兩個活動 i, j <strong>不衝突</strong>的條件：<code>f[i] ≤ s[j]</code> 或 <code>f[j] ≤ s[i]</code>
+  </div>
+</div>
+
+<!-- Step 2 -->
+<div id="step2" class="algo-section">
+  <div class="acc-step-label">Step 2 · 三種直覺策略的反例</div>
+  <div class="acc-p">先來看三個「看起來合理」但都是錯的策略：</div>
+
+  <div style="margin:16px 0;">
+    <div style="font-weight:700;margin-bottom:8px;color:var(--accent2);">❌ 策略一：選最短的活動</div>
+    <div style="font-size:13px;color:var(--text-dim);margin-bottom:8px;">直覺：短的活動佔用時間少，應該能選更多。</div>
+    <div style="font-size:13px;margin-bottom:6px;">反例：活動 A(1~3)、B(2~4)、C(1~10)（最短）</div>
+    <div class="timeline-demo">
+      <div class="tblock" style="left:5%;width:10%;background:#4fc3f7;">A</div>
+      <div class="tblock" style="left:10%;width:10%;background:#81c784;">B</div>
+      <div class="tblock" style="left:5%;width:45%;background:#ffb74d;opacity:0.7;">C（最短？）</div>
+    </div>
+    <div style="font-size:12px;color:var(--text-dim);">選最短 C → 只能選 1 個。但選 A+B → 選 2 個。最短策略失敗！</div>
+  </div>
+
+  <div style="margin:16px 0;">
+    <div style="font-weight:700;margin-bottom:8px;color:var(--accent2);">❌ 策略二：選最早開始的活動</div>
+    <div style="font-size:13px;color:var(--text-dim);margin-bottom:8px;">直覺：早開始的先處理，剩下更多時間。</div>
+    <div style="font-size:13px;margin-bottom:6px;">反例：活動 A(1~9)、B(2~4)、C(5~7)</div>
+    <div class="timeline-demo">
+      <div class="tblock" style="left:5%;width:40%;background:#ffb74d;opacity:0.7;">A（最早開始）</div>
+      <div class="tblock" style="left:10%;width:10%;background:#4fc3f7;">B</div>
+      <div class="tblock" style="left:25%;width:10%;background:#81c784;">C</div>
+    </div>
+    <div style="font-size:12px;color:var(--text-dim);">選最早 A → 只能選 1 個。但選 B+C → 選 2 個。最早開始策略失敗！</div>
+  </div>
+
+  <div style="margin:16px 0;">
+    <div style="font-weight:700;margin-bottom:8px;color:var(--accent2);">❌ 策略三：選衝突最少的活動</div>
+    <div style="font-size:13px;color:var(--text-dim);margin-bottom:8px;">直覺：選擇對其他活動影響最小的。</div>
+    <div style="font-size:13px;margin-bottom:6px;">反例：A(1~3)、B(2~4)、C(3~5)、D(1~5)（只和A,B,C衝突，其他活動不存在）</div>
+    <div style="font-size:12px;color:var(--text-dim);">在某些特殊配置下，衝突最少的活動並不是最優選法。</div>
+  </div>
+</div>
+
+<!-- Step 3 -->
+<div id="step3" class="algo-section">
+  <div class="acc-step-label">Step 3 · 正確的貪心策略</div>
+  <div class="acc-p">
+    正確答案：<strong>每次選結束時間最早的不衝突活動。</strong>
+  </div>
+  <div class="acc-code">
+    <span class="lang-tag">Python</span>
+    <pre><span class="kw">def</span> <span class="fn">interval_scheduling</span>(activities):
+    <span class="cmt"># 按結束時間排序</span>
+    sorted_acts = <span class="fn">sorted</span>(activities, key=<span class="kw">lambda</span> x: x.end)
+
+    selected = []
+    last_end = <span class="num">0</span>  <span class="cmt"># 上一個選中活動的結束時間</span>
+
+    <span class="kw">for</span> act <span class="kw">in</span> sorted_acts:
+        <span class="kw">if</span> act.start >= last_end:  <span class="cmt"># 不衝突</span>
+            selected.append(act)
+            last_end = act.end
+
+    <span class="kw">return</span> selected
+
+<span class="cmt"># 時間複雜度：O(n log n)（排序）+ O(n)（掃描）= O(n log n)</span>
+<span class="cmt"># 空間複雜度：O(n)</span></pre>
+  </div>
+  <div class="acc-insight">
+    <span class="ins-label">💡 直覺</span>
+    選結束最早的活動，讓剩下的時間最多。<br>
+    這樣後面才有最大的機會選更多活動。
+  </div>
+</div>
+
+<!-- Step 4 -->
+<div id="step4" class="algo-section">
+  <div class="acc-step-label">Step 4 · 為什麼最早結束是最優：交換論證</div>
+  <div class="acc-p">
+    用<strong>交換論證（Exchange Argument）</strong>來嚴格證明。<br><br>
+    假設最優解 OPT 選了活動序列 <code>a₁, a₂, …, aₖ</code>（按結束時間排序）<br>
+    貪心解 GREEDY 選了 <code>g₁, g₂, …, gₘ</code>（按結束時間排序）<br><br>
+    <strong>引理：</strong>對所有 i，g[i].end ≤ a[i].end<br>
+    （貪心的第 i 個選擇，結束時間不晚於最優解的第 i 個選擇）
+  </div>
+  <div style="background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:20px;margin:16px 0;font-size:13px;line-height:1.9;">
+    <strong>歸納法證明引理：</strong><br><br>
+    基礎：i=1 時，g₁ 是結束最早的活動，所以 g₁.end ≤ a₁.end ✓<br><br>
+    歸納：假設 g[i].end ≤ a[i].end，考慮第 i+1 步：<br>
+    ・a[i+1] 的開始時間 ≥ a[i].end ≥ g[i].end<br>
+    ・所以 a[i+1] 對貪心也是合法的選擇<br>
+    ・但貪心選的是結束最早的合法活動 g[i+1]<br>
+    ・所以 g[i+1].end ≤ a[i+1].end ✓<br><br>
+    <strong>結論：</strong>如果最優解選了 k 個，貪心也至少能選 k 個，<br>
+    所以貪心解 = 最優解。
+  </div>
+  <div class="acc-insight">
+    <span class="ins-label">🔑 交換論證的精髓</span>
+    不需要枚舉所有可能，只需要證明「把最優解換成貪心解，不會變更差」。<br>
+    這是證明貪心算法正確性的標準方法。
+  </div>
+</div>
+
+<!-- Step 5 -->
+<div id="step5" class="algo-section">
+  <div class="acc-step-label">Step 5 · 和背包問題的對比</div>
+  <div style="overflow-x:auto;margin:16px 0;">
+    <table style="width:100%;border-collapse:collapse;font-size:13px;">
+      <thead>
+        <tr style="border-bottom:1px solid var(--border);">
+          <th style="padding:10px;text-align:left;color:var(--text-dim);font-weight:500;"></th>
+          <th style="padding:10px;text-align:center;color:var(--text-dim);font-weight:500;">區間排程</th>
+          <th style="padding:10px;text-align:center;color:var(--text-dim);font-weight:500;">背包問題</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:10px;color:var(--text-dim);">目標</td>
+          <td style="padding:10px;text-align:center;">數量最多</td>
+          <td style="padding:10px;text-align:center;">價值最大</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:10px;color:var(--text-dim);">限制</td>
+          <td style="padding:10px;text-align:center;">時間不重疊</td>
+          <td style="padding:10px;text-align:center;">重量不超限</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:10px;color:var(--text-dim);">貪心</td>
+          <td style="padding:10px;text-align:center;color:var(--accent);">✅ 最優</td>
+          <td style="padding:10px;text-align:center;color:var(--accent2);">❌ 不一定</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:10px;color:var(--text-dim);">最優演算法</td>
+          <td style="padding:10px;text-align:center;">Greedy O(n log n)</td>
+          <td style="padding:10px;text-align:center;">DP O(n·W)</td>
+        </tr>
+        <tr>
+          <td style="padding:10px;color:var(--text-dim);">關鍵性質</td>
+          <td style="padding:10px;text-align:center;">最優子結構 + 貪心選擇</td>
+          <td style="padding:10px;text-align:center;">最優子結構（無貪心選擇）</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="acc-insight">
+    <span class="ins-label">💡 貪心 vs DP</span>
+    兩個問題都有「最優子結構」，但區間排程還有「貪心選擇性質」：<br>
+    局部最優（每步選結束最早）能導向全局最優。<br>
+    背包問題沒有這個性質，所以必須用 DP 枚舉所有可能。
+  </div>
+</div>
+
+<!-- 互動模擬 -->
+<div id="sim" class="algo-section">
+  <div class="acc-step-label">互動貪心模擬</div>
+  <div class="acc-p">點擊「下一步」，看貪心演算法一步步選擇活動。</div>
+
+  <div style="margin:12px 0;display:flex;gap:10px;flex-wrap:wrap;">
+    <button class="btn btn-sm" onclick="simReset()">↺ 重置</button>
+    <button class="btn btn-primary btn-sm" onclick="simNext()">下一步 →</button>
+    <button class="btn btn-sm" onclick="simFill()">全部執行</button>
+    <button class="btn btn-sm" onclick="simRandomize()">🎲 隨機活動</button>
+  </div>
+
+  <div id="sim-explain" style="font-size:13px;color:var(--text-dim);min-height:36px;margin:8px 0;padding:10px;background:var(--bg);border-radius:8px;border:1px solid var(--border);"></div>
+
+  <div style="position:relative;height:28px;background:var(--surface2);border-radius:6px;margin:12px 0;" id="sim-timeline"></div>
+  <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-dim);font-family:'Orbitron',monospace;margin-bottom:12px;" id="sim-labels"></div>
+
+  <div id="sim-acts" style="display:flex;flex-direction:column;gap:6px;"></div>
+</div>
+
+<!-- LeetCode -->
+<div id="leetcode" class="algo-section">
+  <div class="acc-step-label">LeetCode 相關題目</div>
+  <div style="display:flex;flex-direction:column;gap:10px;margin-top:12px;">
+    <a href="https://leetcode.com/problems/non-overlapping-intervals/" target="_blank" class="lc-card">
+      <span class="lc-num">#435</span><span class="lc-title">Non-overlapping Intervals</span>
+      <span class="lc-tag medium">Medium</span>
+      <span class="lc-desc">移除最少區間使不重疊，直接使用本題的貪心策略</span>
+    </a>
+    <a href="https://leetcode.com/problems/minimum-number-of-arrows-to-burst-balloons/" target="_blank" class="lc-card">
+      <span class="lc-num">#452</span><span class="lc-title">Minimum Number of Arrows to Burst Balloons</span>
+      <span class="lc-tag medium">Medium</span>
+      <span class="lc-desc">區間覆蓋問題，貪心的變體</span>
+    </a>
+    <a href="https://leetcode.com/problems/merge-intervals/" target="_blank" class="lc-card">
+      <span class="lc-num">#56</span><span class="lc-title">Merge Intervals</span>
+      <span class="lc-tag medium">Medium</span>
+      <span class="lc-desc">合併重疊區間，排序後掃描</span>
+    </a>
+    <a href="https://leetcode.com/problems/task-scheduler/" target="_blank" class="lc-card">
+      <span class="lc-num">#621</span><span class="lc-title">Task Scheduler</span>
+      <span class="lc-tag medium">Medium</span>
+      <span class="lc-desc">任務排程 + 貪心，CPU 冷卻時間</span>
+    </a>
+    <a href="https://leetcode.com/problems/jump-game-ii/" target="_blank" class="lc-card">
+      <span class="lc-num">#45</span><span class="lc-title">Jump Game II</span>
+      <span class="lc-tag medium">Medium</span>
+      <span class="lc-desc">貪心跳躍，每步選最遠可達位置</span>
+    </a>
+  </div>
+</div>
+
+<!-- 導航 -->
+<div style="display:flex;justify-content:center;gap:12px;margin:32px 0 8px;flex-wrap:wrap;">
+  <a href="knapsack-algo.html" style="display:inline-flex;align-items:center;gap:8px;padding:12px 20px;background:var(--surface);border:1px solid var(--border);border-radius:12px;text-decoration:none;color:var(--text);font-size:13px;transition:all 0.2s;"
+    onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'"
+    onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text)'">← 🎒 背包問題解析</a>
+  <a href="../index.html" style="display:inline-flex;align-items:center;gap:8px;padding:12px 20px;background:var(--surface);border:1px solid var(--border);border-radius:12px;text-decoration:none;color:var(--text);font-size:13px;transition:all 0.2s;"
+    onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'"
+    onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text)'">回選單 →</a>
+</div>
+
+</div>
+
+<style>
+.algo-section{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:24px;margin-bottom:20px;}
+.lc-card{display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--bg);border:1px solid var(--border);border-radius:10px;text-decoration:none;color:var(--text);transition:border-color 0.2s;flex-wrap:wrap;}
+.lc-card:hover{border-color:var(--accent);}
+.lc-num{font-family:'Orbitron',monospace;font-size:11px;color:var(--text-dim);min-width:44px;}
+.lc-title{font-weight:600;font-size:14px;flex:1;}
+.lc-tag{font-size:10px;padding:2px 8px;border-radius:20px;font-weight:700;letter-spacing:0.05em;}
+.lc-tag.easy{background:rgba(0,200,100,0.15);color:#00c864;}
+.lc-tag.medium{background:rgba(255,180,0,0.15);color:#ffb400;}
+.lc-tag.hard{background:rgba(255,60,60,0.15);color:#ff3c3c;}
+.lc-desc{font-size:12px;color:var(--text-dim);width:100%;margin-top:2px;}
+.acc-step-label{font-family:'Orbitron',monospace;font-size:11px;letter-spacing:0.15em;text-transform:uppercase;color:var(--accent);margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid var(--border);}
+.sim-act-row{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;border:1px solid var(--border);font-size:12px;}
+.sim-act-row.selected{border-color:var(--accent);background:rgba(0,229,255,0.08);}
+.sim-act-row.skipped{opacity:0.4;}
+.sim-act-row.current{border-color:var(--accent2);background:rgba(255,64,129,0.08);}
+</style>
+
+<script>
+const COLORS=['#4fc3f7','#81c784','#ffb74d','#f48fb1','#ce93d8','#80cbc4','#fff176','#ffcc02'];
+let simActs=[
+  {name:'A',s:1,e:4},{name:'B',s:3,e:6},{name:'C',s:5,e:8},
+  {name:'D',s:2,e:9},{name:'E',s:7,e:10},{name:'F',s:8,e:11}
+];
+let simSorted=[],simStep=0,simLastEnd=0,simSelected=[];
+const simMaxT=12;
+
+function simReset(){
+  simSorted=[...simActs].sort((a,b)=>a.e-b.e);
+  simStep=0;simLastEnd=0;simSelected=[];
+  simRenderTimeline();simRenderActs();
+  document.getElementById('sim-explain').textContent='活動已按結束時間排序，點擊「下一步」開始貪心選擇。';
+}
+
+function simRenderTimeline(){
+  const tl=document.getElementById('sim-timeline');tl.innerHTML='';
+  const lbls=document.getElementById('sim-labels');lbls.innerHTML='';
+  simSelected.forEach(idx=>{
+    const act=simActs[idx];
+    const block=document.createElement('div');
+    block.style.cssText=`position:absolute;left:${act.s/simMaxT*100}%;width:${(act.e-act.s)/simMaxT*100}%;height:100%;background:var(--accent);opacity:0.7;border-radius:4px;`;
+    tl.appendChild(block);
+  });
+  for(let t=0;t<=simMaxT;t+=2){const l=document.createElement('span');l.textContent=t;lbls.appendChild(l);}
+}
+
+function simRenderActs(){
+  const c=document.getElementById('sim-acts');c.innerHTML='';
+  simSorted.forEach((act,rank)=>{
+    const origIdx=simActs.indexOf(act);
+    const isSelected=simSelected.includes(origIdx);
+    const isSkipped=rank<simStep&&!isSelected;
+    const isCurrent=rank===simStep;
+    const row=document.createElement('div');
+    row.className='sim-act-row'+(isSelected?' selected':isSkipped?' skipped':isCurrent?' current':'');
+    const bar=document.createElement('div');
+    bar.style.cssText='flex:1;height:18px;background:var(--surface2);border-radius:3px;position:relative;';
+    const fill=document.createElement('div');
+    fill.style.cssText=`position:absolute;left:${act.s/simMaxT*100}%;width:${(act.e-act.s)/simMaxT*100}%;height:100%;border-radius:3px;background:${isSelected?'var(--accent)':isSkipped?'var(--border)':COLORS[rank%COLORS.length]};opacity:${isSelected?1:0.7};`;
+    bar.appendChild(fill);
+    row.innerHTML=`<span style="min-width:20px;font-weight:700;">${act.name}</span>
+      <span style="color:var(--text-dim);min-width:60px;font-family:'Orbitron',monospace;font-size:10px;">${act.s}~${act.e}</span>`;
+    row.appendChild(bar);
+    row.innerHTML+=`<span style="min-width:40px;font-size:11px;">${isSelected?'✅ 選':isSkipped?'❌ 跳':'⏳'}</span>`;
+    c.appendChild(row);
+  });
+}
+
+function simNext(){
+  if(simStep>=simSorted.length){
+    document.getElementById('sim-explain').textContent=`✅ 完成！共選了 ${simSelected.length} 個活動。`;return;
+  }
+  const act=simSorted[simStep];
+  const origIdx=simActs.indexOf(act);
+  let explain='';
+  if(act.s>=simLastEnd){
+    simSelected.push(origIdx);simLastEnd=act.e;
+    explain=`選 ${act.name}（${act.s}~${act.e}）：開始 ${act.s} ≥ 上個結束 ${simLastEnd}，不衝突 ✅ → 選入，更新 last_end=${act.e}`;
+  }else{
+    explain=`跳過 ${act.name}（${act.s}~${act.e}）：開始 ${act.s} < 上個結束 ${simLastEnd}，衝突 ❌ → 跳過`;
+  }
+  simStep++;
+  document.getElementById('sim-explain').textContent=explain;
+  simRenderTimeline();simRenderActs();
+}
+
+function simFill(){while(simStep<simSorted.length)simNext();}
+
+function simRandomize(){
+  const names='ABCDEFGH';
+  simActs=[];
+  for(let i=0;i<6;i++){
+    const s=Math.floor(Math.random()*9)+1;
+    const e=Math.min(s+Math.floor(Math.random()*3)+1,simMaxT);
+    simActs.push({name:names[i],s,e});
+  }
+  simReset();
+}
+
+simReset();
+</script>
+</body>
+</html>

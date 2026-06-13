@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="../favicon.png">
+<title>區間排程 — 演算法互動遊戲集</title>
+<link rel="stylesheet" href="../shared/style.css">
+<style>
+  .mode-switch{display:flex;gap:10px;margin-bottom:20px;justify-content:center;}
+  .mode-switch-btn{padding:10px 24px;border-radius:10px;border:2px solid var(--border);background:var(--surface);color:var(--text-dim);font-size:13px;font-weight:700;cursor:pointer;transition:all 0.2s;}
+  .mode-switch-btn.active{border-color:var(--accent);color:var(--accent);background:rgba(0,229,255,0.08);}
+
+  .timeline-wrap{margin:16px 0;overflow-x:auto;}
+  .timeline{position:relative;height:32px;background:var(--surface);border-radius:8px;border:1px solid var(--border);margin-bottom:4px;}
+  .timeline-labels{display:flex;justify-content:space-between;font-size:10px;color:var(--text-dim);font-family:'Orbitron',monospace;padding:0 4px;margin-bottom:12px;}
+
+  .activities-list{display:flex;flex-direction:column;gap:8px;margin-bottom:16px;}
+  .activity-row{display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--surface);border:2px solid var(--border);border-radius:10px;cursor:pointer;transition:all 0.2s;user-select:none;}
+  .activity-row:hover{border-color:var(--accent);transform:translateX(2px);}
+  .activity-row.selected{border-color:var(--accent);background:rgba(0,229,255,0.08);}
+  .activity-row.conflict{border-color:var(--accent2);opacity:0.5;cursor:not-allowed;pointer-events:none;}
+  .activity-row.disabled{opacity:0.4;cursor:not-allowed;pointer-events:none;}
+  .activity-bar{flex:1;height:20px;border-radius:4px;position:relative;background:var(--surface2);}
+  .activity-fill{height:100%;border-radius:4px;background:var(--accent);opacity:0.7;position:absolute;}
+  .activity-fill.selected{background:var(--accent);opacity:1;}
+  .activity-fill.conflict{background:var(--accent2);}
+  .activity-name{font-size:12px;font-weight:700;min-width:60px;color:var(--text);}
+  .activity-time{font-size:11px;color:var(--text-dim);font-family:'Orbitron',monospace;min-width:70px;}
+
+  .score-panel{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 18px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;}
+  .score-item{text-align:center;}
+  .score-num{font-family:'Orbitron',monospace;font-size:24px;font-weight:900;color:var(--accent);}
+  .score-lbl{font-size:11px;color:var(--text-dim);margin-top:2px;}
+
+  .result-pct{font-size:48px;font-weight:900;font-family:'Orbitron',monospace;text-align:center;margin:12px 0;}
+  .result-pct.perfect{color:var(--accent);}
+  .result-pct.good{color:var(--accent4);}
+  .result-pct.ok{color:var(--text-dim);}
+
+  .timer-display{text-align:center;font-family:'Orbitron',monospace;font-size:36px;font-weight:900;margin:8px 0;}
+  .timer-display.urgent{color:var(--accent2);animation:timerPulse 0.5s ease infinite alternate;}
+  @keyframes timerPulse{from{opacity:1}to{opacity:0.5}}
+</style>
+</head>
+<body>
+<canvas id="confetti-canvas"></canvas>
+<div class="container">
+
+<header>
+  <div class="title">📅 區間排程</div>
+  <div class="subtitle">活動選擇 &nbsp;·&nbsp; Greedy Algorithm &nbsp;·&nbsp; O(n log n)</div>
+</header>
+
+<div style="text-align:center;margin-bottom:20px">
+  <a href="../index.html" style="font-size:12px;color:var(--text-dim);text-decoration:none;letter-spacing:0.1em;text-transform:uppercase;padding:8px 14px;border:1px solid var(--border);border-radius:8px;transition:all 0.2s;display:inline-block;"
+    onmouseover="this.style.color='var(--accent)';this.style.borderColor='var(--accent)'"
+    onmouseout="this.style.color='var(--text-dim)';this.style.borderColor='var(--border)'">← 返回選單</a>
+</div>
+
+<div class="rules-block">
+  <div class="rules-title">📖 遊戲規則</div>
+  <div class="rules-body">
+    <div class="rules-item move">
+      <div class="ri-label">目標</div>
+      <div class="ri-text">選擇活動參加，<strong>時間不能重疊</strong>，讓參加的活動<strong>數量最多</strong></div>
+    </div>
+    <div class="rules-item lose">
+      <div class="ri-label">限制</div>
+      <div class="ri-text">同一時間只能參加<strong>一個活動</strong>，有重疊就無法選取</div>
+    </div>
+    <div class="rules-item tip">
+      <div class="ri-label">挑戰</div>
+      <div class="ri-text">你覺得該怎麼選才能最多？試試看你的直覺策略 👇</div>
+    </div>
+  </div>
+</div>
+
+<!-- 設定 -->
+<div class="panel active" id="panel-setup">
+  <div class="panel-title">⚙️ 遊戲設定</div>
+  <div class="mode-switch">
+    <button class="mode-switch-btn active" id="btn-challenge" onclick="switchMode('challenge')">🎯 挑戰模式</button>
+    <button class="mode-switch-btn" id="btn-speed" onclick="switchMode('speed')">⏱️ 競速模式</button>
+  </div>
+  <div class="input-group"><label>活動數量</label>
+    <select id="is-count">
+      <option value="6">6 個（入門）</option>
+      <option value="9" selected>9 個（經典）</option>
+      <option value="12">12 個</option>
+    </select></div>
+  <div class="input-group"><label>時間軸長度</label>
+    <select id="is-timeline">
+      <option value="12">12 小時</option>
+      <option value="16" selected>16 小時</option>
+      <option value="20">20 小時</option>
+    </select></div>
+  <div id="is-speed-group" style="display:none;">
+    <div class="input-group"><label>競速時限</label>
+      <select id="is-time-limit">
+        <option value="30">30 秒</option>
+        <option value="60" selected>60 秒</option>
+        <option value="90">90 秒</option>
+      </select></div>
+  </div>
+  <div class="btn-row">
+    <button class="btn btn-primary btn-lg" onclick="isBegin()">🚀 開始</button>
+  </div>
+</div>
+
+<!-- 遊戲 -->
+<div class="panel" id="panel-game">
+  <div class="panel-title" id="is-game-label">📅 區間排程</div>
+
+  <div id="is-timer-area" style="display:none;">
+    <div class="timer-display" id="is-timer">60</div>
+    <div style="font-size:11px;color:var(--text-dim);text-align:center;margin-bottom:12px;">剩餘時間</div>
+  </div>
+
+  <div class="score-panel">
+    <div class="score-item">
+      <div class="score-num" id="is-selected-count">0</div>
+      <div class="score-lbl">已選活動</div>
+    </div>
+    <div class="score-item">
+      <div class="score-num" style="color:var(--text-dim)" id="is-total-count">0</div>
+      <div class="score-lbl">總活動數</div>
+    </div>
+    <div class="score-item">
+      <div class="score-num" style="color:var(--accent2)" id="is-opt-count">0</div>
+      <div class="score-lbl">最優解</div>
+    </div>
+  </div>
+
+  <!-- 時間軸 -->
+  <div style="font-size:11px;color:var(--text-dim);margin-bottom:6px;">時間軸（小時）</div>
+  <div class="timeline-wrap">
+    <div class="timeline" id="is-timeline-bar"></div>
+    <div class="timeline-labels" id="is-timeline-labels"></div>
+  </div>
+
+  <div style="font-size:12px;color:var(--text-dim);margin-bottom:8px;">點擊活動選取/取消（灰色表示與已選活動時間衝突）</div>
+  <div class="activities-list" id="is-activities"></div>
+
+  <div class="btn-row" id="is-submit-area">
+    <button class="btn btn-primary" onclick="isSubmit()">✅ 提交答案</button>
+    <button class="btn btn-sm" onclick="isClear()">🗑️ 清空</button>
+    <button class="btn btn-sm" onclick="goHome()">⚙️ 重設</button>
+  </div>
+
+  <div id="is-result-area" style="display:none;">
+    <div class="result-pct" id="is-result-pct">100%</div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:16px;">
+      <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+        <span style="font-size:12px;color:var(--text-dim);">你選了幾個</span>
+        <span style="font-family:'Orbitron',monospace;font-weight:900;" id="is-your-count">—</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+        <span style="font-size:12px;color:var(--text-dim);">貪心最優解</span>
+        <span style="font-family:'Orbitron',monospace;font-weight:900;color:var(--accent);" id="is-opt-count2">—</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;">
+        <span style="font-size:12px;color:var(--text-dim);">最優選法</span>
+        <span style="font-size:12px;color:var(--text-dim);" id="is-opt-names">—</span>
+      </div>
+    </div>
+    <div style="font-size:13px;color:var(--text-dim);text-align:center;margin-bottom:12px;" id="is-result-msg"></div>
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="isBegin()">🔄 再來一局</button>
+      <button class="btn btn-sm" onclick="goHome()">⚙️ 重設</button>
+    </div>
+  </div>
+</div>
+
+<!-- 演算法解析連結 -->
+<div style="text-align:center;margin:24px 0 8px;">
+  <a href="interval-scheduling-algo.html"
+    style="display:inline-flex;align-items:center;gap:10px;padding:14px 28px;
+      background:var(--surface);border:1px solid var(--border);border-radius:12px;
+      text-decoration:none;color:var(--text);font-size:14px;transition:all 0.2s;letter-spacing:0.03em;"
+    onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'"
+    onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text)'">
+    🧠 <strong>看演算法解析</strong> &nbsp;— 為什麼貪心是最優 · 反例推翻其他策略 · 證明
+  </a>
+</div>
+
+</div>
+
+<script src="../shared/firebase.js"></script>
+<script src="../shared/ui.js"></script>
+<script>
+const ACTIVITY_NAMES=['晨跑','早餐會','瑜珈課','數學課','音樂課','午餐','圖書館','游泳','英語課','實驗室','下午茶','電影','晚餐','讀書會','夜跑'];
+const ACTIVITY_EMOJIS=['🏃','🍳','🧘','📐','🎵','🍱','📚','🏊','💬','🔬','☕','🎬','🍽️','📖','🌙'];
+
+const IS={
+  mode:'challenge',
+  activities:[],selected:[],
+  optCount:0,optSelected:[],
+  maxTime:16,
+  timerLimit:60,timerLeft:60,timerInterval:null
+};
+
+function switchMode(m){
+  IS.mode=m;
+  document.getElementById('btn-challenge').classList.toggle('active',m==='challenge');
+  document.getElementById('btn-speed').classList.toggle('active',m==='speed');
+  document.getElementById('is-speed-group').style.display=m==='speed'?'':'none';
+}
+
+function goHome(){
+  clearInterval(IS.timerInterval);
+  showPanel('panel-setup');
+}
+
+function isBegin(){
+  clearInterval(IS.timerInterval);
+  const n=+document.getElementById('is-count').value;
+  IS.maxTime=+document.getElementById('is-timeline').value;
+  IS.timerLimit=+document.getElementById('is-time-limit').value||60;
+
+  // 產生隨機活動
+  IS.activities=isGenerateActivities(n,IS.maxTime);
+  IS.selected=new Array(n).fill(false);
+
+  // 貪心最優解
+  IS.optSelected=isGreedy(IS.activities);
+  IS.optCount=IS.optSelected.length;
+
+  document.getElementById('is-game-label').textContent=`📅 區間排程（${IS.maxTime}小時）`;
+  document.getElementById('is-total-count').textContent=n;
+  document.getElementById('is-opt-count').textContent=IS.optCount;
+  document.getElementById('is-timer-area').style.display=IS.mode==='speed'?'':'none';
+  document.getElementById('is-submit-area').style.display='flex';
+  document.getElementById('is-result-area').style.display='none';
+
+  isRenderTimeline();isRenderActivities();isUpdateScore();
+
+  if(IS.mode==='speed'){
+    IS.timerLeft=IS.timerLimit;
+    isUpdateTimer();
+    IS.timerInterval=setInterval(()=>{
+      IS.timerLeft--;isUpdateTimer();
+      if(IS.timerLeft<=0){clearInterval(IS.timerInterval);isSubmit();}
+    },1000);
+  }
+
+  showPanel('panel-game');
+}
+
+function isGenerateActivities(n,maxT){
+  const shuffledNames=[...ACTIVITY_NAMES].sort(()=>Math.random()-0.5);
+  const shuffledEmojis=[...ACTIVITY_EMOJIS].sort(()=>Math.random()-0.5);
+  const acts=[];
+  for(let i=0;i<n;i++){
+    let start,end,tries=0;
+    do{
+      start=Math.floor(Math.random()*(maxT-2))+1;
+      const dur=Math.floor(Math.random()*4)+1;
+      end=Math.min(start+dur,maxT);
+      tries++;
+    }while(end<=start&&tries<20);
+    acts.push({id:i,name:shuffledNames[i],emoji:shuffledEmojis[i],start,end});
+  }
+  return acts.sort((a,b)=>a.start-b.start);
+}
+
+function isGreedy(acts){
+  // 按結束時間排序，貪心選最早結束的不衝突活動
+  const sorted=[...acts].sort((a,b)=>a.end-b.end);
+  const selected=[];
+  let lastEnd=0;
+  for(const act of sorted){
+    if(act.start>=lastEnd){selected.push(act.id);lastEnd=act.end;}
+  }
+  return selected;
+}
+
+function isConflicts(id){
+  // 檢查活動 id 是否和已選活動衝突
+  const act=IS.activities[id];
+  for(let i=0;i<IS.activities.length;i++){
+    if(!IS.selected[i])continue;
+    const other=IS.activities[i];
+    if(act.start<other.end&&act.end>other.start)return true;
+  }
+  return false;
+}
+
+function isRenderTimeline(){
+  const bar=document.getElementById('is-timeline-bar');
+  const labels=document.getElementById('is-timeline-labels');
+  bar.innerHTML='';labels.innerHTML='';
+  // 顯示已選活動在時間軸上
+  IS.activities.forEach((act,i)=>{
+    if(!IS.selected[i])return;
+    const block=document.createElement('div');
+    const pct=100/IS.maxTime;
+    block.style.cssText=`position:absolute;left:${act.start*pct}%;width:${(act.end-act.start)*pct}%;height:100%;background:var(--accent);opacity:0.6;border-radius:4px;`;
+    bar.appendChild(block);
+  });
+  // 標籤
+  for(let t=0;t<=IS.maxTime;t+=2){
+    const lbl=document.createElement('span');lbl.textContent=t;labels.appendChild(lbl);
+  }
+}
+
+function isRenderActivities(){
+  const list=document.getElementById('is-activities');list.innerHTML='';
+  const pct=100/IS.maxTime;
+  IS.activities.forEach((act,i)=>{
+    const row=document.createElement('div');
+    const conflict=!IS.selected[i]&&isConflicts(i);
+    row.className='activity-row'+(IS.selected[i]?' selected':conflict?' conflict':'');
+
+    const nameEl=document.createElement('div');nameEl.className='activity-name';
+    nameEl.textContent=`${act.emoji} ${act.name}`;
+
+    const timeEl=document.createElement('div');timeEl.className='activity-time';
+    timeEl.textContent=`${act.start}~${act.end}時`;
+
+    const barWrap=document.createElement('div');barWrap.className='activity-bar';
+    const fill=document.createElement('div');
+    fill.className='activity-fill'+(IS.selected[i]?' selected':conflict?' conflict':'');
+    fill.style.cssText=`left:${act.start*pct}%;width:${(act.end-act.start)*pct}%;`;
+    barWrap.appendChild(fill);
+
+    row.appendChild(nameEl);row.appendChild(timeEl);row.appendChild(barWrap);
+
+    if(!conflict){
+      row.onclick=()=>{
+        IS.selected[i]=!IS.selected[i];
+        isRenderTimeline();isRenderActivities();isUpdateScore();
+      };
+    }
+    list.appendChild(row);
+  });
+}
+
+function isUpdateScore(){
+  const count=IS.selected.filter(Boolean).length;
+  document.getElementById('is-selected-count').textContent=count;
+}
+
+function isUpdateTimer(){
+  const el=document.getElementById('is-timer');
+  el.textContent=IS.timerLeft;
+  el.className='timer-display'+(IS.timerLeft<=10?' urgent':'');
+}
+
+function isClear(){
+  IS.selected=new Array(IS.activities.length).fill(false);
+  isRenderTimeline();isRenderActivities();isUpdateScore();
+}
+
+function isSubmit(){
+  clearInterval(IS.timerInterval);
+  const yourCount=IS.selected.filter(Boolean).length;
+  const pct=IS.optCount>0?Math.round(yourCount/IS.optCount*100):100;
+
+  document.getElementById('is-submit-area').style.display='none';
+  document.getElementById('is-result-area').style.display='block';
+  document.getElementById('is-your-count').textContent=yourCount;
+  document.getElementById('is-opt-count2').textContent=IS.optCount;
+  document.getElementById('is-opt-names').textContent=IS.optSelected.map(id=>IS.activities[id].emoji+IS.activities[id].name).join('、');
+
+  const pctEl=document.getElementById('is-result-pct');
+  pctEl.textContent=pct+'%';
+  pctEl.className='result-pct '+(pct===100?'perfect':pct>=80?'good':'ok');
+
+  let msg='';
+  if(pct===100)msg='🎉 完美！你找到了最優解！';
+  else if(pct>=67)msg='👍 不錯，但還差一個活動。';
+  else msg='💡 試試「每次選結束最早的不衝突活動」這個策略。';
+  document.getElementById('is-result-msg').textContent=msg;
+
+  // 高亮最優解
+  IS.selected=new Array(IS.activities.length).fill(false);
+  IS.optSelected.forEach(id=>{IS.selected[id]=true;});
+  isRenderTimeline();isRenderActivities();
+}
+</script>
+</body>
+</html>
