@@ -48,10 +48,7 @@
 <div class="container">
 
 <header>
-  <div class="title">
-  <img src="../assets/icons/IntervalScheduling.png" style="height:60px;vertical-align:middle;margin-right:8px;">
-  區間排程
-</div>
+  <div class="title">📅 區間排程</div>
   <div class="subtitle">活動選擇 &nbsp;·&nbsp; Greedy Algorithm &nbsp;·&nbsp; O(n log n)</div>
 </header>
 
@@ -251,8 +248,7 @@ function isBegin(){
 }
 
 function isGenerateActivities(n,maxT){
-  const shuffledNames=[...ACTIVITY_NAMES].sort(()=>Math.random()-0.5);
-  const shuffledEmojis=[...ACTIVITY_EMOJIS].sort(()=>Math.random()-0.5);
+  const pool=ACTIVITY_NAMES.map((name,i)=>({name,emoji:ACTIVITY_EMOJIS[i]})).sort(()=>Math.random()-0.5);
   const acts=[];
   for(let i=0;i<n;i++){
     let start,end,tries=0;
@@ -262,7 +258,7 @@ function isGenerateActivities(n,maxT){
       end=Math.min(start+dur,maxT);
       tries++;
     }while(end<=start&&tries<20);
-    acts.push({id:i,name:shuffledNames[i],emoji:shuffledEmojis[i],start,end});
+    acts.push({id:i,name:pool[i].name,emoji:pool[i].emoji,start,end});
   }
   return acts.sort((a,b)=>a.start-b.start);
 }
