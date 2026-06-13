@@ -3,7 +3,6 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link rel="icon" href="../favicon.png">
 <title>Connect Four — 演算法互動遊戲集</title>
 <link rel="stylesheet" href="../shared/style.css">
 <style>
@@ -26,10 +25,7 @@
 <div class="container">
 
 <header>
-  <div class="title">
-  <img src="../assets/icons/connect4.png" style="height:60px;vertical-align:middle;margin-right:8px;">
-  Connect Four
-</div>
+  <div class="title">🔴 Connect Four</div>
   <div class="subtitle">四子連線 &nbsp;·&nbsp; Alpha-Beta Pruning &nbsp;·&nbsp; Minimax</div>
 </header>
 
@@ -237,7 +233,7 @@ function f4ApplyMove(player,col,animate){
   if(F4.board[F4.rows-1].every(v=>v!==0)){
     F4.gameOver=true;F4.draw=true;addLog('f4-log','sys','棋盤已滿，平局！');
     f4RenderBoard();setStatusDot('f4-status-dot','over');document.getElementById('f4-status-text').textContent='平局';document.getElementById('f4-status-sub').textContent='';
-    setTimeout(()=>showDraw('棋盤已滿，勢均力敵！'),800);
+    setTimeout(()=>showDraw('棋盤已滿，勢均力敵！'),800);return;
   }
   F4.currentPlayer=F4.currentPlayer===1?2:1;f4UpdateStatus();
   if(F4.mode==='cpu'&&F4.currentPlayer===2)setTimeout(f4CpuTurn,400+Math.random()*400);
