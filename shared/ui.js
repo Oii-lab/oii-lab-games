@@ -47,8 +47,8 @@ function updatePlayerTags(p1Id, p2Id, cur) {
 function showResult(winner, winnerName, loserName, isMe, flavor) {
   const resultEmoji = document.getElementById('result-emoji');
   resultEmoji.innerHTML = isMe
-    ? '<img src="../assets/icons/winner.png" style="height:100px;">'
-    : '<img src="../assets/icons/loser.png" style="height:100px;">';
+    ? '<img src="../assets/icons/winner.png" style="height:140px;">'
+    : '<img src="../assets/icons/loser.png" style="height:140px;">';
   const t = document.getElementById('result-title');
   t.textContent = isMe ? '勝利！' : '失敗';
   t.style.color = isMe ? 'var(--accent3)' : 'var(--accent2)';
@@ -60,7 +60,7 @@ function showResult(winner, winnerName, loserName, isMe, flavor) {
 
 function showDraw(msg) {
   const resultEmoji = document.getElementById('result-emoji');
-  resultEmoji.innerHTML = '<img src="../assets/icons/draw.png" style="height:100px;">';
+  resultEmoji.innerHTML = '<img src="../assets/icons/draw.png" style="height:140px;">';
   const t = document.getElementById('result-title');
   t.textContent = '平局！';
   t.style.color = 'var(--accent4)';
