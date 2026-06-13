@@ -237,7 +237,7 @@ function f4ApplyMove(player,col,animate){
   if(F4.board[F4.rows-1].every(v=>v!==0)){
     F4.gameOver=true;F4.draw=true;addLog('f4-log','sys','棋盤已滿，平局！');
     f4RenderBoard();setStatusDot('f4-status-dot','over');document.getElementById('f4-status-text').textContent='平局';document.getElementById('f4-status-sub').textContent='';
-    setTimeout(()=>{document.getElementById('result-emoji').textContent='🤝';document.getElementById('result-title').textContent='平局！';document.getElementById('result-title').style.color='var(--accent4)';document.getElementById('result-msg').textContent='棋盤已滿，勢均力敵！';document.getElementById('result-overlay').classList.add('show');},800);return;
+    setTimeout(()=>showDraw('棋盤已滿，勢均力敵！'),800);
   }
   F4.currentPlayer=F4.currentPlayer===1?2:1;f4UpdateStatus();
   if(F4.mode==='cpu'&&F4.currentPlayer===2)setTimeout(f4CpuTurn,400+Math.random()*400);
