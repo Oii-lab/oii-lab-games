@@ -244,18 +244,30 @@ function generateMaze(rows,cols){
 
 function runBFS(grid,rows,cols){
   const endX=cols-2,endY=rows-2;
-  const queue=[[1,1,[]]];
+  const queue=[[1,1]];
   const visited=new Set(['1,1']);
+  const parent=new Map([['1,1',null]]);
   const cellOrder=[];
   while(queue.length){
-    const[x,y,path]=queue.shift();
+    const[x,y]=queue.shift();
     cellOrder.push([x,y]);
-    if(x===endX&&y===endY)return{path:[...path,[x,y]],visited:cellOrder};
+    if(x===endX&&y===endY){
+      // 回溯最短路徑
+      const path=[];
+      let cur=`${endX},${endY}`;
+      while(cur!==null){
+        const[px,py]=cur.split(',').map(Number);
+        path.unshift([px,py]);
+        cur=parent.get(cur);
+      }
+      return{path,visited:cellOrder};
+    }
     for(const[dx,dy]of[[1,0],[-1,0],[0,1],[0,-1]]){
       const nx=x+dx,ny=y+dy,key=`${nx},${ny}`;
       if(nx>=0&&nx<cols&&ny>=0&&ny<rows&&grid[ny][nx]===PATH&&!visited.has(key)){
         visited.add(key);
-        queue.push([nx,ny,[...path,[x,y]]]);
+        parent.set(key,`${x},${y}`);
+        queue.push([nx,ny]);
       }
     }
   }
