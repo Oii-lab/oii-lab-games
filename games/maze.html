@@ -91,11 +91,11 @@
   <div class="stats-row">
     <div class="stat-box">
       <div class="stat-val" id="stat-player" style="color:var(--accent3);">0</div>
-      <div class="stat-lbl">你的步數</div>
+      <div class="stat-lbl">你走的步數</div>
     </div>
     <div class="stat-box">
       <div class="stat-val" id="stat-bfs" style="color:#00e5ff;">—</div>
-      <div class="stat-lbl">BFS 最短步數</div>
+      <div class="stat-lbl">BFS 最短路（步）</div>
     </div>
     <div class="stat-box">
       <div class="stat-val" id="stat-dfs" style="color:#ea80fc;">—</div>
@@ -452,7 +452,7 @@ async function algoRun(){
     document.getElementById('algo-status').textContent=
       mode==='bfs'
         ?`BFS 完成！最短路徑 ${pathLen} 步，共探索 ${result.visited.length} 格`
-        :`DFS 完成！找到路徑 ${pathLen} 步，共探索 ${result.visited.length} 格`;
+        :`DFS 完成！找到路徑 ${pathLen} 步（非最短），共探索 ${result.visited.length} 格`;
     setStatusDot('algo-dot','over');
   }
   MZ.algoRunning=false;
