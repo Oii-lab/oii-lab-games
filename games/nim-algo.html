@@ -4,21 +4,21 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" href="../favicon.png">
-<title>Nim 多堆版 演算法解析 — 演算法互動遊戲集</title>
+<title>BFS / DFS 演算法解析 — 演算法互動遊戲集</title>
 <link rel="stylesheet" href="../shared/style.css">
 </head>
 <body>
 <div class="container">
 
 <header>
-  <div class="title">🧠 Nim 多堆版 演算法解析</div>
-  <div class="subtitle">XOR Nim-sum &nbsp;·&nbsp; Bouton 定理 &nbsp;·&nbsp; Sprague-Grundy Theorem</div>
+  <div class="title">🧠 BFS / DFS 演算法解析</div>
+  <div class="subtitle">BFS · DFS · 最短路徑 · 時間空間複雜度</div>
 </header>
 
 <div style="text-align:center;margin-bottom:20px;display:flex;justify-content:center;gap:12px;flex-wrap:wrap;">
-  <a href="nim.html" style="font-size:12px;color:var(--text-dim);text-decoration:none;letter-spacing:0.1em;text-transform:uppercase;padding:8px 14px;border:1px solid var(--border);border-radius:8px;transition:all 0.2s;display:inline-block;"
+  <a href="maze.html" style="font-size:12px;color:var(--text-dim);text-decoration:none;letter-spacing:0.1em;text-transform:uppercase;padding:8px 14px;border:1px solid var(--border);border-radius:8px;transition:all 0.2s;display:inline-block;"
     onmouseover="this.style.color='var(--accent)';this.style.borderColor='var(--accent)'"
-    onmouseout="this.style.color='var(--text-dim)';this.style.borderColor='var(--border)'">⚡ 回遊戲</a>
+    onmouseout="this.style.color='var(--text-dim)';this.style.borderColor='var(--border)'">🔵 回遊戲</a>
   <a href="../index.html" style="font-size:12px;color:var(--text-dim);text-decoration:none;letter-spacing:0.1em;text-transform:uppercase;padding:8px 14px;border:1px solid var(--border);border-radius:8px;transition:all 0.2s;display:inline-block;"
     onmouseover="this.style.color='var(--accent)';this.style.borderColor='var(--accent)'"
     onmouseout="this.style.color='var(--text-dim)';this.style.borderColor='var(--border)'">← 返回選單</a>
@@ -28,280 +28,273 @@
 <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:28px;">
   <div style="font-size:11px;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-dim);margin-bottom:12px;">本頁內容</div>
   <div style="display:flex;flex-direction:column;gap:8px;">
-    <a href="#step1" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Step 1 · 為什麼單堆的方法在多堆失效</a>
-    <a href="#step2" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Step 2 · XOR 的關鍵性質</a>
-    <a href="#step3" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Step 3 · Bouton 定理與必勝策略</a>
-    <a href="#step4" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Step 4 · 完整走一局</a>
-    <a href="#step5" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Step 5 · Sprague-Grundy 定理</a>
-    <a href="#step6" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Step 6 · Misère 規則的調整</a>
-    <a href="#sim" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">互動 XOR 計算器</a>
+    <a href="#step1" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Step 1 · 圖的表示與搜尋問題</a>
+    <a href="#step2" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Step 2 · BFS：廣度優先搜尋</a>
+    <a href="#step3" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Step 3 · DFS：深度優先搜尋</a>
+    <a href="#step4" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Step 4 · BFS vs DFS 完整比較</a>
+    <a href="#step5" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Step 5 · 複雜度分析</a>
+    <a href="#sim" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">互動模擬：小迷宮逐步追蹤</a>
     <a href="#leetcode" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">LeetCode 相關題目</a>
   </div>
 </div>
 
 <!-- Step 1 -->
 <div id="step1" class="algo-section">
-  <div class="acc-step-label">Step 1 · 為什麼單堆的方法在多堆失效</div>
+  <div class="acc-step-label">Step 1 · 圖的表示與搜尋問題</div>
   <div class="acc-p">
-    Bachet's Game 用的是 <code>n % (M+1)</code> 的週期規律。<br>
-    但多堆 Nim 每次可以從<strong>任意一堆</strong>取任意數量，情況完全不同：<br><br>
-    比如 [3, 5]，你能取第一堆的3顆、也能取第二堆的1顆……沒有固定的「步長」可以套用模運算。<br><br>
-    這時候需要一個能同時描述<strong>多個數字</strong>狀態的工具——<strong>XOR（位元互斥或）</strong>。
+    迷宮可以用<strong>圖（Graph）</strong>來表示：<br>
+    每個可走的格子是一個<strong>節點（Node）</strong>，相鄰可走的格子之間有<strong>邊（Edge）</strong>。<br><br>
+    搜尋問題：從起點 S 找一條路到終點 E。<br>
+    最短路徑問題：找步數最少的那條路。
+  </div>
+  <div class="acc-code">
+    <span class="lang-tag">Python</span>
+    <pre><span class="cmt"># 迷宮表示：0=可走，1=牆</span>
+maze = [
+    [<span class="num">1</span>,<span class="num">1</span>,<span class="num">1</span>,<span class="num">1</span>,<span class="num">1</span>],
+    [<span class="num">1</span>,<span class="num">0</span>,<span class="num">0</span>,<span class="num">0</span>,<span class="num">1</span>],
+    [<span class="num">1</span>,<span class="num">1</span>,<span class="num">1</span>,<span class="num">0</span>,<span class="num">1</span>],
+    [<span class="num">1</span>,<span class="num">0</span>,<span class="num">0</span>,<span class="num">0</span>,<span class="num">1</span>],
+    [<span class="num">1</span>,<span class="num">1</span>,<span class="num">1</span>,<span class="num">1</span>,<span class="num">1</span>],
+]
+start = (<span class="num">1</span>, <span class="num">1</span>)  <span class="cmt"># (row, col)</span>
+end   = (<span class="num">3</span>, <span class="num">3</span>)
+
+<span class="cmt"># 四個方向：上下左右</span>
+DIRS = [(-<span class="num">1</span>,<span class="num">0</span>), (<span class="num">1</span>,<span class="num">0</span>), (<span class="num">0</span>,-<span class="num">1</span>), (<span class="num">0</span>,<span class="num">1</span>)]</pre>
   </div>
 </div>
 
 <!-- Step 2 -->
 <div id="step2" class="algo-section">
-  <div class="acc-step-label">Step 2 · XOR 的關鍵性質</div>
+  <div class="acc-step-label">Step 2 · BFS：廣度優先搜尋</div>
   <div class="acc-p">
-    XOR 有兩個對這個問題至關重要的性質：
+    BFS 用<strong>佇列（Queue）</strong>，像水波一樣向外擴散——先把所有距離 1 的格子走完，再走距離 2 的，依此類推。<br><br>
+    因為每次都擴展「最近的」格子，BFS <strong>保證找到最短路徑</strong>。
   </div>
   <div class="acc-code">
     <span class="lang-tag">Python</span>
-    <pre><span class="cmt"># 性質1：a XOR a = 0（自我抵消）</span>
-<span class="num">5</span> ^ <span class="num">5</span> == <span class="num">0</span>   <span class="cmt"># True</span>
+    <pre><span class="kw">from</span> collections <span class="kw">import</span> deque
 
-<span class="cmt"># 性質2：a XOR 0 = a（與0 XOR 不變）</span>
-<span class="num">5</span> ^ <span class="num">0</span> == <span class="num">5</span>   <span class="cmt"># True</span>
+<span class="kw">def</span> <span class="fn">bfs</span>(maze, start, end):
+    queue = deque([(start, [start])])  <span class="cmt"># (當前位置, 路徑)</span>
+    visited = {start}
 
-<span class="cmt"># 把每個數字寫成二進位，對每個位元獨立看：</span>
-<span class="cmt">#  3 = 011</span>
-<span class="cmt">#  5 = 101</span>
-<span class="cmt">#  6 = 110</span>
-<span class="cmt"># XOR = 000  ← 每個位元上 1 的個數都是偶數 → Nim-sum = 0</span>
+    <span class="kw">while</span> queue:
+        (r, c), path = queue.popleft()  <span class="cmt"># 從前端取出（FIFO）</span>
 
-<span class="cmt">#  1 = 001</span>
-<span class="cmt">#  2 = 010</span>
-<span class="cmt">#  4 = 100</span>
-<span class="cmt"># XOR = 111 = 7  ← 每個位元上都是奇數個 1 → Nim-sum ≠ 0</span></pre>
+        <span class="kw">if</span> (r, c) == end:
+            <span class="kw">return</span> path  <span class="cmt"># 找到！一定是最短路徑</span>
+
+        <span class="kw">for</span> dr, dc <span class="kw">in</span> DIRS:
+            nr, nc = r + dr, c + dc
+            <span class="kw">if</span> (<span class="num">0</span> <= nr < <span class="fn">len</span>(maze) <span class="kw">and</span>
+                <span class="num">0</span> <= nc < <span class="fn">len</span>(maze[<span class="num">0</span>]) <span class="kw">and</span>
+                maze[nr][nc] == <span class="num">0</span> <span class="kw">and</span>
+                (nr, nc) <span class="kw">not in</span> visited):
+                visited.add((nr, nc))
+                queue.append(((nr, nc), path + [(nr, nc)]))
+
+    <span class="kw">return</span> []  <span class="cmt"># 無解</span></pre>
   </div>
   <div class="acc-insight">
-    <span class="ins-label">💡 直覺</span>
-    把各堆石頭數量「疊加」在二進位上，XOR 就是看每個位元有幾個 1。<br>
-    偶數個 1 → 那個位元 XOR 為 0，奇數個 1 → XOR 為 1。<br>
-    Nim-sum = 0 代表每個位元都「配對」了，是一種「平衡」狀態。
+    <span class="ins-label">🔑 關鍵：Queue（先進先出）</span>
+    BFS 用 Queue，保證每層（每個距離）都走完再走下一層。<br>
+    第一次到達終點時，就是最短路徑。
   </div>
 </div>
 
 <!-- Step 3 -->
 <div id="step3" class="algo-section">
-  <div class="acc-step-label">Step 3 · Bouton 定理與必勝策略</div>
-  <div class="acc-insight" style="margin-bottom:20px;">
-    <span class="ins-label">📐 Bouton 定理（1901年）</span>
-    <strong>Nim-sum = 0 → 當前玩家必輸</strong><br>
-    <strong>Nim-sum ≠ 0 → 當前玩家必贏</strong>
-  </div>
-  <div class="acc-p"><strong>為什麼 Nim-sum = 0 必輸？</strong><br><br>
-    從 Nim-sum = 0 出發，不管你從哪一堆取幾顆，那一堆的數字一定會改變，<br>
-    至少有一個位元被動到，所以取完後 Nim-sum <strong>一定不等於 0</strong>。<br>
-    對手永遠從 Nim-sum ≠ 0 的狀態開始，你永遠從 Nim-sum = 0 的狀態開始。<br>
-    最終所有石頭被取光（Nim-sum = 0），輪到你——你輸。
-  </div>
-  <div class="acc-p" style="margin-top:16px;"><strong>為什麼 Nim-sum ≠ 0 必贏？</strong><br><br>
-    Nim-sum ≠ 0，表示存在某個最高位的 1。<br>
-    找到那個最高位，找一堆在那個位上也是 1 的堆，<br>
-    從那堆取走適當數量，讓那堆和 Nim-sum XOR 之後比原來小，<br>
-    取完後整體 Nim-sum 就變成 0，把必輸局面傳給對手。
+  <div class="acc-step-label">Step 3 · DFS：深度優先搜尋</div>
+  <div class="acc-p">
+    DFS 用<strong>堆疊（Stack）</strong>，一條路走到底，走不通再回頭（回溯）。<br>
+    DFS <strong>不保證找到最短路徑</strong>，但空間使用通常比 BFS 少。
   </div>
   <div class="acc-code">
     <span class="lang-tag">Python</span>
-    <pre><span class="kw">def</span> <span class="fn">nim_best_move</span>(heaps: list) -> tuple:
-    nim_sum = <span class="num">0</span>
-    <span class="kw">for</span> h <span class="kw">in</span> heaps:
-        nim_sum ^= h
+    <pre><span class="kw">def</span> <span class="fn">dfs</span>(maze, start, end):
+    stack = [(start, [start])]  <span class="cmt"># (當前位置, 路徑)</span>
+    visited = {start}
 
-    <span class="kw">if</span> nim_sum == <span class="num">0</span>:
-        <span class="cmt"># 敗局，隨便取一顆（對手完美時必輸）</span>
-        i = next(i <span class="kw">for</span> i, h <span class="kw">in</span> <span class="fn">enumerate</span>(heaps) <span class="kw">if</span> h > <span class="num">0</span>)
-        <span class="kw">return</span> (i, <span class="num">1</span>)
+    <span class="kw">while</span> stack:
+        (r, c), path = stack.pop()  <span class="cmt"># 從頂端取出（LIFO）</span>
 
-    <span class="kw">for</span> i, h <span class="kw">in</span> <span class="fn">enumerate</span>(heaps):
-        target = h ^ nim_sum    <span class="cmt"># 取完後這堆應剩幾顆</span>
-        <span class="kw">if</span> target < h:          <span class="cmt"># 只有減少才合法</span>
-            <span class="kw">return</span> (i, h - target)  <span class="cmt"># 取走 h-target 顆</span></pre>
+        <span class="kw">if</span> (r, c) == end:
+            <span class="kw">return</span> path  <span class="cmt"># 找到！但不一定最短</span>
+
+        <span class="kw">for</span> dr, dc <span class="kw">in</span> DIRS:
+            nr, nc = r + dr, c + dc
+            <span class="kw">if</span> (<span class="num">0</span> <= nr < <span class="fn">len</span>(maze) <span class="kw">and</span>
+                <span class="num">0</span> <= nc < <span class="fn">len</span>(maze[<span class="num">0</span>]) <span class="kw">and</span>
+                maze[nr][nc] == <span class="num">0</span> <span class="kw">and</span>
+                (nr, nc) <span class="kw">not in</span> visited):
+                visited.add((nr, nc))
+                stack.append(((nr, nc), path + [(nr, nc)]))
+
+    <span class="kw">return</span> []  <span class="cmt"># 無解</span></pre>
+  </div>
+  <div class="acc-insight">
+    <span class="ins-label">🔑 關鍵：Stack（後進先出）</span>
+    BFS 和 DFS 的程式碼幾乎一樣，唯一差別：<br>
+    BFS 用 <code>deque.popleft()</code>（從前端取）<br>
+    DFS 用 <code>stack.pop()</code>（從後端取）<br>
+    一個資料結構的差異，造成完全不同的搜尋行為！
   </div>
 </div>
 
 <!-- Step 4 -->
 <div id="step4" class="algo-section">
-  <div class="acc-step-label">Step 4 · 完整走一局（[3, 5, 7]）</div>
-  <div class="acc-p">
-    初始局面：[3, 5, 7]<br>
-    Nim-sum = 3 XOR 5 XOR 7 = <code>011 XOR 101 XOR 111 = 001 = 1</code> ≠ 0 → 先手必贏
-  </div>
+  <div class="acc-step-label">Step 4 · BFS vs DFS 完整比較</div>
   <div style="overflow-x:auto;margin:16px 0;">
     <table style="width:100%;border-collapse:collapse;font-size:13px;">
       <thead>
         <tr style="border-bottom:1px solid var(--border);">
-          <th style="padding:10px;text-align:left;color:var(--text-dim);font-weight:500;">局面</th>
-          <th style="padding:10px;text-align:left;color:var(--text-dim);font-weight:500;">Nim-sum</th>
-          <th style="padding:10px;text-align:left;color:var(--text-dim);font-weight:500;">走法</th>
-          <th style="padding:10px;text-align:left;color:var(--text-dim);font-weight:500;">狀態</th>
+          <th style="padding:10px;text-align:left;color:var(--text-dim);font-weight:500;"></th>
+          <th style="padding:10px;text-align:center;color:#00e5ff;font-weight:700;">BFS</th>
+          <th style="padding:10px;text-align:center;color:#ea80fc;font-weight:700;">DFS</th>
         </tr>
       </thead>
       <tbody>
         <tr style="border-bottom:1px solid var(--border);">
-          <td style="padding:10px;font-weight:700;">[3, 5, 7]</td>
-          <td style="padding:10px;color:var(--accent);">1 ≠ 0</td>
-          <td style="padding:10px;">先手從堆3取1顆（7→6）</td>
-          <td style="padding:10px;color:var(--accent);">W ✓</td>
+          <td style="padding:10px;">資料結構</td>
+          <td style="padding:10px;text-align:center;">Queue（佇列）</td>
+          <td style="padding:10px;text-align:center;">Stack（堆疊）</td>
         </tr>
         <tr style="border-bottom:1px solid var(--border);">
-          <td style="padding:10px;font-weight:700;">[3, 5, 6]</td>
-          <td style="padding:10px;color:var(--accent2);">0</td>
-          <td style="padding:10px;">後手任意取</td>
-          <td style="padding:10px;color:var(--accent2);">L ✗</td>
+          <td style="padding:10px;">搜尋方式</td>
+          <td style="padding:10px;text-align:center;">逐層向外擴展</td>
+          <td style="padding:10px;text-align:center;">一條路走到底</td>
         </tr>
         <tr style="border-bottom:1px solid var(--border);">
-          <td style="padding:10px;font-weight:700;">…</td>
-          <td style="padding:10px;color:var(--accent);">≠ 0</td>
-          <td style="padding:10px;">先手恢復 Nim-sum=0</td>
-          <td style="padding:10px;color:var(--accent);">W ✓</td>
+          <td style="padding:10px;">最短路徑</td>
+          <td style="padding:10px;text-align:center;color:var(--accent);">✅ 保證</td>
+          <td style="padding:10px;text-align:center;color:var(--accent2);">❌ 不保證</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:10px;">時間複雜度</td>
+          <td style="padding:10px;text-align:center;">O(V+E)</td>
+          <td style="padding:10px;text-align:center;">O(V+E)</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:10px;">空間複雜度</td>
+          <td style="padding:10px;text-align:center;color:var(--accent2);">O(V)（較大）</td>
+          <td style="padding:10px;text-align:center;color:var(--accent);">O(深度)（較小）</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:10px;">適合場景</td>
+          <td style="padding:10px;text-align:center;">找最短路徑</td>
+          <td style="padding:10px;text-align:center;">檢測連通性<br>拓撲排序</td>
         </tr>
         <tr>
-          <td style="padding:10px;font-weight:700;">[0, 0, 1]</td>
-          <td style="padding:10px;color:var(--accent2);">0（Misère）</td>
-          <td style="padding:10px;">後手被迫取最後一顆</td>
-          <td style="padding:10px;color:var(--accent2);">後手輸 ✗</td>
+          <td style="padding:10px;">直覺比喻</td>
+          <td style="padding:10px;text-align:center;">水波向外擴散</td>
+          <td style="padding:10px;text-align:center;">走迷宮一直走到底</td>
         </tr>
       </tbody>
     </table>
-  </div>
-  <div class="acc-insight">
-    <span class="ins-label">✅ 驗證</span>
-    3 XOR 5 XOR 6 = <code>011 XOR 101 XOR 110 = 000 = 0</code> ✓<br>
-    先手每次都能把 Nim-sum 恢復成 0，後手永遠面對 Nim-sum ≠ 0。
   </div>
 </div>
 
 <!-- Step 5 -->
 <div id="step5" class="algo-section">
-  <div class="acc-step-label">Step 5 · Sprague-Grundy 定理（進階）</div>
+  <div class="acc-step-label">Step 5 · 複雜度分析</div>
   <div class="acc-p">
-    為什麼 XOR 能用？背後有更深的理論：<strong>Sprague-Grundy 定理</strong>。<br><br>
-    每個遊戲狀態都有一個 <strong>Grundy value（或稱 nimber）</strong>，定義為：<br>
-    <code>G(狀態) = mex({ G(可到達的狀態) })</code><br>
-    其中 mex 是「最小不存在的非負整數」。<br><br>
-    對於 Nim 的單堆：<code>G(n顆) = n</code>（因為從n顆可以到0,1,...,n-1，mex = n）<br><br>
-    <strong>多個獨立子遊戲合在一起時：整體 G = 各子遊戲 G 的 XOR。</strong><br>
-    這就是為什麼多堆 Nim 的勝負完全由 XOR 決定！
+    對於一個 n×m 的迷宮：
   </div>
   <div class="acc-code">
-    <span class="lang-tag">Python</span>
-    <pre><span class="kw">from</span> functools <span class="kw">import</span> lru_cache
+    <span class="lang-tag">分析</span>
+    <pre><span class="cmt"># V = 節點數 = n × m（所有格子）</span>
+<span class="cmt"># E = 邊數 ≤ 4V（每格最多4個鄰居）</span>
 
-<span class="kw">def</span> <span class="fn">grundy</span>(n: <span class="cls">int</span>, moves: set) -> <span class="cls">int</span>:
-    <span class="cmt">"""計算任意遊戲的 Grundy value"""</span>
-    @lru_cache(maxsize=<span class="kw">None</span>)
-    <span class="kw">def</span> <span class="fn">g</span>(state):
-        reachable = {g(state - m) <span class="kw">for</span> m <span class="kw">in</span> moves <span class="kw">if</span> m <= state}
-        mex = <span class="num">0</span>
-        <span class="kw">while</span> mex <span class="kw">in</span> reachable:
-            mex += <span class="num">1</span>
-        <span class="kw">return</span> mex
-    <span class="kw">return</span> g(n)
+<span class="cmt"># 時間複雜度</span>
+BFS: O(V + E) = O(n × m)   <span class="cmt"># 每個格子最多訪問一次</span>
+DFS: O(V + E) = O(n × m)   <span class="cmt"># 相同</span>
 
-<span class="cmt"># Nim 單堆：moves = {1,2,3,...,n}（可取任意數）</span>
-<span class="cmt"># G(0)=0, G(1)=1, G(2)=2, G(3)=3 ... G(n)=n</span>
+<span class="cmt"># 空間複雜度</span>
+BFS: O(V) = O(n × m)       <span class="cmt"># 最壞情況 Queue 存所有節點</span>
+DFS: O(深度) = O(n + m)    <span class="cmt"># 最壞情況 Stack 深度 = 路徑長</span>
 
-<span class="cmt"># 多堆 [3,5,7]：G = 3 XOR 5 XOR 7 = 1 ≠ 0 → 先手必贏</span>
-<span class="cmt"># 多堆 [3,5,6]：G = 3 XOR 5 XOR 6 = 0 → 當前玩家必輸</span></pre>
+<span class="cmt"># 實際上 BFS 在廣闊空間需要更多記憶體</span>
+<span class="cmt"># DFS 在深度很深時可能 Stack Overflow（遞迴版）</span></pre>
   </div>
   <div class="acc-insight">
-    <span class="ins-label">🔬 重要性</span>
-    Sprague-Grundy 讓你能分析<strong>任意組合賽局</strong>，不只是 Nim。<br>
-    只要能算出每個子遊戲的 Grundy value，XOR 起來就知道輸贏。<br>
-    這是組合賽局理論最核心的定理。
+    <span class="ins-label">💡 何時用哪個？</span>
+    需要最短路徑 → BFS（或 Dijkstra / A*）<br>
+    只需要判斷是否可達 → DFS 或 BFS 都可以<br>
+    記憶體有限、圖很深 → DFS<br>
+    目標離起點很近 → BFS 更快找到
   </div>
 </div>
 
-<!-- Step 6 -->
-<div id="step6" class="algo-section">
-  <div class="acc-step-label">Step 6 · Misère 規則的調整</div>
-  <div class="acc-p">
-    我們的遊戲用的是 <strong>Misère 規則</strong>（取最後一顆者輸），和標準 Nim（取最後一顆者贏）略有不同。<br><br>
-    Misère Nim 的策略只在接近結局時需要調整：
-  </div>
-  <div style="overflow-x:auto;margin:16px 0;">
-    <table style="width:100%;border-collapse:collapse;font-size:13px;">
-      <thead>
-        <tr style="border-bottom:1px solid var(--border);">
-          <th style="padding:10px;text-align:left;color:var(--text-dim);font-weight:500;">情況</th>
-          <th style="padding:10px;text-align:left;color:var(--text-dim);font-weight:500;">標準 Nim</th>
-          <th style="padding:10px;text-align:left;color:var(--text-dim);font-weight:500;">Misère Nim</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr style="border-bottom:1px solid var(--border);">
-          <td style="padding:10px;">存在大於1的堆</td>
-          <td style="padding:10px;">Nim-sum = 0 → 必輸</td>
-          <td style="padding:10px;">Nim-sum = 0 → 必輸（相同）</td>
-        </tr>
-        <tr>
-          <td style="padding:10px;">全部都是 0 或 1 的堆</td>
-          <td style="padding:10px;">1的堆數為奇數 → 必贏</td>
-          <td style="padding:10px;">1的堆數為奇數 → <strong>必輸</strong>（相反）</td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
-  <div class="acc-insight">
-    <span class="ins-label">💡 記憶口訣</span>
-    中盤和標準 Nim 完全一樣，只有到「全是1的堆」時反轉。<br>
-    直覺上，全是1的堆意味著每人每輪只能取1顆，最後一個取的人輸，<br>
-    所以奇數堆時你是「最後取」的人。
-  </div>
-</div>
-
-<!-- 互動計算器 -->
+<!-- 互動模擬 -->
 <div id="sim" class="algo-section">
-  <div class="acc-step-label">互動 XOR 計算器</div>
-  <div class="acc-p">輸入各堆的石頭數，即時計算 Nim-sum 和勝負判斷。</div>
-  <div id="sim-heaps" style="display:flex;flex-direction:column;gap:10px;margin:16px 0;"></div>
-  <div style="display:flex;gap:10px;margin-bottom:16px;">
-    <button class="btn btn-sm" onclick="simAddHeap()">＋ 加一堆</button>
-    <button class="btn btn-sm" onclick="simRemoveHeap()">－ 減一堆</button>
+  <div class="acc-step-label">互動模擬：小迷宮逐步追蹤</div>
+  <div class="acc-p">在 5×5 的小迷宮上，一步步看 BFS 和 DFS 的差異。</div>
+
+  <div style="display:flex;gap:10px;flex-wrap:wrap;margin:12px 0;align-items:center;">
+    <button class="btn btn-sm" onclick="simReset()">↺ 重置</button>
+    <button class="btn btn-primary btn-sm" id="sim-next-btn" onclick="simNext()">下一步 →</button>
+    <button class="btn btn-sm" onclick="simFill()">全部執行</button>
+    <div style="display:flex;gap:6px;margin-left:8px;">
+      <button class="btn btn-sm" id="sim-bfs-btn" onclick="simSetMode('bfs')" style="border-color:#00e5ff;color:#00e5ff;">BFS</button>
+      <button class="btn btn-sm" id="sim-dfs-btn" onclick="simSetMode('dfs')">DFS</button>
+    </div>
   </div>
-  <div id="sim-result" style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:16px;font-size:14px;"></div>
+
+  <div id="sim-explain" style="font-size:13px;color:var(--text-dim);min-height:40px;margin-bottom:12px;padding:10px;background:var(--bg);border-radius:8px;border:1px solid var(--border);"></div>
+
+  <div style="display:flex;gap:24px;flex-wrap:wrap;justify-content:center;">
+    <div>
+      <div style="font-size:11px;color:var(--text-dim);text-align:center;margin-bottom:6px;">迷宮</div>
+      <canvas id="sim-canvas" width="200" height="200" style="border:1px solid var(--border);border-radius:8px;"></canvas>
+    </div>
+    <div style="flex:1;min-width:200px;">
+      <div style="font-size:11px;color:var(--text-dim);margin-bottom:6px;" id="sim-struct-label">Queue 狀態</div>
+      <div id="sim-struct" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px;min-height:80px;font-size:12px;font-family:'Fira Code',monospace;color:var(--text-dim);"></div>
+      <div style="font-size:11px;color:var(--text-dim);margin:8px 0 4px;">已訪問</div>
+      <div id="sim-visited" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px;min-height:40px;font-size:12px;font-family:'Fira Code',monospace;color:var(--text-dim);"></div>
+    </div>
+  </div>
 </div>
 
 <!-- LeetCode -->
 <div id="leetcode" class="algo-section">
   <div class="acc-step-label">LeetCode 相關題目</div>
   <div style="display:flex;flex-direction:column;gap:10px;margin-top:12px;">
-    <a href="https://leetcode.com/problems/nim-game/" target="_blank" class="lc-card">
-      <span class="lc-num">#292</span><span class="lc-title">Nim Game</span>
-      <span class="lc-tag easy">Easy</span>
-      <span class="lc-desc">單堆 Nim 入門，n%4==0 必輸，理解前先看這題</span>
-    </a>
-    <a href="https://leetcode.com/problems/chalkboard-xor-game/" target="_blank" class="lc-card">
-      <span class="lc-num">#810</span><span class="lc-title">Chalkboard XOR Game</span>
-      <span class="lc-tag hard">Hard</span>
-      <span class="lc-desc">直接用 XOR 判斷勝負，本題的核心應用</span>
-    </a>
-    <a href="https://leetcode.com/problems/stone-game-iv/" target="_blank" class="lc-card">
-      <span class="lc-num">#1510</span><span class="lc-title">Stone Game IV</span>
-      <span class="lc-tag hard">Hard</span>
-      <span class="lc-desc">Grundy value DP，每次取完全平方數</span>
-    </a>
-    <a href="https://leetcode.com/problems/flip-game-ii/" target="_blank" class="lc-card">
-      <span class="lc-num">#294</span><span class="lc-title">Flip Game II</span>
+    <a href="https://leetcode.com/problems/number-of-islands/" target="_blank" class="lc-card">
+      <span class="lc-num">#200</span><span class="lc-title">Number of Islands</span>
       <span class="lc-tag medium">Medium</span>
-      <span class="lc-desc">Backtracking + Memo + Grundy value 概念</span>
+      <span class="lc-desc">DFS / BFS 基礎題，連通分量計數</span>
     </a>
-    <a href="https://leetcode.com/problems/cat-and-mouse/" target="_blank" class="lc-card">
-      <span class="lc-num">#913</span><span class="lc-title">Cat and Mouse</span>
+    <a href="https://leetcode.com/problems/shortest-path-in-binary-matrix/" target="_blank" class="lc-card">
+      <span class="lc-num">#1091</span><span class="lc-title">Shortest Path in Binary Matrix</span>
+      <span class="lc-tag medium">Medium</span>
+      <span class="lc-desc">BFS 找最短路徑，和迷宮問題完全一樣</span>
+    </a>
+    <a href="https://leetcode.com/problems/walls-and-gates/" target="_blank" class="lc-card">
+      <span class="lc-num">#286</span><span class="lc-title">Walls and Gates</span>
+      <span class="lc-tag medium">Medium</span>
+      <span class="lc-desc">多源 BFS，從多個起點同時擴散</span>
+    </a>
+    <a href="https://leetcode.com/problems/word-ladder/" target="_blank" class="lc-card">
+      <span class="lc-num">#127</span><span class="lc-title">Word Ladder</span>
       <span class="lc-tag hard">Hard</span>
-      <span class="lc-desc">圖上博弈，Minimax + BFS，進階挑戰</span>
+      <span class="lc-desc">BFS 在抽象圖上的應用，找最短轉換序列</span>
+    </a>
+    <a href="https://leetcode.com/problems/pacific-atlantic-water-flow/" target="_blank" class="lc-card">
+      <span class="lc-num">#417</span><span class="lc-title">Pacific Atlantic Water Flow</span>
+      <span class="lc-tag medium">Medium</span>
+      <span class="lc-desc">反向 BFS / DFS，從終點向起點搜尋</span>
     </a>
   </div>
 </div>
 
 <!-- 導航 -->
 <div style="display:flex;justify-content:center;gap:12px;margin:32px 0 8px;flex-wrap:wrap;">
-  <a href="count21-algo.html" style="display:inline-flex;align-items:center;gap:8px;padding:12px 20px;background:var(--surface);border:1px solid var(--border);border-radius:12px;text-decoration:none;color:var(--text);font-size:13px;transition:all 0.2s;"
+  <a href="interval-scheduling-algo.html" style="display:inline-flex;align-items:center;gap:8px;padding:12px 20px;background:var(--surface);border:1px solid var(--border);border-radius:12px;text-decoration:none;color:var(--text);font-size:13px;transition:all 0.2s;"
     onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'"
-    onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text)'">← 🔢 21點報數解析</a>
+    onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text)'">← 📅 區間排程解析</a>
   <a href="../index.html" style="display:inline-flex;align-items:center;gap:8px;padding:12px 20px;background:var(--surface);border:1px solid var(--border);border-radius:12px;text-decoration:none;color:var(--text);font-size:13px;transition:all 0.2s;"
     onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'"
     onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text)'">回選單 →</a>
@@ -321,47 +314,122 @@
 .lc-tag.hard{background:rgba(255,60,60,0.15);color:#ff3c3c;}
 .lc-desc{font-size:12px;color:var(--text-dim);width:100%;margin-top:2px;}
 .acc-step-label{font-family:'Orbitron',monospace;font-size:11px;letter-spacing:0.15em;text-transform:uppercase;color:var(--accent);margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid var(--border);}
-.sim-heap-row{display:flex;align-items:center;gap:12px;}
-.sim-heap-row input{background:var(--surface);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:8px;width:80px;font-size:16px;text-align:center;}
-.sim-heap-row .bin{font-family:'Orbitron',monospace;font-size:12px;color:var(--text-dim);min-width:60px;}
 </style>
 
 <script>
-let simHeapVals=[3,5,7];
-function simRender(){
-  const c=document.getElementById('sim-heaps');c.innerHTML='';
-  simHeapVals.forEach((v,i)=>{
-    const row=document.createElement('div');row.className='sim-heap-row';
-    const lbl=document.createElement('span');lbl.style.cssText='font-size:13px;color:var(--text-dim);min-width:36px;';lbl.textContent=`堆${i+1}`;
-    const inp=document.createElement('input');inp.type='number';inp.min=0;inp.max=99;inp.value=v;
-    inp.oninput=()=>{simHeapVals[i]=Math.max(0,+inp.value||0);simCalc();};
-    const bin=document.createElement('span');bin.className='bin';bin.textContent=`= ${v.toString(2).padStart(4,'0')}`;
-    inp.oninput=()=>{simHeapVals[i]=Math.max(0,+inp.value||0);bin.textContent=`= ${simHeapVals[i].toString(2).padStart(4,'0')}`;simCalc();};
-    row.appendChild(lbl);row.appendChild(inp);row.appendChild(bin);c.appendChild(row);
-  });
-  simCalc();
+// 5×5 迷宮模擬
+const SIM_MAZE=[
+  [1,1,1,1,1],
+  [1,0,0,0,1],
+  [1,1,1,0,1],
+  [1,0,0,0,1],
+  [1,1,1,1,1],
+];
+const SIM_START=[1,1],SIM_END=[3,3];
+const DIRS=[[-1,0],[1,0],[0,-1],[0,1]];
+const DIR_NAMES=['上','下','左','右'];
+
+let simMode='bfs',simQueue=[],simVisited=new Set(),simStep=0,simPath=[];
+let simAllSteps=[];
+
+function simSetMode(m){
+  simMode=m;
+  document.getElementById('sim-bfs-btn').style.borderColor=m==='bfs'?'#00e5ff':'var(--border)';
+  document.getElementById('sim-bfs-btn').style.color=m==='bfs'?'#00e5ff':'var(--text-dim)';
+  document.getElementById('sim-dfs-btn').style.borderColor=m==='dfs'?'#ea80fc':'var(--border)';
+  document.getElementById('sim-dfs-btn').style.color=m==='dfs'?'#ea80fc':'var(--text-dim)';
+  document.getElementById('sim-struct-label').textContent=m==='bfs'?'Queue 狀態（先進先出）':'Stack 狀態（後進先出）';
+  simReset();
 }
-function simCalc(){
-  const xs=simHeapVals.reduce((a,b)=>a^b,0);
-  const multiHeaps=simHeapVals.filter(h=>h>1).length;
-  const ones=simHeapVals.filter(h=>h===1).length;
-  let verdict,detail;
-  if(simHeapVals.every(h=>h===0)){verdict='遊戲已結束';detail='';}
-  else if(multiHeaps===0){
-    verdict=ones%2===1?'⚠️ 當前玩家必輸（Misère：奇數個1堆）':'✅ 當前玩家必贏（Misère：偶數個1堆）';
-    detail=`全是1的堆，適用 Misère 特殊規則`;
-  }else{
-    verdict=xs===0?'⚠️ 當前玩家必輸（Nim-sum = 0）':'✅ 當前玩家必贏（Nim-sum ≠ 0）';
-    detail=`${simHeapVals.join(' XOR ')} = ${xs}（二進位：${xs.toString(2)}）`;
+
+function simReset(){
+  simVisited=new Set([`${SIM_START[0]},${SIM_START[1]}`]);
+  simPath=[];simStep=0;
+  // BFS 和 DFS 初始結構相同，差異在 simNext 取出方式（shift vs pop）
+  simQueue=[[SIM_START,[SIM_START]]];
+  simAllSteps=[];
+  document.getElementById('sim-explain').textContent=`初始化：將起點 (${SIM_START[0]},${SIM_START[1]}) 加入${simMode==='bfs'?'Queue':'Stack'}`;
+  simDrawMaze([],null);
+  simUpdateStruct();
+}
+
+function simNext(){
+  if(simQueue.length===0){
+    document.getElementById('sim-explain').textContent='搜尋完成！';return;
   }
-  document.getElementById('sim-result').innerHTML=`
-    <div style="font-size:20px;font-family:'Orbitron',monospace;font-weight:900;margin-bottom:8px;">${xs}</div>
-    <div style="font-size:12px;color:var(--text-dim);margin-bottom:12px;">${detail}</div>
-    <div style="font-size:15px;font-weight:600;">${verdict}</div>`;
+  const[[r,c],path]=simMode==='bfs'?simQueue.shift():simQueue.pop();
+  simAllSteps.push([r,c]);
+
+  if(r===SIM_END[0]&&c===SIM_END[1]){
+    simPath=path;
+    simDrawMaze(simAllSteps,path);
+    document.getElementById('sim-explain').textContent=`🎉 找到終點！路徑長度 ${path.length-1} 步，共探索 ${simAllSteps.length} 格。`;
+    document.getElementById('sim-next-btn').disabled=true;
+    simQueue=[];simUpdateStruct();return;
+  }
+
+  const neighbors=[];
+  for(let d=0;d<4;d++){
+    const nr=r+DIRS[d][0],nc=c+DIRS[d][1];
+    const key=`${nr},${nc}`;
+    if(nr>=0&&nr<5&&nc>=0&&nc<5&&SIM_MAZE[nr][nc]===0&&!simVisited.has(key)){
+      simVisited.add(key);
+      simQueue.push([[nr,nc],[...path,[nr,nc]]]);
+      neighbors.push(`(${nr},${nc})`);
+    }
+  }
+
+  document.getElementById('sim-explain').textContent=
+    `取出 (${r},${c})${neighbors.length?`，將鄰居 ${neighbors.join('、')} 加入${simMode==='bfs'?'Queue':'Stack'}`:'，無新鄰居'}`;
+  document.getElementById('sim-visited').textContent=
+    [...simAllSteps].map(([r,c])=>`(${r},${c})`).join(' → ');
+
+  simDrawMaze(simAllSteps,null);
+  simUpdateStruct();
 }
-function simAddHeap(){if(simHeapVals.length<6){simHeapVals.push(1);simRender();}}
-function simRemoveHeap(){if(simHeapVals.length>2){simHeapVals.pop();simRender();}}
-simRender();
+
+function simUpdateStruct(){
+  const el=document.getElementById('sim-struct');
+  if(simQueue.length===0){el.textContent='（空）';return;}
+  const preview=simQueue.slice(0,6).map(([[r,c]])=>`(${r},${c})`);
+  el.textContent=(simMode==='bfs'?'前→ ':'頂→ ')+preview.join(', ')+(simQueue.length>6?` ...+${simQueue.length-6}`:'');
+}
+
+function simFill(){while(simQueue.length>0)simNext();}
+
+function simDrawMaze(visited,path){
+  const canvas=document.getElementById('sim-canvas');
+  const ctx=canvas.getContext('2d');
+  const cs=40;ctx.clearRect(0,0,200,200);
+  for(let r=0;r<5;r++){
+    for(let c=0;c<5;c++){
+      ctx.fillStyle=SIM_MAZE[r][c]===1?'#1a1a2e':'#0d0d1a';
+      ctx.fillRect(c*cs,r*cs,cs,cs);
+    }
+  }
+  if(visited){
+    const color=simMode==='bfs'?'rgba(0,229,255,0.25)':'rgba(234,128,252,0.25)';
+    for(const[r,c]of visited){ctx.fillStyle=color;ctx.fillRect(c*cs+2,r*cs+2,cs-4,cs-4);}
+  }
+  if(path&&path.length>1){
+    const color=simMode==='bfs'?'#00e5ff':'#ea80fc';
+    ctx.strokeStyle=color;ctx.lineWidth=4;ctx.lineCap='round';ctx.lineJoin='round';
+    ctx.beginPath();
+    path.forEach(([r,c],i)=>{i===0?ctx.moveTo(c*cs+cs/2,r*cs+cs/2):ctx.lineTo(c*cs+cs/2,r*cs+cs/2);});
+    ctx.stroke();
+  }
+  // 起點
+  ctx.fillStyle='#69ff47';ctx.beginPath();
+  ctx.arc(SIM_START[1]*cs+cs/2,SIM_START[0]*cs+cs/2,cs*0.3,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#000';ctx.font='bold 12px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText('S',SIM_START[1]*cs+cs/2,SIM_START[0]*cs+cs/2);
+  // 終點
+  ctx.fillStyle='#ff4081';ctx.beginPath();
+  ctx.arc(SIM_END[1]*cs+cs/2,SIM_END[0]*cs+cs/2,cs*0.3,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#fff';ctx.fillText('E',SIM_END[1]*cs+cs/2,SIM_END[0]*cs+cs/2);
+}
+
+simReset();
 </script>
 </body>
 </html>
