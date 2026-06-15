@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="../favicon.png">
+<title>迷宮尋路 演算法解析 — 演算法互動遊戲集</title>
+<link rel="stylesheet" href="../shared/style.css">
+</head>
+<body>
+<div class="container">
+
+<header>
+  <div class="title">🧠 迷宮尋路 演算法解析</div>
+  <div class="subtitle">BFS · DFS · 最短路徑 · 時間空間複雜度</div>
+</header>
+
+<div style="text-align:center;margin-bottom:20px;display:flex;justify-content:center;gap:12px;flex-wrap:wrap;">
+  <a href="maze.html" style="font-size:12px;color:var(--text-dim);text-decoration:none;letter-spacing:0.1em;text-transform:uppercase;padding:8px 14px;border:1px solid var(--border);border-radius:8px;transition:all 0.2s;display:inline-block;"
+    onmouseover="this.style.color='var(--accent)';this.style.borderColor='var(--accent)'"
+    onmouseout="this.style.color='var(--text-dim)';this.style.borderColor='var(--border)'">🌀 回遊戲</a>
+  <a href="../index.html" style="font-size:12px;color:var(--text-dim);text-decoration:none;letter-spacing:0.1em;text-transform:uppercase;padding:8px 14px;border:1px solid var(--border);border-radius:8px;transition:all 0.2s;display:inline-block;"
+    onmouseover="this.style.color='var(--accent)';this.style.borderColor='var(--accent)'"
+    onmouseout="this.style.color='var(--text-dim)';this.style.borderColor='var(--border)'">← 返回選單</a>
+</div>
+
+<!-- 目錄 -->
+<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:28px;">
+  <div style="font-size:11px;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-dim);margin-bottom:12px;">本頁內容</div>
+  <div style="display:flex;flex-direction:column;gap:8px;">
+    <a href="#step1" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Step 1 · 圖的表示與搜尋問題</a>
+    <a href="#step2" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Step 2 · BFS：廣度優先搜尋</a>
+    <a href="#step3" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Step 3 · DFS：深度優先搜尋</a>
+    <a href="#step4" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Step 4 · BFS vs DFS 完整比較</a>
+    <a href="#step5" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Step 5 · 複雜度分析</a>
+    <a href="#sim" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">互動模擬：小迷宮逐步追蹤</a>
+    <a href="#leetcode" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">LeetCode 相關題目</a>
+  </div>
+</div>
+
+<!-- Step 1 -->
+<div id="step1" class="algo-section">
+  <div class="acc-step-label">Step 1 · 圖的表示與搜尋問題</div>
+  <div class="acc-p">
+    迷宮可以用<strong>圖（Graph）</strong>來表示：<br>
+    每個可走的格子是一個<strong>節點（Node）</strong>，相鄰可走的格子之間有<strong>邊（Edge）</strong>。<br><br>
+    搜尋問題：從起點 S 找一條路到終點 E。<br>
+    最短路徑問題：找步數最少的那條路。
+  </div>
+  <div class="acc-code">
+    <span class="lang-tag">Python</span>
+    <pre><span class="cmt"># 迷宮表示：0=可走，1=牆</span>
+maze = [
+    [<span class="num">1</span>,<span class="num">1</span>,<span class="num">1</span>,<span class="num">1</span>,<span class="num">1</span>],
+    [<span class="num">1</span>,<span class="num">0</span>,<span class="num">0</span>,<span class="num">0</span>,<span class="num">1</span>],
+    [<span class="num">1</span>,<span class="num">1</span>,<span class="num">1</span>,<span class="num">0</span>,<span class="num">1</span>],
+    [<span class="num">1</span>,<span class="num">0</span>,<span class="num">0</span>,<span class="num">0</span>,<span class="num">1</span>],
+    [<span class="num">1</span>,<span class="num">1</span>,<span class="num">1</span>,<span class="num">1</span>,<span class="num">1</span>],
+]
+start = (<span class="num">1</span>, <span class="num">1</span>)  <span class="cmt"># (row, col)</span>
+end   = (<span class="num">3</span>, <span class="num">3</span>)
+
+<span class="cmt"># 四個方向：上下左右</span>
+DIRS = [(-<span class="num">1</span>,<span class="num">0</span>), (<span class="num">1</span>,<span class="num">0</span>), (<span class="num">0</span>,-<span class="num">1</span>), (<span class="num">0</span>,<span class="num">1</span>)]</pre>
+  </div>
+</div>
+
+<!-- Step 2 -->
+<div id="step2" class="algo-section">
+  <div class="acc-step-label">Step 2 · BFS：廣度優先搜尋</div>
+  <div class="acc-p">
+    BFS 用<strong>佇列（Queue）</strong>，像水波一樣向外擴散——先把所有距離 1 的格子走完，再走距離 2 的，依此類推。<br><br>
+    因為每次都擴展「最近的」格子，BFS <strong>保證找到最短路徑</strong>。
+  </div>
+  <div class="acc-code">
+    <span class="lang-tag">Python</span>
+    <pre><span class="kw">from</span> collections <span class="kw">import</span> deque
+
+<span class="kw">def</span> <span class="fn">bfs</span>(maze, start, end):
+    queue = deque([(start, [start])])  <span class="cmt"># (當前位置, 路徑)</span>
+    visited = {start}
+
+    <span class="kw">while</span> queue:
+        (r, c), path = queue.popleft()  <span class="cmt"># 從前端取出（FIFO）</span>
+
+        <span class="kw">if</span> (r, c) == end:
+            <span class="kw">return</span> path  <span class="cmt"># 找到！一定是最短路徑</span>
+
+        <span class="kw">for</span> dr, dc <span class="kw">in</span> DIRS:
+            nr, nc = r + dr, c + dc
+            <span class="kw">if</span> (<span class="num">0</span> <= nr < <span class="fn">len</span>(maze) <span class="kw">and</span>
+                <span class="num">0</span> <= nc < <span class="fn">len</span>(maze[<span class="num">0</span>]) <span class="kw">and</span>
+                maze[nr][nc] == <span class="num">0</span> <span class="kw">and</span>
+                (nr, nc) <span class="kw">not in</span> visited):
+                visited.add((nr, nc))
+                queue.append(((nr, nc), path + [(nr, nc)]))
+
+    <span class="kw">return</span> []  <span class="cmt"># 無解</span></pre>
+  </div>
+  <div class="acc-insight">
+    <span class="ins-label">🔑 關鍵：Queue（先進先出）</span>
+    BFS 用 Queue，保證每層（每個距離）都走完再走下一層。<br>
+    第一次到達終點時，就是最短路徑。
+  </div>
+</div>
+
+<!-- Step 3 -->
+<div id="step3" class="algo-section">
+  <div class="acc-step-label">Step 3 · DFS：深度優先搜尋</div>
+  <div class="acc-p">
+    DFS 用<strong>堆疊（Stack）</strong>，一條路走到底，走不通再回頭（回溯）。<br>
+    DFS <strong>不保證找到最短路徑</strong>，但空間使用通常比 BFS 少。
+  </div>
+  <div class="acc-code">
+    <span class="lang-tag">Python</span>
+    <pre><span class="kw">def</span> <span class="fn">dfs</span>(maze, start, end):
+    stack = [(start, [start])]  <span class="cmt"># (當前位置, 路徑)</span>
+    visited = {start}
+
+    <span class="kw">while</span> stack:
+        (r, c), path = stack.pop()  <span class="cmt"># 從頂端取出（LIFO）</span>
+
+        <span class="kw">if</span> (r, c) == end:
+            <span class="kw">return</span> path  <span class="cmt"># 找到！但不一定最短</span>
+
+        <span class="kw">for</span> dr, dc <span class="kw">in</span> DIRS:
+            nr, nc = r + dr, c + dc
+            <span class="kw">if</span> (<span class="num">0</span> <= nr < <span class="fn">len</span>(maze) <span class="kw">and</span>
+                <span class="num">0</span> <= nc < <span class="fn">len</span>(maze[<span class="num">0</span>]) <span class="kw">and</span>
+                maze[nr][nc] == <span class="num">0</span> <span class="kw">and</span>
+                (nr, nc) <span class="kw">not in</span> visited):
+                visited.add((nr, nc))
+                stack.append(((nr, nc), path + [(nr, nc)]))
+
+    <span class="kw">return</span> []  <span class="cmt"># 無解</span></pre>
+  </div>
+  <div class="acc-insight">
+    <span class="ins-label">🔑 關鍵：Stack（後進先出）</span>
+    BFS 和 DFS 的程式碼幾乎一樣，唯一差別：<br>
+    BFS 用 <code>deque.popleft()</code>（從前端取）<br>
+    DFS 用 <code>stack.pop()</code>（從後端取）<br>
+    一個資料結構的差異，造成完全不同的搜尋行為！
+  </div>
+</div>
+
+<!-- Step 4 -->
+<div id="step4" class="algo-section">
+  <div class="acc-step-label">Step 4 · BFS vs DFS 完整比較</div>
+  <div style="overflow-x:auto;margin:16px 0;">
+    <table style="width:100%;border-collapse:collapse;font-size:13px;">
+      <thead>
+        <tr style="border-bottom:1px solid var(--border);">
+          <th style="padding:10px;text-align:left;color:var(--text-dim);font-weight:500;"></th>
+          <th style="padding:10px;text-align:center;color:#00e5ff;font-weight:700;">BFS</th>
+          <th style="padding:10px;text-align:center;color:#ea80fc;font-weight:700;">DFS</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:10px;">資料結構</td>
+          <td style="padding:10px;text-align:center;">Queue（佇列）</td>
+          <td style="padding:10px;text-align:center;">Stack（堆疊）</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:10px;">搜尋方式</td>
+          <td style="padding:10px;text-align:center;">逐層向外擴展</td>
+          <td style="padding:10px;text-align:center;">一條路走到底</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:10px;">最短路徑</td>
+          <td style="padding:10px;text-align:center;color:var(--accent);">✅ 保證</td>
+          <td style="padding:10px;text-align:center;color:var(--accent2);">❌ 不保證</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:10px;">時間複雜度</td>
+          <td style="padding:10px;text-align:center;">O(V+E)</td>
+          <td style="padding:10px;text-align:center;">O(V+E)</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:10px;">空間複雜度</td>
+          <td style="padding:10px;text-align:center;color:var(--accent2);">O(V)（較大）</td>
+          <td style="padding:10px;text-align:center;color:var(--accent);">O(深度)（較小）</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:10px;">適合場景</td>
+          <td style="padding:10px;text-align:center;">找最短路徑</td>
+          <td style="padding:10px;text-align:center;">檢測連通性<br>拓撲排序</td>
+        </tr>
+        <tr>
+          <td style="padding:10px;">直覺比喻</td>
+          <td style="padding:10px;text-align:center;">水波向外擴散</td>
+          <td style="padding:10px;text-align:center;">走迷宮一直走到底</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Step 5 -->
+<div id="step5" class="algo-section">
+  <div class="acc-step-label">Step 5 · 複雜度分析</div>
+  <div class="acc-p">
+    對於一個 n×m 的迷宮：
+  </div>
+  <div class="acc-code">
+    <span class="lang-tag">分析</span>
+    <pre><span class="cmt"># V = 節點數 = n × m（所有格子）</span>
+<span class="cmt"># E = 邊數 ≤ 4V（每格最多4個鄰居）</span>
+
+<span class="cmt"># 時間複雜度</span>
+BFS: O(V + E) = O(n × m)   <span class="cmt"># 每個格子最多訪問一次</span>
+DFS: O(V + E) = O(n × m)   <span class="cmt"># 相同</span>
+
+<span class="cmt"># 空間複雜度</span>
+BFS: O(V) = O(n × m)       <span class="cmt"># 最壞情況 Queue 存所有節點</span>
+DFS: O(深度) = O(n + m)    <span class="cmt"># 最壞情況 Stack 深度 = 路徑長</span>
+
+<span class="cmt"># 實際上 BFS 在廣闊空間需要更多記憶體</span>
+<span class="cmt"># DFS 在深度很深時可能 Stack Overflow（遞迴版）</span></pre>
+  </div>
+  <div class="acc-insight">
+    <span class="ins-label">💡 何時用哪個？</span>
+    需要最短路徑 → BFS（或 Dijkstra / A*）<br>
+    只需要判斷是否可達 → DFS 或 BFS 都可以<br>
+    記憶體有限、圖很深 → DFS<br>
+    目標離起點很近 → BFS 更快找到
+  </div>
+</div>
+
+<!-- 互動模擬 -->
+<div id="sim" class="algo-section">
+  <div class="acc-step-label">互動模擬：小迷宮逐步追蹤</div>
+  <div class="acc-p">在 5×5 的小迷宮上，一步步看 BFS 和 DFS 的差異。</div>
+
+  <div style="display:flex;gap:10px;flex-wrap:wrap;margin:12px 0;align-items:center;">
+    <button class="btn btn-sm" onclick="simReset()">↺ 重置</button>
+    <button class="btn btn-primary btn-sm" id="sim-next-btn" onclick="simNext()">下一步 →</button>
+    <button class="btn btn-sm" onclick="simFill()">全部執行</button>
+    <div style="display:flex;gap:6px;margin-left:8px;">
+      <button class="btn btn-sm" id="sim-bfs-btn" onclick="simSetMode('bfs')" style="border-color:#00e5ff;color:#00e5ff;">BFS</button>
+      <button class="btn btn-sm" id="sim-dfs-btn" onclick="simSetMode('dfs')">DFS</button>
+    </div>
+  </div>
+
+  <div id="sim-explain" style="font-size:13px;color:var(--text-dim);min-height:40px;margin-bottom:12px;padding:10px;background:var(--bg);border-radius:8px;border:1px solid var(--border);"></div>
+
+  <div style="display:flex;gap:24px;flex-wrap:wrap;justify-content:center;">
+    <div>
+      <div style="font-size:11px;color:var(--text-dim);text-align:center;margin-bottom:6px;">迷宮</div>
+      <canvas id="sim-canvas" width="200" height="200" style="border:1px solid var(--border);border-radius:8px;"></canvas>
+    </div>
+    <div style="flex:1;min-width:200px;">
+      <div style="font-size:11px;color:var(--text-dim);margin-bottom:6px;" id="sim-struct-label">Queue 狀態</div>
+      <div id="sim-struct" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px;min-height:80px;font-size:12px;font-family:'Fira Code',monospace;color:var(--text-dim);"></div>
+      <div style="font-size:11px;color:var(--text-dim);margin:8px 0 4px;">已訪問</div>
+      <div id="sim-visited" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px;min-height:40px;font-size:12px;font-family:'Fira Code',monospace;color:var(--text-dim);"></div>
+    </div>
+  </div>
+</div>
+
+<!-- LeetCode -->
+<div id="leetcode" class="algo-section">
+  <div class="acc-step-label">LeetCode 相關題目</div>
+  <div style="display:flex;flex-direction:column;gap:10px;margin-top:12px;">
+    <a href="https://leetcode.com/problems/number-of-islands/" target="_blank" class="lc-card">
+      <span class="lc-num">#200</span><span class="lc-title">Number of Islands</span>
+      <span class="lc-tag medium">Medium</span>
+      <span class="lc-desc">DFS / BFS 基礎題，連通分量計數</span>
+    </a>
+    <a href="https://leetcode.com/problems/shortest-path-in-binary-matrix/" target="_blank" class="lc-card">
+      <span class="lc-num">#1091</span><span class="lc-title">Shortest Path in Binary Matrix</span>
+      <span class="lc-tag medium">Medium</span>
+      <span class="lc-desc">BFS 找最短路徑，和迷宮問題完全一樣</span>
+    </a>
+    <a href="https://leetcode.com/problems/walls-and-gates/" target="_blank" class="lc-card">
+      <span class="lc-num">#286</span><span class="lc-title">Walls and Gates</span>
+      <span class="lc-tag medium">Medium</span>
+      <span class="lc-desc">多源 BFS，從多個起點同時擴散</span>
+    </a>
+    <a href="https://leetcode.com/problems/word-ladder/" target="_blank" class="lc-card">
+      <span class="lc-num">#127</span><span class="lc-title">Word Ladder</span>
+      <span class="lc-tag hard">Hard</span>
+      <span class="lc-desc">BFS 在抽象圖上的應用，找最短轉換序列</span>
+    </a>
+    <a href="https://leetcode.com/problems/pacific-atlantic-water-flow/" target="_blank" class="lc-card">
+      <span class="lc-num">#417</span><span class="lc-title">Pacific Atlantic Water Flow</span>
+      <span class="lc-tag medium">Medium</span>
+      <span class="lc-desc">反向 BFS / DFS，從終點向起點搜尋</span>
+    </a>
+  </div>
+</div>
+
+<!-- 導航 -->
+<div style="display:flex;justify-content:center;gap:12px;margin:32px 0 8px;flex-wrap:wrap;">
+  <a href="interval-scheduling-algo.html" style="display:inline-flex;align-items:center;gap:8px;padding:12px 20px;background:var(--surface);border:1px solid var(--border);border-radius:12px;text-decoration:none;color:var(--text);font-size:13px;transition:all 0.2s;"
+    onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'"
+    onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text)'">← 📅 區間排程解析</a>
+  <a href="../index.html" style="display:inline-flex;align-items:center;gap:8px;padding:12px 20px;background:var(--surface);border:1px solid var(--border);border-radius:12px;text-decoration:none;color:var(--text);font-size:13px;transition:all 0.2s;"
+    onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'"
+    onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text)'">回選單 →</a>
+</div>
+
+</div>
+
+<style>
+.algo-section{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:24px;margin-bottom:20px;}
+.lc-card{display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--bg);border:1px solid var(--border);border-radius:10px;text-decoration:none;color:var(--text);transition:border-color 0.2s;flex-wrap:wrap;}
+.lc-card:hover{border-color:var(--accent);}
+.lc-num{font-family:'Orbitron',monospace;font-size:11px;color:var(--text-dim);min-width:44px;}
+.lc-title{font-weight:600;font-size:14px;flex:1;}
+.lc-tag{font-size:10px;padding:2px 8px;border-radius:20px;font-weight:700;letter-spacing:0.05em;}
+.lc-tag.easy{background:rgba(0,200,100,0.15);color:#00c864;}
+.lc-tag.medium{background:rgba(255,180,0,0.15);color:#ffb400;}
+.lc-tag.hard{background:rgba(255,60,60,0.15);color:#ff3c3c;}
+.lc-desc{font-size:12px;color:var(--text-dim);width:100%;margin-top:2px;}
+.acc-step-label{font-family:'Orbitron',monospace;font-size:11px;letter-spacing:0.15em;text-transform:uppercase;color:var(--accent);margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid var(--border);}
+</style>
+
+<script>
+// 5×5 迷宮模擬
+const SIM_MAZE=[
+  [1,1,1,1,1],
+  [1,0,0,0,1],
+  [1,1,1,0,1],
+  [1,0,0,0,1],
+  [1,1,1,1,1],
+];
+const SIM_START=[1,1],SIM_END=[3,3];
+const DIRS=[[-1,0],[1,0],[0,-1],[0,1]];
+const DIR_NAMES=['上','下','左','右'];
+
+let simMode='bfs',simQueue=[],simVisited=new Set(),simStep=0,simPath=[];
+let simAllSteps=[];
+
+function simSetMode(m){
+  simMode=m;
+  document.getElementById('sim-bfs-btn').style.borderColor=m==='bfs'?'#00e5ff':'var(--border)';
+  document.getElementById('sim-bfs-btn').style.color=m==='bfs'?'#00e5ff':'var(--text-dim)';
+  document.getElementById('sim-dfs-btn').style.borderColor=m==='dfs'?'#ea80fc':'var(--border)';
+  document.getElementById('sim-dfs-btn').style.color=m==='dfs'?'#ea80fc':'var(--text-dim)';
+  document.getElementById('sim-struct-label').textContent=m==='bfs'?'Queue 狀態（先進先出）':'Stack 狀態（後進先出）';
+  simReset();
+}
+
+function simReset(){
+  simVisited=new Set([`${SIM_START[0]},${SIM_START[1]}`]);
+  simPath=[];simStep=0;
+  if(simMode==='bfs'){
+    simQueue=[[SIM_START,[SIM_START]]];
+  }else{
+    simQueue=[[SIM_START,[SIM_START]]];
+  }
+  simAllSteps=[];
+  document.getElementById('sim-explain').textContent=`初始化：將起點 (${SIM_START[0]},${SIM_START[1]}) 加入${simMode==='bfs'?'Queue':'Stack'}`;
+  simDrawMaze([],null);
+  simUpdateStruct();
+}
+
+function simNext(){
+  if(simQueue.length===0){
+    document.getElementById('sim-explain').textContent='搜尋完成！';return;
+  }
+  const[[r,c],path]=simMode==='bfs'?simQueue.shift():simQueue.pop();
+  simAllSteps.push([r,c]);
+
+  if(r===SIM_END[0]&&c===SIM_END[1]){
+    simPath=path;
+    simDrawMaze(simAllSteps,path);
+    document.getElementById('sim-explain').textContent=`🎉 找到終點！路徑長度 ${path.length-1} 步，共探索 ${simAllSteps.length} 格。`;
+    document.getElementById('sim-next-btn').disabled=true;
+    simQueue=[];simUpdateStruct();return;
+  }
+
+  const neighbors=[];
+  for(let d=0;d<4;d++){
+    const nr=r+DIRS[d][0],nc=c+DIRS[d][1];
+    const key=`${nr},${nc}`;
+    if(nr>=0&&nr<5&&nc>=0&&nc<5&&SIM_MAZE[nr][nc]===0&&!simVisited.has(key)){
+      simVisited.add(key);
+      simQueue.push([[nr,nc],[...path,[nr,nc]]]);
+      neighbors.push(`(${nr},${nc})`);
+    }
+  }
+
+  document.getElementById('sim-explain').textContent=
+    `取出 (${r},${c})${neighbors.length?`，將鄰居 ${neighbors.join('、')} 加入${simMode==='bfs'?'Queue':'Stack'}`:'，無新鄰居'}`;
+  document.getElementById('sim-visited').textContent=
+    [...simAllSteps].map(([r,c])=>`(${r},${c})`).join(' → ');
+
+  simDrawMaze(simAllSteps,null);
+  simUpdateStruct();
+}
+
+function simUpdateStruct(){
+  const el=document.getElementById('sim-struct');
+  if(simQueue.length===0){el.textContent='（空）';return;}
+  const preview=simQueue.slice(0,6).map(([[r,c]])=>`(${r},${c})`);
+  el.textContent=(simMode==='bfs'?'前→ ':'頂→ ')+preview.join(', ')+(simQueue.length>6?` ...+${simQueue.length-6}`:'');
+}
+
+function simFill(){while(simQueue.length>0)simNext();}
+
+function simDrawMaze(visited,path){
+  const canvas=document.getElementById('sim-canvas');
+  const ctx=canvas.getContext('2d');
+  const cs=40;ctx.clearRect(0,0,200,200);
+  for(let r=0;r<5;r++){
+    for(let c=0;c<5;c++){
+      ctx.fillStyle=SIM_MAZE[r][c]===1?'#1a1a2e':'#0d0d1a';
+      ctx.fillRect(c*cs,r*cs,cs,cs);
+    }
+  }
+  if(visited){
+    const color=simMode==='bfs'?'rgba(0,229,255,0.25)':'rgba(234,128,252,0.25)';
+    for(const[r,c]of visited){ctx.fillStyle=color;ctx.fillRect(c*cs+2,r*cs+2,cs-4,cs-4);}
+  }
+  if(path&&path.length>1){
+    const color=simMode==='bfs'?'#00e5ff':'#ea80fc';
+    ctx.strokeStyle=color;ctx.lineWidth=4;ctx.lineCap='round';ctx.lineJoin='round';
+    ctx.beginPath();
+    path.forEach(([r,c],i)=>{i===0?ctx.moveTo(c*cs+cs/2,r*cs+cs/2):ctx.lineTo(c*cs+cs/2,r*cs+cs/2);});
+    ctx.stroke();
+  }
+  // 起點
+  ctx.fillStyle='#69ff47';ctx.beginPath();
+  ctx.arc(SIM_START[1]*cs+cs/2,SIM_START[0]*cs+cs/2,cs*0.3,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#000';ctx.font='bold 12px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText('S',SIM_START[1]*cs+cs/2,SIM_START[0]*cs+cs/2);
+  // 終點
+  ctx.fillStyle='#ff4081';ctx.beginPath();
+  ctx.arc(SIM_END[1]*cs+cs/2,SIM_END[0]*cs+cs/2,cs*0.3,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#fff';ctx.fillText('E',SIM_END[1]*cs+cs/2,SIM_END[0]*cs+cs/2);
+}
+
+simReset();
+</script>
+</body>
+</html>
