@@ -4,34 +4,46 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" href="../favicon.png">
-<title>迷宮尋路 — 演算法互動遊戲集</title>
+<title>BFS / DFS 圖搜尋 — 演算法互動遊戲集</title>
 <link rel="stylesheet" href="../shared/style.css">
 <style>
-  .maze-wrap{display:flex;justify-content:center;margin:16px 0;overflow-x:auto;}
-  canvas#maze-canvas{border:2px solid var(--border);border-radius:8px;display:block;}
+  .algo-switch{display:flex;gap:10px;justify-content:center;margin:12px 0;}
+  .algo-btn{padding:10px 28px;border-radius:10px;border:2px solid var(--border);background:var(--surface);
+    color:var(--text-dim);font-size:13px;font-weight:700;cursor:pointer;transition:all 0.2s;font-family:'Orbitron',monospace;}
+  .algo-btn.bfs{border-color:#00e5ff;color:#00e5ff;background:rgba(0,229,255,0.08);}
+  .algo-btn.dfs{border-color:#ea80fc;color:#ea80fc;background:rgba(234,128,252,0.08);}
+  .algo-btn:not(.bfs):not(.dfs):hover{border-color:var(--accent);}
 
-  .algo-tabs{display:flex;gap:8px;justify-content:center;margin:12px 0;flex-wrap:wrap;}
-  .algo-tab{padding:8px 18px;border-radius:8px;border:2px solid var(--border);background:var(--surface);
-    color:var(--text-dim);font-size:12px;font-weight:700;cursor:pointer;transition:all 0.2s;font-family:'Orbitron',monospace;}
-  .algo-tab:hover:not(:disabled){border-color:var(--accent);}
-  .algo-tab:disabled{opacity:0.3;cursor:not-allowed;}
-  .algo-tab.active-bfs{border-color:#00e5ff;color:#00e5ff;background:rgba(0,229,255,0.08);}
-  .algo-tab.active-dfs{border-color:#ea80fc;color:#ea80fc;background:rgba(234,128,252,0.08);}
-  .algo-tab.active-player{border-color:var(--accent3);color:var(--accent3);background:rgba(105,255,71,0.08);}
+  .graph-wrap{display:flex;justify-content:center;margin:12px 0;}
+  canvas#graph-canvas{border:1px solid var(--border);border-radius:12px;background:#0a0a12;}
 
-  .stats-row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin:10px 0;}
-  .stat-box{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 16px;text-align:center;min-width:100px;}
-  .stat-val{font-family:'Orbitron',monospace;font-size:20px;font-weight:900;}
-  .stat-lbl{font-size:10px;color:var(--text-dim);margin-top:3px;}
+  .struct-row{display:flex;gap:10px;flex-wrap:wrap;margin:10px 0;}
+  .struct-box{flex:1;min-width:140px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;}
+  .struct-title{font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-dim);margin-bottom:8px;font-family:'Orbitron',monospace;}
+  .struct-content{font-size:12px;font-family:'Fira Code',monospace;color:var(--text);min-height:32px;word-break:break-all;line-height:1.8;}
+  .struct-content .node-chip{display:inline-flex;align-items:center;justify-content:center;
+    width:24px;height:24px;border-radius:50%;font-size:11px;font-weight:700;margin:2px;
+    background:var(--surface2);border:1px solid var(--border);}
+  .struct-content .node-chip.visited{background:rgba(0,229,255,0.15);border-color:#00e5ff;color:#00e5ff;}
+  .struct-content .node-chip.in-queue{background:rgba(255,215,0,0.15);border-color:#ffd740;color:#ffd740;}
+  .struct-content .node-chip.current{background:rgba(255,64,129,0.2);border-color:#ff4081;color:#ff4081;}
 
-  .dir-btns{display:grid;grid-template-columns:repeat(3,52px);gap:6px;justify-content:center;margin:12px 0;}
-  .dir-btn{width:52px;height:52px;border-radius:10px;border:2px solid var(--border);background:var(--surface);
-    font-size:20px;cursor:pointer;transition:all 0.18s;display:flex;align-items:center;justify-content:center;}
-  .dir-btn:hover:not(:disabled){border-color:var(--accent3);background:rgba(105,255,71,0.08);}
-  .dir-btn:disabled{opacity:0.2;cursor:not-allowed;}
+  .visit-order{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0;min-height:36px;}
+  .vo-chip{display:inline-flex;align-items:center;justify-content:center;
+    width:28px;height:28px;border-radius:50%;font-size:12px;font-weight:700;
+    background:rgba(0,229,255,0.12);border:2px solid #00e5ff;color:#00e5ff;
+    animation:popIn 0.2s ease;}
+  .vo-chip.dfs{background:rgba(234,128,252,0.12);border-color:#ea80fc;color:#ea80fc;}
+  @keyframes popIn{from{transform:scale(0.5);opacity:0}to{transform:scale(1);opacity:1}}
 
   .speed-row{display:flex;align-items:center;gap:10px;justify-content:center;margin:8px 0;}
   .speed-lbl{font-size:11px;color:var(--text-dim);}
+
+  .graph-preset{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin:8px 0;}
+  .preset-btn{padding:6px 14px;border-radius:8px;border:1px solid var(--border);background:var(--surface);
+    color:var(--text-dim);font-size:11px;cursor:pointer;transition:all 0.2s;}
+  .preset-btn:hover{border-color:var(--accent);color:var(--accent);}
+  .preset-btn.active{border-color:var(--accent);color:var(--accent);background:rgba(0,229,255,0.06);}
 </style>
 </head>
 <body>
@@ -41,9 +53,9 @@
 <header>
   <div class="title">
     <img src="../assets/icons/BFS-DFS.png" style="height:50px;vertical-align:middle;margin-right:8px;" onerror="this.style.display='none'">
-    迷宮尋路
+    BFS / DFS 圖搜尋
   </div>
-  <div class="subtitle">BFS · DFS · 最短路徑視覺化</div>
+  <div class="subtitle">廣度優先 · 深度優先 · 走訪順序視覺化</div>
 </header>
 
 <div style="text-align:center;margin-bottom:20px">
@@ -53,106 +65,92 @@
 </div>
 
 <div class="rules-block">
-  <div class="rules-title">📖 遊戲說明</div>
+  <div class="rules-title">📖 學習目標</div>
   <div class="rules-body">
     <div class="rules-item move">
-      <div class="ri-label">第一步</div>
-      <div class="ri-text">先<strong>自己走迷宮</strong>，從綠色 S 出發，到達紅色 E 終點</div>
+      <div class="ri-label">BFS</div>
+      <div class="ri-text">廣度優先：用 <strong>Queue</strong>，先把所有鄰居加入，<strong>逐層</strong>向外擴散</div>
     </div>
     <div class="rules-item win">
-      <div class="ri-label">第二步</div>
-      <div class="ri-text">走完後解鎖 <strong>BFS</strong> 和 <strong>DFS</strong> 按鈕，觀看各自怎麼找路</div>
+      <div class="ri-label">DFS</div>
+      <div class="ri-text">深度優先：用 <strong>Stack</strong>，一條路走到底再回頭（<strong>回溯</strong>）</div>
     </div>
     <div class="rules-item tip">
-      <div class="ri-label">挑戰</div>
-      <div class="ri-text">你走的步數能和 BFS 最短路徑一樣少嗎？👇</div>
+      <div class="ri-label">觀察</div>
+      <div class="ri-text">選不同圖形，比較 BFS 和 DFS 走訪節點的<strong>順序差異</strong> 👇</div>
     </div>
   </div>
 </div>
 
 <!-- 設定 -->
-<div class="panel active" id="panel-setup">
-  <div class="panel-title">⚙️ 迷宮設定</div>
-  <div class="input-group"><label>迷宮大小</label>
-    <select id="maze-size">
-      <option value="9">9×9（入門）</option>
-      <option value="13" selected>13×13（經典）</option>
-      <option value="17">17×17（挑戰）</option>
-    </select></div>
+<div class="panel active" id="panel-main">
+
+  <!-- 圖形選擇 -->
+  <div class="panel-title">選擇圖形</div>
+  <div class="graph-preset">
+    <button class="preset-btn active" id="preset-tree" onclick="loadPreset('tree')">🌳 樹狀圖</button>
+    <button class="preset-btn" id="preset-grid" onclick="loadPreset('grid')">⊞ 網格圖</button>
+    <button class="preset-btn" id="preset-cycle" onclick="loadPreset('cycle')">🔄 含環圖</button>
+    <button class="preset-btn" id="preset-custom" onclick="loadPreset('custom')">🎲 隨機圖</button>
+  </div>
+
+  <!-- 算法選擇 -->
+  <div class="algo-switch">
+    <button class="algo-btn bfs" id="btn-bfs" onclick="setAlgo('bfs')">🔵 BFS 廣度優先</button>
+    <button class="algo-btn" id="btn-dfs" onclick="setAlgo('dfs')">🟣 DFS 深度優先</button>
+  </div>
+
+  <!-- 起點選擇 -->
+  <div style="text-align:center;font-size:12px;color:var(--text-dim);margin-bottom:6px;">
+    起始節點：<span id="start-label" style="color:var(--accent);font-weight:700;font-family:'Orbitron',monospace;">1</span>
+    <span style="margin-left:8px;font-size:11px;">（點圖中節點可換起點）</span>
+  </div>
+
+  <!-- 圖形畫布 -->
+  <div class="graph-wrap">
+    <canvas id="graph-canvas" width="400" height="300"></canvas>
+  </div>
+
+  <!-- 走訪順序 -->
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;margin:8px 0;">
+    <div style="font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-dim);margin-bottom:8px;font-family:'Orbitron',monospace;">走訪順序</div>
+    <div class="visit-order" id="visit-order"></div>
+  </div>
+
+  <!-- Queue / Stack 狀態 -->
+  <div class="struct-row">
+    <div class="struct-box">
+      <div class="struct-title" id="struct-title">Queue 狀態</div>
+      <div class="struct-content" id="struct-content">（尚未開始）</div>
+    </div>
+    <div class="struct-box">
+      <div class="struct-title">當前節點</div>
+      <div class="struct-content" id="current-node" style="font-size:28px;font-weight:900;font-family:'Orbitron',monospace;text-align:center;color:var(--accent2);">—</div>
+    </div>
+  </div>
+
+  <!-- 說明 -->
+  <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-size:13px;color:var(--text-dim);min-height:40px;" id="algo-explain">選擇演算法後點執行</div>
+
+  <!-- 速度控制 -->
+  <div class="speed-row">
+    <span class="speed-lbl">速度</span>
+    <input type="range" id="algo-speed" min="1" max="5" value="3" style="width:120px;">
+    <span class="speed-lbl" id="speed-label">中</span>
+  </div>
+
+  <!-- 控制按鈕 -->
   <div class="btn-row">
-    <button class="btn btn-primary btn-lg" onclick="mazeBegin()">🚀 開始</button>
-  </div>
-</div>
-
-<!-- 遊戲 -->
-<div class="panel" id="panel-game">
-  <div class="panel-title">🌀 迷宮尋路</div>
-
-  <div class="stats-row">
-    <div class="stat-box">
-      <div class="stat-val" id="stat-player" style="color:var(--accent3);">0</div>
-      <div class="stat-lbl">你走的步數</div>
-    </div>
-    <div class="stat-box">
-      <div class="stat-val" id="stat-bfs" style="color:#00e5ff;">—</div>
-      <div class="stat-lbl">BFS 最短路（步）</div>
-    </div>
-    <div class="stat-box">
-      <div class="stat-val" id="stat-dfs" style="color:#ea80fc;">—</div>
-      <div class="stat-lbl">DFS 探索格數</div>
-    </div>
+    <button class="btn btn-primary" id="run-btn" onclick="algoRun()">▶ 執行</button>
+    <button class="btn btn-sm" onclick="algoReset()">↺ 重置</button>
+    <button class="btn btn-sm" onclick="stepOnce()">→ 下一步</button>
   </div>
 
-  <div class="maze-wrap">
-    <canvas id="maze-canvas"></canvas>
+  <div class="status-bar" style="margin-top:8px;">
+    <div class="status-dot" id="algo-dot"></div>
+    <div style="flex:1"><div class="status-text" id="algo-status">選擇演算法後點執行，或用「下一步」逐步觀察</div></div>
   </div>
 
-  <div class="algo-tabs">
-    <button class="algo-tab active-player" id="tab-player" onclick="setView('player')">🟢 自己走</button>
-    <button class="algo-tab" id="tab-bfs" onclick="setView('bfs')" disabled>🔵 BFS</button>
-    <button class="algo-tab" id="tab-dfs" onclick="setView('dfs')" disabled>🟣 DFS</button>
-  </div>
-
-  <!-- 方向按鈕 -->
-  <div id="dir-area">
-    <div class="dir-btns">
-      <div></div>
-      <button class="dir-btn" onclick="playerMove(0,-1)">↑</button>
-      <div></div>
-      <button class="dir-btn" onclick="playerMove(-1,0)">←</button>
-      <button class="dir-btn" onclick="mazeBegin()">↺</button>
-      <button class="dir-btn" onclick="playerMove(1,0)">→</button>
-      <div></div>
-      <button class="dir-btn" onclick="playerMove(0,1)">↓</button>
-      <div></div>
-    </div>
-    <div style="font-size:11px;color:var(--text-dim);text-align:center;">也可以用鍵盤方向鍵或 WASD</div>
-  </div>
-
-  <!-- 演算法控制 -->
-  <div id="algo-area" style="display:none;">
-    <div class="speed-row">
-      <span class="speed-lbl">速度</span>
-      <input type="range" id="algo-speed" min="1" max="5" value="3" style="width:120px;">
-      <span class="speed-lbl" id="speed-label">中</span>
-    </div>
-    <div class="btn-row">
-      <button class="btn btn-primary" id="algo-run-btn" onclick="algoRun()">▶ 執行</button>
-      <button class="btn btn-sm" onclick="algoReset()">↺ 重置</button>
-    </div>
-    <div class="status-bar" style="margin-top:8px;">
-      <div class="status-dot" id="algo-dot"></div>
-      <div style="flex:1"><div class="status-text" id="algo-status">點擊執行開始</div></div>
-    </div>
-  </div>
-
-  <!-- 走完後的提示 -->
-  <div id="finish-msg" style="display:none;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 16px;margin:10px 0;font-size:13px;color:var(--text-dim);text-align:center;"></div>
-
-  <div class="btn-row" style="margin-top:14px;">
-    <button class="btn btn-sm" onclick="goHome()">⚙️ 重新設定</button>
-    <button class="btn btn-sm" onclick="mazeBegin()">🎲 新迷宮</button>
-  </div>
 </div>
 
 <!-- 演算法解析連結 -->
@@ -163,7 +161,7 @@
       text-decoration:none;color:var(--text);font-size:14px;transition:all 0.2s;letter-spacing:0.03em;"
     onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'"
     onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text)'">
-    🧠 <strong>看演算法解析</strong> &nbsp;— BFS vs DFS · 最短路徑 · 時間空間複雜度
+    🧠 <strong>看演算法解析</strong> &nbsp;— BFS vs DFS · Queue vs Stack · 複雜度分析
   </a>
 </div>
 
@@ -172,314 +170,320 @@
 <script src="../shared/firebase.js"></script>
 <script src="../shared/ui.js"></script>
 <script>
-const WALL=1,PATH=0;
-let MZ={
-  grid:[],rows:0,cols:0,cellSize:32,
-  player:{x:1,y:1},
-  playerPath:[[1,1]],playerSteps:0,
-  bfsResult:null,dfsResult:null,
-  view:'player',done:false,
-  algoRunning:false
+// ── 圖形預設 ──────────────────────────────────────────
+const PRESETS={
+  tree:{
+    nodes:[1,2,3,4,5,6,7,8,9,10,11,12],
+    edges:[[1,2],[1,7],[1,8],[2,3],[2,6],[3,4],[3,5],[8,9],[8,12],[9,10],[9,11]],
+    layout:{
+      1:{x:200,y:40},
+      2:{x:110,y:100},7:{x:200,y:100},8:{x:290,y:100},
+      3:{x:70,y:165},6:{x:150,y:165},9:{x:255,y:165},12:{x:335,y:165},
+      4:{x:40,y:235},5:{x:105,y:235},10:{x:225,y:235},11:{x:285,y:235}
+    }
+  },
+  grid:{
+    nodes:[1,2,3,4,5,6,7,8,9],
+    edges:[[1,2],[2,3],[4,5],[5,6],[7,8],[8,9],[1,4],[4,7],[2,5],[5,8],[3,6],[6,9]],
+    layout:{
+      1:{x:100,y:80},2:{x:200,y:80},3:{x:300,y:80},
+      4:{x:100,y:160},5:{x:200,y:160},6:{x:300,y:160},
+      7:{x:100,y:240},8:{x:200,y:240},9:{x:300,y:240}
+    }
+  },
+  cycle:{
+    nodes:[1,2,3,4,5,6,7],
+    edges:[[1,2],[1,3],[2,4],[2,5],[3,5],[3,6],[4,7],[5,7],[6,7]],
+    layout:{
+      1:{x:200,y:50},
+      2:{x:100,y:130},3:{x:300,y:130},
+      4:{x:50,y:210},5:{x:200,y:210},6:{x:350,y:210},
+      7:{x:200,y:270}
+    }
+  },
+  custom:null
 };
 
-function goHome(){
-  MZ.algoRunning=false;
-  showPanel('panel-setup');
-}
-
-function mazeBegin(){
-  MZ.algoRunning=false;
-  const sz=+document.getElementById('maze-size').value;
-  MZ.rows=sz;MZ.cols=sz;
-  MZ.grid=generateMaze(sz,sz);
-  MZ.player={x:1,y:1};
-  MZ.playerPath=[[1,1]];
-  MZ.playerSteps=0;
-  MZ.view='player';
-  MZ.done=false;
-
-  MZ.bfsResult=runBFS(MZ.grid,MZ.rows,MZ.cols);
-  MZ.dfsResult=runDFS(MZ.grid,MZ.rows,MZ.cols);
-
-  document.getElementById('stat-player').textContent='0';
-  document.getElementById('stat-bfs').textContent=MZ.bfsResult.path.length>0?MZ.bfsResult.path.length-1:'?';
-  document.getElementById('stat-dfs').textContent=MZ.dfsResult.visited.length;
-  document.getElementById('tab-bfs').disabled=true;
-  document.getElementById('tab-dfs').disabled=true;
-  document.getElementById('tab-bfs').className='algo-tab';
-  document.getElementById('tab-dfs').className='algo-tab';
-  document.getElementById('tab-player').className='algo-tab active-player';
-  document.getElementById('dir-area').style.display='';
-  document.getElementById('algo-area').style.display='none';
-  document.getElementById('finish-msg').style.display='none';
-
-  setupCanvas();
-  drawMaze();
-  showPanel('panel-game');
-}
-
-// 用 DFS 遞迴生成迷宮（奇數格為通道）
-function generateMaze(rows,cols){
-  const grid=Array.from({length:rows},()=>Array(cols).fill(WALL));
-  function carve(x,y){
-    grid[y][x]=PATH;
-    const dirs=[[0,-2],[0,2],[-2,0],[2,0]].sort(()=>Math.random()-0.5);
-    for(const[dx,dy]of dirs){
-      const nx=x+dx,ny=y+dy;
-      if(nx>0&&nx<cols-1&&ny>0&&ny<rows-1&&grid[ny][nx]===WALL){
-        grid[y+dy/2][x+dx/2]=PATH;
-        carve(nx,ny);
-      }
-    }
+function makeRandomGraph(){
+  const n=8+Math.floor(Math.random()*4);
+  const nodes=Array.from({length:n},(_,i)=>i+1);
+  const edges=[];const edgeSet=new Set();
+  // 先建 spanning tree 保證連通
+  for(let i=2;i<=n;i++){
+    const p=Math.floor(Math.random()*(i-1))+1;
+    edges.push([p,i]);edgeSet.add(`${Math.min(p,i)},${Math.max(p,i)}`);
   }
-  carve(1,1);
-  // 確保終點可達
-  grid[rows-2][cols-2]=PATH;
-  // 確保終點周邊至少一格可走
-  if(grid[rows-2][cols-3]===WALL&&grid[rows-3][cols-2]===WALL){
-    grid[rows-2][cols-3]=PATH;
+  // 額外加幾條邊
+  const extra=Math.floor(n/2);
+  for(let t=0;t<extra*10&&edges.length<n+extra;t++){
+    const a=Math.floor(Math.random()*n)+1,b=Math.floor(Math.random()*n)+1;
+    if(a!==b){const k=`${Math.min(a,b)},${Math.max(a,b)}`;if(!edgeSet.has(k)){edgeSet.add(k);edges.push([a,b]);}}
   }
-  return grid;
-}
-
-function runBFS(grid,rows,cols){
-  const endX=cols-2,endY=rows-2;
-  const queue=[[1,1]];
-  const visited=new Set(['1,1']);
-  const parent=new Map([['1,1',null]]);
-  const cellOrder=[];
-  while(queue.length){
-    const[x,y]=queue.shift();
-    cellOrder.push([x,y]);
-    if(x===endX&&y===endY){
-      // 回溯最短路徑
-      const path=[];
-      let cur=`${endX},${endY}`;
-      while(cur!==null){
-        const[px,py]=cur.split(',').map(Number);
-        path.unshift([px,py]);
-        cur=parent.get(cur);
-      }
-      return{path,visited:cellOrder};
-    }
-    for(const[dx,dy]of[[1,0],[-1,0],[0,1],[0,-1]]){
-      const nx=x+dx,ny=y+dy,key=`${nx},${ny}`;
-      if(nx>=0&&nx<cols&&ny>=0&&ny<rows&&grid[ny][nx]===PATH&&!visited.has(key)){
-        visited.add(key);
-        parent.set(key,`${x},${y}`);
-        queue.push([nx,ny]);
-      }
-    }
-  }
-  return{path:[],visited:cellOrder};
-}
-
-function runDFS(grid,rows,cols){
-  const endX=cols-2,endY=rows-2;
-  const stack=[[1,1,[]]];
-  const visited=new Set(['1,1']);
-  const cellOrder=[];
-  while(stack.length){
-    const[x,y,path]=stack.pop();
-    cellOrder.push([x,y]);
-    if(x===endX&&y===endY)return{path:[...path,[x,y]],visited:cellOrder};
-    for(const[dx,dy]of[[1,0],[-1,0],[0,1],[0,-1]]){
-      const nx=x+dx,ny=y+dy,key=`${nx},${ny}`;
-      if(nx>=0&&nx<cols&&ny>=0&&ny<rows&&grid[ny][nx]===PATH&&!visited.has(key)){
-        visited.add(key);
-        stack.push([nx,ny,[...path,[x,y]]]);
-      }
-    }
-  }
-  return{path:[],visited:cellOrder};
-}
-
-function setupCanvas(){
-  const canvas=document.getElementById('maze-canvas');
-  const maxW=Math.min(window.innerWidth-48,500);
-  MZ.cellSize=Math.max(Math.floor(maxW/MZ.cols),14);
-  canvas.width=MZ.cols*MZ.cellSize;
-  canvas.height=MZ.rows*MZ.cellSize;
-}
-
-function drawMaze(visitedCells,pathCells,mode){
-  const canvas=document.getElementById('maze-canvas');
-  const ctx=canvas.getContext('2d');
-  const cs=MZ.cellSize;
-  ctx.clearRect(0,0,canvas.width,canvas.height);
-
-  // 底層格子
-  for(let y=0;y<MZ.rows;y++){
-    for(let x=0;x<MZ.cols;x++){
-      ctx.fillStyle=MZ.grid[y][x]===WALL?'#111122':'#1e1e2e';
-      ctx.fillRect(x*cs,y*cs,cs,cs);
-    }
-  }
-
-  // 玩家走過的路徑（自己走模式）
-  if(MZ.view==='player'&&MZ.playerPath.length>1){
-    ctx.strokeStyle='rgba(105,255,71,0.4)';
-    ctx.lineWidth=Math.max(cs*0.25,2);
-    ctx.lineCap='round';ctx.lineJoin='round';
-    ctx.beginPath();
-    MZ.playerPath.forEach(([x,y],i)=>{
-      i===0?ctx.moveTo(x*cs+cs/2,y*cs+cs/2):ctx.lineTo(x*cs+cs/2,y*cs+cs/2);
-    });
-    ctx.stroke();
-  }
-
-  // 演算法探索的格子
-  if(visitedCells&&visitedCells.length>0){
-    const col=mode==='bfs'?'rgba(0,229,255,0.18)':'rgba(234,128,252,0.18)';
-    for(const[x,y]of visitedCells){
-      ctx.fillStyle=col;
-      ctx.fillRect(x*cs+1,y*cs+1,cs-2,cs-2);
-    }
-  }
-
-  // 演算法路徑
-  if(pathCells&&pathCells.length>1){
-    ctx.strokeStyle=mode==='bfs'?'#00e5ff':'#ea80fc';
-    ctx.lineWidth=Math.max(cs*0.3,3);
-    ctx.lineCap='round';ctx.lineJoin='round';
-    ctx.beginPath();
-    pathCells.forEach(([x,y],i)=>{
-      i===0?ctx.moveTo(x*cs+cs/2,y*cs+cs/2):ctx.lineTo(x*cs+cs/2,y*cs+cs/2);
-    });
-    ctx.stroke();
-  }
-
-  // 起點
-  const sx=1,sy=1;
-  ctx.fillStyle='#69ff47';
-  ctx.beginPath();ctx.arc(sx*cs+cs/2,sy*cs+cs/2,cs*0.38,0,Math.PI*2);ctx.fill();
-  ctx.fillStyle='#000';ctx.font=`bold ${Math.max(cs*0.42,10)}px sans-serif`;
-  ctx.textAlign='center';ctx.textBaseline='middle';
-  ctx.fillText('S',sx*cs+cs/2,sy*cs+cs/2);
-
-  // 終點
-  const ex=MZ.cols-2,ey=MZ.rows-2;
-  ctx.fillStyle='#ff4081';
-  ctx.beginPath();ctx.arc(ex*cs+cs/2,ey*cs+cs/2,cs*0.38,0,Math.PI*2);ctx.fill();
-  ctx.fillStyle='#fff';ctx.font=`bold ${Math.max(cs*0.42,10)}px sans-serif`;
-  ctx.textAlign='center';ctx.textBaseline='middle';
-  ctx.fillText('E',ex*cs+cs/2,ey*cs+cs/2);
-
-  // 玩家位置（未完成時顯示）
-  if(MZ.view==='player'&&!MZ.done){
-    const{x,y}=MZ.player;
-    if(!(x===1&&y===1)){// 不在起點才畫，避免遮住 S
-      ctx.fillStyle='rgba(105,255,71,0.9)';
-      ctx.beginPath();ctx.arc(x*cs+cs/2,y*cs+cs/2,cs*0.28,0,Math.PI*2);ctx.fill();
-    }
-  }
-}
-
-function setView(v){
-  MZ.algoRunning=false;
-  MZ.view=v;
-  ['player','bfs','dfs'].forEach(t=>{
-    const el=document.getElementById('tab-'+t);
-    if(el&&!el.disabled)el.className='algo-tab'+(t===v?` active-${t}`:'');
+  // 圓形佈局
+  const layout={};const cx=200,cy=150,r=110;
+  nodes.forEach((nd,i)=>{
+    const angle=(i/n)*Math.PI*2-Math.PI/2;
+    layout[nd]={x:Math.round(cx+r*Math.cos(angle)),y:Math.round(cy+r*Math.sin(angle))};
   });
-  document.getElementById('tab-player').className='algo-tab'+(v==='player'?' active-player':'');
-  document.getElementById('dir-area').style.display=v==='player'?'':'none';
-  document.getElementById('algo-area').style.display=v!=='player'?'':'none';
-  document.getElementById('algo-run-btn').disabled=false;
-  document.getElementById('algo-status').textContent='點擊執行開始';
-  setStatusDot('algo-dot','waiting');
-  drawMaze([],null,v);
+  return{nodes,edges,layout};
 }
 
-function playerMove(dx,dy){
-  if(MZ.done||MZ.view!=='player')return;
-  const nx=MZ.player.x+dx,ny=MZ.player.y+dy;
-  if(nx<0||nx>=MZ.cols||ny<0||ny>=MZ.rows)return;
-  if(MZ.grid[ny][nx]===WALL)return;
-  MZ.player={x:nx,y:ny};
-  MZ.playerPath.push([nx,ny]);
-  MZ.playerSteps++;
-  document.getElementById('stat-player').textContent=MZ.playerSteps;
-  drawMaze();
+// ── 狀態 ──────────────────────────────────────────────
+let G={nodes:[],edges:[],adj:{},layout:{},startNode:1};
+let ALGO={mode:'bfs',running:false,stepQueue:[],stepIdx:0};
+let VIS={visited:new Set(),queue:[],current:null,visitOrder:[]};
 
-  // 到達終點
-  if(nx===MZ.cols-2&&ny===MZ.rows-2){
-    MZ.done=true;
-    const bfsLen=MZ.bfsResult.path.length>0?MZ.bfsResult.path.length-1:0;
-    const diff=MZ.playerSteps-bfsLen;
-
-    document.getElementById('tab-bfs').disabled=false;
-    document.getElementById('tab-dfs').disabled=false;
-    document.getElementById('tab-bfs').className='algo-tab';
-    document.getElementById('tab-dfs').className='algo-tab';
-
-    const finishEl=document.getElementById('finish-msg');
-    finishEl.style.display='';
-    finishEl.textContent=diff===0
-      ?`🎉 完美！你走了最短路徑 ${MZ.playerSteps} 步，和 BFS 一樣！點 BFS / DFS 看看演算法怎麼走。`
-      :diff<=3
-      ?`👍 不錯！你走了 ${MZ.playerSteps} 步，BFS 最短是 ${bfsLen} 步，差了 ${diff} 步。點 BFS 看最短路！`
-      :`💡 你走了 ${MZ.playerSteps} 步，BFS 最短是 ${bfsLen} 步，差了 ${diff} 步。看看 BFS 怎麼找最短路？`;
-
-    document.getElementById('dir-area').style.display='none';
-    if(diff===0)launchConfetti();
-  }
+function loadPreset(name){
+  ALGO.running=false;
+  document.querySelectorAll('.preset-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('preset-'+name).classList.add('active');
+  const data=name==='custom'?makeRandomGraph():PRESETS[name];
+  G.nodes=data.nodes;G.edges=data.edges;G.layout=data.layout;
+  G.adj={};G.nodes.forEach(n=>{G.adj[n]=[];});
+  G.edges.forEach(([a,b])=>{G.adj[a].push(b);G.adj[b].push(a);});
+  G.startNode=G.nodes[0];
+  document.getElementById('start-label').textContent=G.startNode;
+  algoReset();
+  drawGraph();
 }
 
-async function algoRun(){
-  if(MZ.algoRunning)return;
-  MZ.algoRunning=true;
-  document.getElementById('algo-run-btn').disabled=true;
-  const mode=MZ.view;
-  const result=mode==='bfs'?MZ.bfsResult:MZ.dfsResult;
-  const speedMap={1:150,2:80,3:30,4:10,5:2};
-  const delay=speedMap[+document.getElementById('algo-speed').value]||30;
-  setStatusDot('algo-dot','your-turn');
-
-  const visited=[];
-  for(let i=0;i<result.visited.length;i++){
-    if(!MZ.algoRunning)break;
-    visited.push(result.visited[i]);
-    document.getElementById('algo-status').textContent=
-      `${mode.toUpperCase()} 探索中… 已訪問 ${visited.length} 格`;
-    drawMaze(visited,null,mode);
-    await sleep(delay);
-  }
-
-  if(MZ.algoRunning){
-    drawMaze(visited,result.path,mode);
-    const pathLen=result.path.length>0?result.path.length-1:0;
-    document.getElementById('algo-status').textContent=
-      mode==='bfs'
-        ?`BFS 完成！最短路徑 ${pathLen} 步，共探索 ${result.visited.length} 格`
-        :`DFS 完成！找到路徑 ${pathLen} 步（非最短），共探索 ${result.visited.length} 格`;
-    setStatusDot('algo-dot','over');
-  }
-  MZ.algoRunning=false;
-  document.getElementById('algo-run-btn').disabled=false;
+function setAlgo(mode){
+  ALGO.mode=mode;ALGO.running=false;
+  document.getElementById('btn-bfs').className='algo-btn'+(mode==='bfs'?' bfs':'');
+  document.getElementById('btn-dfs').className='algo-btn'+(mode==='dfs'?' dfs':'');
+  document.getElementById('struct-title').textContent=mode==='bfs'?'Queue 狀態（先進先出）':'Stack 狀態（後進先出）';
+  algoReset();
 }
 
 function algoReset(){
-  MZ.algoRunning=false;
-  document.getElementById('algo-run-btn').disabled=false;
-  document.getElementById('algo-status').textContent='點擊執行開始';
+  ALGO.running=false;ALGO.stepIdx=0;
+  VIS={visited:new Set(),queue:[],current:null,visitOrder:[]};
+  document.getElementById('visit-order').innerHTML='';
+  document.getElementById('struct-content').textContent='（尚未開始）';
+  document.getElementById('current-node').textContent='—';
+  document.getElementById('current-node').style.color='var(--accent2)';
+  document.getElementById('algo-explain').textContent='選擇演算法後點執行，或用「下一步」逐步觀察';
+  document.getElementById('run-btn').disabled=false;
   setStatusDot('algo-dot','waiting');
-  drawMaze([],null,MZ.view);
+  document.getElementById('algo-status').textContent='準備就緒';
+  // 預計算步驟
+  ALGO.steps=precomputeSteps(G.startNode,ALGO.mode);
+  drawGraph();
 }
 
-function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
+function precomputeSteps(start,mode){
+  const steps=[];
+  const visited=new Set();
+  const struct=[start];visited.add(start);
+  steps.push({type:'init',node:start,struct:[...struct],visited:new Set(visited)});
+  while(struct.length){
+    const cur=mode==='bfs'?struct.shift():struct.pop();
+    steps.push({type:'visit',node:cur,struct:[...struct],visited:new Set(visited)});
+    const neighbors=[...G.adj[cur]].sort((a,b)=>a-b);
+    for(const nb of neighbors){
+      if(!visited.has(nb)){
+        visited.add(nb);struct.push(nb);
+        steps.push({type:'enqueue',node:nb,from:cur,struct:[...struct],visited:new Set(visited)});
+      }
+    }
+  }
+  steps.push({type:'done',struct:[],visited:new Set(visited)});
+  return steps;
+}
+
+async function algoRun(){
+  if(ALGO.running)return;
+  if(ALGO.stepIdx>=ALGO.steps.length){algoReset();return;}
+  ALGO.running=true;
+  document.getElementById('run-btn').disabled=true;
+  setStatusDot('algo-dot','your-turn');
+  const speedMap={1:800,2:400,3:200,4:80,5:20};
+  const delay=speedMap[+document.getElementById('algo-speed').value]||200;
+  while(ALGO.stepIdx<ALGO.steps.length&&ALGO.running){
+    applyStep(ALGO.steps[ALGO.stepIdx]);
+    ALGO.stepIdx++;
+    await sleep(delay);
+  }
+  if(ALGO.running){
+    setStatusDot('algo-dot','over');
+    document.getElementById('algo-status').textContent=
+      `完成！走訪順序：${VIS.visitOrder.join(' → ')}`;
+  }
+  ALGO.running=false;
+  document.getElementById('run-btn').disabled=false;
+}
+
+function stepOnce(){
+  ALGO.running=false;
+  if(ALGO.stepIdx>=ALGO.steps.length){algoReset();return;}
+  applyStep(ALGO.steps[ALGO.stepIdx]);
+  ALGO.stepIdx++;
+  if(ALGO.stepIdx>=ALGO.steps.length){
+    setStatusDot('algo-dot','over');
+    document.getElementById('algo-status').textContent=`完成！走訪順序：${VIS.visitOrder.join(' → ')}`;
+  }
+}
+
+function applyStep(step){
+  const isBfs=ALGO.mode==='bfs';
+  const color=isBfs?'#00e5ff':'#ea80fc';
+
+  if(step.type==='init'){
+    VIS.queue=[step.node];VIS.visited=new Set([step.node]);VIS.current=null;
+    document.getElementById('algo-explain').textContent=
+      `初始化：將起點 ${step.node} 加入${isBfs?'Queue':'Stack'}`;
+    document.getElementById('algo-status').textContent='開始搜尋…';
+    setStatusDot('algo-dot','your-turn');
+  }else if(step.type==='visit'){
+    VIS.current=step.node;VIS.queue=step.struct;VIS.visited=step.visited;
+    VIS.visitOrder.push(step.node);
+    // 加走訪順序 chip
+    const chip=document.createElement('span');
+    chip.className=`vo-chip${isBfs?'':' dfs'}`;
+    chip.textContent=step.node;
+    document.getElementById('visit-order').appendChild(chip);
+    document.getElementById('current-node').textContent=step.node;
+    document.getElementById('current-node').style.color=color;
+    document.getElementById('algo-explain').textContent=
+      `從${isBfs?'Queue':'Stack'}取出節點 ${step.node}，開始探索鄰居`;
+    document.getElementById('algo-status').textContent=
+      `正在訪問節點 ${step.node}，已訪問 ${VIS.visitOrder.length} 個`;
+  }else if(step.type==='enqueue'){
+    VIS.queue=step.struct;VIS.visited=step.visited;
+    document.getElementById('algo-explain').textContent=
+      `節點 ${step.node} 尚未訪問，從 ${step.from} 加入${isBfs?'Queue（尾部）':'Stack（頂部）'}`;
+  }else if(step.type==='done'){
+    VIS.current=null;VIS.queue=[];
+    document.getElementById('current-node').textContent='✓';
+    document.getElementById('current-node').style.color='var(--accent3)';
+    document.getElementById('algo-explain').textContent=
+      `${isBfs?'Queue':'Stack'} 已空，搜尋完成！共走訪 ${VIS.visitOrder.length} 個節點。`;
+  }
+
+  // 更新 struct 顯示
+  const sc=document.getElementById('struct-content');
+  if(VIS.queue.length===0){sc.textContent='（空）';}
+  else{
+    sc.innerHTML='';
+    VIS.queue.forEach((n,i)=>{
+      const chip=document.createElement('span');chip.className='node-chip in-queue';
+      chip.textContent=n;sc.appendChild(chip);
+    });
+    if(isBfs){
+      const hint=document.createElement('span');hint.style.cssText='font-size:10px;color:var(--text-dim);margin-left:4px;';
+      hint.textContent='← 下一個';sc.appendChild(hint);
+    }else{
+      const hint=document.createElement('span');hint.style.cssText='font-size:10px;color:var(--text-dim);margin-left:4px;';
+      hint.textContent='↑ 頂部';sc.appendChild(hint);
+    }
+  }
+  drawGraph(step);
+}
+
+// ── 繪圖 ──────────────────────────────────────────────
+function drawGraph(step){
+  const canvas=document.getElementById('graph-canvas');
+  const ctx=canvas.getContext('2d');
+  const W=canvas.width,H=canvas.height;
+  ctx.clearRect(0,0,W,H);
+
+  const isBfs=ALGO.mode==='bfs';
+  const accentColor=isBfs?'#00e5ff':'#ea80fc';
+
+  // 畫邊
+  G.edges.forEach(([a,b])=>{
+    const pa=G.layout[a],pb=G.layout[b];
+    ctx.strokeStyle='#2a2a3e';ctx.lineWidth=2;
+    ctx.beginPath();ctx.moveTo(pa.x,pa.y);ctx.lineTo(pb.x,pb.y);ctx.stroke();
+  });
+
+  // 高亮已走訪邊
+  if(VIS.visited.size>0){
+    G.edges.forEach(([a,b])=>{
+      if(VIS.visited.has(a)&&VIS.visited.has(b)){
+        const pa=G.layout[a],pb=G.layout[b];
+        ctx.strokeStyle=accentColor+'44';ctx.lineWidth=3;
+        ctx.beginPath();ctx.moveTo(pa.x,pa.y);ctx.lineTo(pb.x,pb.y);ctx.stroke();
+      }
+    });
+  }
+
+  // 畫節點
+  G.nodes.forEach(n=>{
+    const{x,y}=G.layout[n];
+    const isStart=n===G.startNode;
+    const isCurrent=n===VIS.current;
+    const isVisited=VIS.visitOrder.includes(n);
+    const inQueue=VIS.queue.includes(n);
+
+    // 節點圓
+    ctx.beginPath();ctx.arc(x,y,20,0,Math.PI*2);
+    if(isCurrent){
+      ctx.fillStyle='rgba(255,64,129,0.25)';
+      ctx.strokeStyle='#ff4081';ctx.lineWidth=3;
+    }else if(isVisited){
+      ctx.fillStyle=accentColor+'22';
+      ctx.strokeStyle=accentColor;ctx.lineWidth=2;
+    }else if(inQueue){
+      ctx.fillStyle='rgba(255,215,0,0.15)';
+      ctx.strokeStyle='#ffd740';ctx.lineWidth=2;
+    }else{
+      ctx.fillStyle='#1e1e2e';
+      ctx.strokeStyle='#3a3a5e';ctx.lineWidth=2;
+    }
+    ctx.fill();ctx.stroke();
+
+    // 節點數字
+    ctx.fillStyle=isCurrent?'#ff4081':isVisited?accentColor:inQueue?'#ffd740':'#8888aa';
+    ctx.font=`bold ${n>=10?13:15}px 'Orbitron',monospace`;
+    ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText(n,x,y);
+
+    // 走訪順序小標
+    const orderIdx=VIS.visitOrder.indexOf(n);
+    if(orderIdx>=0){
+      ctx.fillStyle='#fff';ctx.font='bold 9px sans-serif';
+      ctx.beginPath();ctx.arc(x+14,y-14,9,0,Math.PI*2);
+      ctx.fillStyle=accentColor;ctx.fill();
+      ctx.fillStyle='#000';ctx.font='bold 9px monospace';
+      ctx.fillText(orderIdx+1,x+14,y-14);
+    }
+
+    // 起點標記
+    if(isStart&&!isVisited){
+      ctx.fillStyle=accentColor;ctx.font='bold 9px sans-serif';
+      ctx.fillText('START',x,y+30);
+    }
+  });
+}
+
+// 點擊節點換起點
+document.getElementById('graph-canvas').addEventListener('click',e=>{
+  const rect=e.target.getBoundingClientRect();
+  const mx=e.clientX-rect.left,my=e.clientY-rect.top;
+  // canvas 實際大小 vs 顯示大小的比例
+  const scaleX=e.target.width/rect.width,scaleY=e.target.height/rect.height;
+  const cx=mx*scaleX,cy=my*scaleY;
+  for(const n of G.nodes){
+    const{x,y}=G.layout[n];
+    if((cx-x)**2+(cy-y)**2<400){
+      G.startNode=n;
+      document.getElementById('start-label').textContent=n;
+      ALGO.steps=precomputeSteps(n,ALGO.mode);
+      algoReset();return;
+    }
+  }
+});
 
 document.getElementById('algo-speed').oninput=function(){
   const labels={1:'很慢',2:'慢',3:'中',4:'快',5:'極快'};
   document.getElementById('speed-label').textContent=labels[this.value];
 };
 
-document.addEventListener('keydown',e=>{
-  if(MZ.view!=='player'||MZ.done)return;
-  const keyMap={ArrowUp:[0,-1],ArrowDown:[0,1],ArrowLeft:[-1,0],ArrowRight:[1,0],
-    w:[0,-1],s:[0,1],a:[-1,0],d:[1,0]};
-  if(keyMap[e.key]){e.preventDefault();playerMove(...keyMap[e.key]);}
-});
+function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
+
+// 初始載入
+loadPreset('tree');
 </script>
 </body>
 </html>
