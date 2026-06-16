@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="../favicon.png">
+<title>視覺化排序 演算法解析 — 演算法互動遊戲集</title>
+<link rel="stylesheet" href="../shared/style.css">
+</head>
+<body>
+<div class="container">
+
+<header>
+  <div class="title">🧠 視覺化排序 演算法解析</div>
+  <div class="subtitle">五種排序深度解析 · 複雜度推導 · 何時用哪個</div>
+</header>
+
+<div style="text-align:center;margin-bottom:20px;display:flex;justify-content:center;gap:12px;flex-wrap:wrap;">
+  <a href="sorting.html" style="font-size:12px;color:var(--text-dim);text-decoration:none;letter-spacing:0.1em;text-transform:uppercase;padding:8px 14px;border:1px solid var(--border);border-radius:8px;transition:all 0.2s;display:inline-block;"
+    onmouseover="this.style.color='var(--accent)';this.style.borderColor='var(--accent)'"
+    onmouseout="this.style.color='var(--text-dim)';this.style.borderColor='var(--border)'">📊 回遊戲</a>
+  <a href="../index.html" style="font-size:12px;color:var(--text-dim);text-decoration:none;letter-spacing:0.1em;text-transform:uppercase;padding:8px 14px;border:1px solid var(--border);border-radius:8px;transition:all 0.2s;display:inline-block;"
+    onmouseover="this.style.color='var(--accent)';this.style.borderColor='var(--accent)'"
+    onmouseout="this.style.color='var(--text-dim)';this.style.borderColor='var(--border)'">← 返回選單</a>
+</div>
+
+<!-- 目錄 -->
+<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:28px;">
+  <div style="font-size:11px;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-dim);margin-bottom:12px;">本頁內容</div>
+  <div style="display:flex;flex-direction:column;gap:8px;">
+    <a href="#step1" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Step 1 · O(n²) 三兄弟：Bubble · Selection · Insertion</a>
+    <a href="#step2" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Step 2 · Merge Sort：分治法保證 O(n log n)</a>
+    <a href="#step3" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Step 3 · Quick Sort：平均最快但有最壞情況</a>
+    <a href="#step4" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Step 4 · 為什麼 O(n log n) 比 O(n²) 快這麼多？</a>
+    <a href="#step5" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Step 5 · 何時用哪個？實際應用</a>
+    <a href="#leetcode" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">LeetCode 相關題目</a>
+  </div>
+</div>
+
+<!-- Step 1 -->
+<div id="step1" class="algo-section">
+  <div class="acc-step-label">Step 1 · O(n²) 三兄弟：Bubble · Selection · Insertion</div>
+  <div class="acc-p">三種都是 O(n²)，但各有特色：</div>
+
+  <div style="display:flex;flex-direction:column;gap:12px;margin:16px 0;">
+    <div style="background:var(--bg);border-left:3px solid #ff4081;border-radius:0 10px 10px 0;padding:14px;">
+      <div style="font-weight:700;color:#ff4081;margin-bottom:6px;">🔴 Bubble Sort</div>
+      <div style="font-size:13px;color:var(--text-dim);">相鄰兩兩比較，大的往右「冒泡」。最直觀但最慢。</div>
+    </div>
+    <div style="background:var(--bg);border-left:3px solid #ffd740;border-radius:0 10px 10px 0;padding:14px;">
+      <div style="font-weight:700;color:#ffd740;margin-bottom:6px;">🟡 Selection Sort</div>
+      <div style="font-size:13px;color:var(--text-dim);">每輪掃描找最小值放到前面。交換次數最少（O(n)），但比較次數固定 O(n²)，不穩定。</div>
+    </div>
+    <div style="background:var(--bg);border-left:3px solid #69ff47;border-radius:0 10px 10px 0;padding:14px;">
+      <div style="font-weight:700;color:#69ff47;margin-bottom:6px;">🟢 Insertion Sort</div>
+      <div style="font-size:13px;color:var(--text-dim);">像插撲克牌，從第二個開始往前插入正確位置。最好情況 O(n)（幾乎排好時），小資料或幾乎有序時最實用。</div>
+    </div>
+  </div>
+
+  <div class="acc-code">
+    <span class="lang-tag">Python</span>
+    <pre><span class="cmt"># Bubble Sort</span>
+<span class="kw">def</span> <span class="fn">bubble_sort</span>(arr):
+    n = <span class="fn">len</span>(arr)
+    <span class="kw">for</span> i <span class="kw">in</span> <span class="fn">range</span>(n):
+        <span class="kw">for</span> j <span class="kw">in</span> <span class="fn">range</span>(n-i-<span class="num">1</span>):
+            <span class="kw">if</span> arr[j] > arr[j+<span class="num">1</span>]:
+                arr[j], arr[j+<span class="num">1</span>] = arr[j+<span class="num">1</span>], arr[j]
+
+<span class="cmt"># Insertion Sort</span>
+<span class="kw">def</span> <span class="fn">insertion_sort</span>(arr):
+    <span class="kw">for</span> i <span class="kw">in</span> <span class="fn">range</span>(<span class="num">1</span>, <span class="fn">len</span>(arr)):
+        key = arr[i]
+        j = i - <span class="num">1</span>
+        <span class="kw">while</span> j >= <span class="num">0</span> <span class="kw">and</span> arr[j] > key:
+            arr[j+<span class="num">1</span>] = arr[j]
+            j -= <span class="num">1</span>
+        arr[j+<span class="num">1</span>] = key</pre>
+  </div>
+</div>
+
+<!-- Step 2 -->
+<div id="step2" class="algo-section">
+  <div class="acc-step-label">Step 2 · Merge Sort：分治法保證 O(n log n)</div>
+  <div class="acc-p">
+    核心思想：<strong>分而治之</strong>。把陣列對半拆，各自排好，再合併。<br>
+    合併兩個已排序陣列只需要 O(n)，而遞迴深度是 O(log n)，所以總共是 O(n log n)。
+  </div>
+  <div class="acc-code">
+    <span class="lang-tag">Python</span>
+    <pre><span class="kw">def</span> <span class="fn">merge_sort</span>(arr):
+    <span class="kw">if</span> <span class="fn">len</span>(arr) <= <span class="num">1</span>: <span class="kw">return</span> arr
+    mid = <span class="fn">len</span>(arr) // <span class="num">2</span>
+    left  = <span class="fn">merge_sort</span>(arr[:mid])
+    right = <span class="fn">merge_sort</span>(arr[mid:])
+    <span class="kw">return</span> <span class="fn">merge</span>(left, right)
+
+<span class="kw">def</span> <span class="fn">merge</span>(left, right):
+    result = []
+    i = j = <span class="num">0</span>
+    <span class="kw">while</span> i < <span class="fn">len</span>(left) <span class="kw">and</span> j < <span class="fn">len</span>(right):
+        <span class="kw">if</span> left[i] <= right[j]:  <span class="cmt"># ≤ 保證穩定性</span>
+            result.append(left[i]); i += <span class="num">1</span>
+        <span class="kw">else</span>:
+            result.append(right[j]); j += <span class="num">1</span>
+    <span class="kw">return</span> result + left[i:] + right[j:]
+
+<span class="cmt"># 時間：O(n log n) 任何情況</span>
+<span class="cmt"># 空間：O(n)（需要額外陣列）</span>
+<span class="cmt"># 穩定：✅</span></pre>
+  </div>
+  <div class="acc-insight">
+    <span class="ins-label">💡 為什麼是 O(n log n)？</span>
+    每層遞迴總共處理 n 個元素（合併的工作量），共有 log n 層，所以是 n × log n。
+  </div>
+</div>
+
+<!-- Step 3 -->
+<div id="step3" class="algo-section">
+  <div class="acc-step-label">Step 3 · Quick Sort：平均最快但有最壞情況</div>
+  <div class="acc-p">
+    選一個 <strong>pivot</strong>，把比它小的放左邊，大的放右邊（partition），再遞迴兩側。<br>
+    原地排序（不需要額外陣列），常數因子小，實際上最快。
+  </div>
+  <div class="acc-code">
+    <span class="lang-tag">Python</span>
+    <pre><span class="kw">def</span> <span class="fn">quick_sort</span>(arr, lo, hi):
+    <span class="kw">if</span> lo >= hi: <span class="kw">return</span>
+    pivot_idx = <span class="fn">partition</span>(arr, lo, hi)
+    <span class="fn">quick_sort</span>(arr, lo, pivot_idx - <span class="num">1</span>)
+    <span class="fn">quick_sort</span>(arr, pivot_idx + <span class="num">1</span>, hi)
+
+<span class="kw">def</span> <span class="fn">partition</span>(arr, lo, hi):
+    pivot = arr[hi]  <span class="cmt"># 選最後一個為 pivot</span>
+    i = lo - <span class="num">1</span>
+    <span class="kw">for</span> j <span class="kw">in</span> <span class="fn">range</span>(lo, hi):
+        <span class="kw">if</span> arr[j] <= pivot:
+            i += <span class="num">1</span>
+            arr[i], arr[j] = arr[j], arr[i]
+    arr[i+<span class="num">1</span>], arr[hi] = arr[hi], arr[i+<span class="num">1</span>]
+    <span class="kw">return</span> i + <span class="num">1</span>
+
+<span class="cmt"># 平均：O(n log n)，最壞（已排序）：O(n²)</span>
+<span class="cmt"># 解法：隨機選 pivot，或三數取中</span></pre>
+  </div>
+  <div class="acc-insight">
+    <span class="ins-label">⚠️ 最壞情況</span>
+    如果每次 pivot 都選到最大或最小值（例如已排序的陣列選最後一個），遞迴深度變 O(n)，整體變 O(n²)。<br>
+    解法：隨機選 pivot，或選頭、中、尾的中位數（三數取中）。
+  </div>
+</div>
+
+<!-- Step 4 -->
+<div id="step4" class="algo-section">
+  <div class="acc-step-label">Step 4 · 為什麼 O(n log n) 比 O(n²) 快這麼多？</div>
+  <div style="overflow-x:auto;margin:16px 0;">
+    <table style="width:100%;border-collapse:collapse;font-size:13px;">
+      <thead>
+        <tr style="border-bottom:1px solid var(--border);">
+          <th style="padding:10px;text-align:left;color:var(--text-dim);font-weight:500;">n（資料量）</th>
+          <th style="padding:10px;text-align:right;color:var(--accent2);font-weight:700;">O(n²)</th>
+          <th style="padding:10px;text-align:right;color:var(--accent);font-weight:700;">O(n log n)</th>
+          <th style="padding:10px;text-align:right;color:var(--text-dim);font-weight:500;">快了幾倍</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:10px;">100</td>
+          <td style="padding:10px;text-align:right;color:var(--accent2);">10,000</td>
+          <td style="padding:10px;text-align:right;color:var(--accent);">665</td>
+          <td style="padding:10px;text-align:right;">15×</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:10px;">1,000</td>
+          <td style="padding:10px;text-align:right;color:var(--accent2);">1,000,000</td>
+          <td style="padding:10px;text-align:right;color:var(--accent);">9,966</td>
+          <td style="padding:10px;text-align:right;">100×</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:10px;">10,000</td>
+          <td style="padding:10px;text-align:right;color:var(--accent2);">100,000,000</td>
+          <td style="padding:10px;text-align:right;color:var(--accent);">132,877</td>
+          <td style="padding:10px;text-align:right;">753×</td>
+        </tr>
+        <tr>
+          <td style="padding:10px;">1,000,000</td>
+          <td style="padding:10px;text-align:right;color:var(--accent2);">10¹²</td>
+          <td style="padding:10px;text-align:right;color:var(--accent);">19,931,568</td>
+          <td style="padding:10px;text-align:right;">50,000×</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="acc-insight">
+    <span class="ins-label">💡 直覺理解</span>
+    n=100 萬時，O(n²) 要做 1 兆次操作，O(n log n) 只要 2000 萬次。<br>
+    假設每秒 10 億次：O(n²) 要 1000 秒，O(n log n) 只要 0.02 秒。
+  </div>
+</div>
+
+<!-- Step 5 -->
+<div id="step5" class="algo-section">
+  <div class="acc-step-label">Step 5 · 何時用哪個？實際應用</div>
+  <div style="overflow-x:auto;margin:16px 0;">
+    <table style="width:100%;border-collapse:collapse;font-size:13px;">
+      <thead>
+        <tr style="border-bottom:1px solid var(--border);">
+          <th style="padding:10px;text-align:left;color:var(--text-dim);font-weight:500;">情境</th>
+          <th style="padding:10px;text-align:left;color:var(--text-dim);font-weight:500;">推薦</th>
+          <th style="padding:10px;text-align:left;color:var(--text-dim);font-weight:500;">原因</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:10px;">資料量小（n &lt; 20）</td>
+          <td style="padding:10px;color:#69ff47;">Insertion Sort</td>
+          <td style="padding:10px;font-size:12px;color:var(--text-dim);">常數因子小，小資料最快</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:10px;">幾乎已排序</td>
+          <td style="padding:10px;color:#69ff47;">Insertion Sort</td>
+          <td style="padding:10px;font-size:12px;color:var(--text-dim);">最好情況 O(n)</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:10px;">需要穩定排序</td>
+          <td style="padding:10px;color:#00e5ff;">Merge Sort</td>
+          <td style="padding:10px;font-size:12px;color:var(--text-dim);">唯一穩定的 O(n log n)</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:10px;">一般用途、最快</td>
+          <td style="padding:10px;color:#ea80fc;">Quick Sort</td>
+          <td style="padding:10px;font-size:12px;color:var(--text-dim);">平均最快，原地排序</td>
+        </tr>
+        <tr>
+          <td style="padding:10px;">實際語言內建</td>
+          <td style="padding:10px;color:var(--accent);">Timsort / Introsort</td>
+          <td style="padding:10px;font-size:12px;color:var(--text-dim);">Python 用 Timsort（Merge+Insertion），C++ 用 Introsort（Quick+Heap+Insertion）</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- LeetCode -->
+<div id="leetcode" class="algo-section">
+  <div class="acc-step-label">LeetCode 相關題目</div>
+  <div style="display:flex;flex-direction:column;gap:10px;margin-top:12px;">
+    <a href="https://leetcode.com/problems/sort-an-array/" target="_blank" class="lc-card">
+      <span class="lc-num">#912</span><span class="lc-title">Sort an Array</span>
+      <span class="lc-tag medium">Medium</span>
+      <span class="lc-desc">實作排序，不能用內建函式，練習 Merge Sort 或 Quick Sort</span>
+    </a>
+    <a href="https://leetcode.com/problems/sort-colors/" target="_blank" class="lc-card">
+      <span class="lc-num">#75</span><span class="lc-title">Sort Colors</span>
+      <span class="lc-tag medium">Medium</span>
+      <span class="lc-desc">荷蘭旗問題，Quick Sort partition 的應用，O(n) 一次掃描</span>
+    </a>
+    <a href="https://leetcode.com/problems/merge-sorted-array/" target="_blank" class="lc-card">
+      <span class="lc-num">#88</span><span class="lc-title">Merge Sorted Array</span>
+      <span class="lc-tag easy">Easy</span>
+      <span class="lc-desc">Merge Sort 的合併步驟，從後往前合併避免覆蓋</span>
+    </a>
+    <a href="https://leetcode.com/problems/kth-largest-element-in-an-array/" target="_blank" class="lc-card">
+      <span class="lc-num">#215</span><span class="lc-title">Kth Largest Element in an Array</span>
+      <span class="lc-tag medium">Medium</span>
+      <span class="lc-desc">Quick Select：Quick Sort 的變形，O(n) 平均找第 k 大</span>
+    </a>
+    <a href="https://leetcode.com/problems/count-of-smaller-numbers-after-self/" target="_blank" class="lc-card">
+      <span class="lc-num">#315</span><span class="lc-title">Count of Smaller Numbers After Self</span>
+      <span class="lc-tag hard">Hard</span>
+      <span class="lc-desc">Merge Sort 的進階應用，合併時計算逆序對</span>
+    </a>
+  </div>
+</div>
+
+<!-- 導航 -->
+<div style="display:flex;justify-content:center;gap:12px;margin:32px 0 8px;flex-wrap:wrap;">
+  <a href="bst-algo.html" style="display:inline-flex;align-items:center;gap:8px;padding:12px 20px;background:var(--surface);border:1px solid var(--border);border-radius:12px;text-decoration:none;color:var(--text);font-size:13px;transition:all 0.2s;"
+    onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'"
+    onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text)'">← 🌳 BST 解析</a>
+  <a href="../index.html" style="display:inline-flex;align-items:center;gap:8px;padding:12px 20px;background:var(--surface);border:1px solid var(--border);border-radius:12px;text-decoration:none;color:var(--text);font-size:13px;transition:all 0.2s;"
+    onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'"
+    onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text)'">回選單 →</a>
+</div>
+
+</div>
+
+<style>
+.algo-section{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:24px;margin-bottom:20px;}
+.lc-card{display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--bg);border:1px solid var(--border);border-radius:10px;text-decoration:none;color:var(--text);transition:border-color 0.2s;flex-wrap:wrap;}
+.lc-card:hover{border-color:var(--accent);}
+.lc-num{font-family:'Orbitron',monospace;font-size:11px;color:var(--text-dim);min-width:44px;}
+.lc-title{font-weight:600;font-size:14px;flex:1;}
+.lc-tag{font-size:10px;padding:2px 8px;border-radius:20px;font-weight:700;letter-spacing:0.05em;}
+.lc-tag.easy{background:rgba(0,200,100,0.15);color:#00c864;}
+.lc-tag.medium{background:rgba(255,180,0,0.15);color:#ffb400;}
+.lc-tag.hard{background:rgba(255,60,60,0.15);color:#ff3c3c;}
+.lc-desc{font-size:12px;color:var(--text-dim);width:100%;margin-top:2px;}
+.acc-step-label{font-family:'Orbitron',monospace;font-size:11px;letter-spacing:0.15em;text-transform:uppercase;color:var(--accent);margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid var(--border);}
+</style>
+</body>
+</html>

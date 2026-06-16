@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="../favicon.png">
+<title>視覺化排序 — 演算法互動遊戲集</title>
+<link rel="stylesheet" href="../shared/style.css">
+<style>
+  .sort-canvas-wrap{display:flex;justify-content:center;margin:12px 0;}
+  canvas#sort-canvas{border:1px solid var(--border);border-radius:12px;background:#0a0a12;display:block;}
+
+  .algo-btns{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin:10px 0;}
+  .algo-btn{padding:9px 18px;border-radius:10px;border:2px solid var(--border);background:var(--surface);
+    color:var(--text-dim);font-size:12px;font-weight:700;cursor:pointer;transition:all 0.2s;font-family:'Orbitron',monospace;}
+  .algo-btn:hover{border-color:var(--accent);}
+  .algo-btn.active{border-color:var(--accent);color:var(--accent);background:rgba(0,229,255,0.08);}
+  .algo-btn.bubble.active{border-color:#ff4081;color:#ff4081;background:rgba(255,64,129,0.08);}
+  .algo-btn.selection.active{border-color:#ffd740;color:#ffd740;background:rgba(255,215,0,0.08);}
+  .algo-btn.insertion.active{border-color:#69ff47;color:#69ff47;background:rgba(105,255,71,0.08);}
+  .algo-btn.merge.active{border-color:#00e5ff;color:#00e5ff;background:rgba(0,229,255,0.08);}
+  .algo-btn.quick.active{border-color:#ea80fc;color:#ea80fc;background:rgba(234,128,252,0.08);}
+
+  .stats-row{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin:8px 0;}
+  .stat-box{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px 14px;text-align:center;min-width:80px;}
+  .stat-val{font-family:'Orbitron',monospace;font-size:18px;font-weight:900;}
+  .stat-lbl{font-size:10px;color:var(--text-dim);margin-top:2px;}
+
+  .explain-box{background:var(--surface);border-left:3px solid var(--accent);border-radius:0 8px 8px 0;
+    padding:10px 14px;font-size:13px;color:var(--text-dim);margin:8px 0;line-height:1.6;min-height:40px;}
+
+  .speed-row{display:flex;align-items:center;gap:10px;justify-content:center;margin:8px 0;}
+  .speed-lbl{font-size:11px;color:var(--text-dim);}
+
+  .compare-table{width:100%;border-collapse:collapse;font-size:12px;margin-top:12px;}
+  .compare-table th{padding:8px;text-align:left;color:var(--text-dim);font-weight:500;border-bottom:1px solid var(--border);}
+  .compare-table td{padding:8px;border-bottom:1px solid var(--border);}
+  .compare-table tr.highlight td{color:var(--accent);}
+</style>
+</head>
+<body>
+<canvas id="confetti-canvas"></canvas>
+<div class="container">
+
+<header>
+  <div class="title">
+    <img src="../assets/icons/Sorting.png" style="height:55px;vertical-align:middle;margin-right:8px;" onerror="this.style.display='none'">
+    視覺化排序
+  </div>
+  <div class="subtitle">Bubble · Selection · Insertion · Merge · Quick Sort</div>
+</header>
+
+<div style="text-align:center;margin-bottom:20px">
+  <a href="../index.html" style="font-size:12px;color:var(--text-dim);text-decoration:none;letter-spacing:0.1em;text-transform:uppercase;padding:8px 14px;border:1px solid var(--border);border-radius:8px;transition:all 0.2s;display:inline-block;"
+    onmouseover="this.style.color='var(--accent)';this.style.borderColor='var(--accent)'"
+    onmouseout="this.style.color='var(--text-dim)';this.style.borderColor='var(--border)'">← 返回選單</a>
+</div>
+
+<div class="rules-block">
+  <div class="rules-title">📖 學習目標</div>
+  <div class="rules-body">
+    <div class="rules-item move">
+      <div class="ri-label">觀察</div>
+      <div class="ri-text">選不同排序演算法，看它們怎麼把數列排好，比較<strong>比較次數</strong>和<strong>交換次數</strong></div>
+    </div>
+    <div class="rules-item win">
+      <div class="ri-label">重點</div>
+      <div class="ri-text">為什麼 Merge Sort 和 Quick Sort 比 Bubble Sort 快？從動畫看出差異</div>
+    </div>
+    <div class="rules-item tip">
+      <div class="ri-label">挑戰</div>
+      <div class="ri-text">試試「最差情況」，看哪個演算法受影響最大 👇</div>
+    </div>
+  </div>
+</div>
+
+<div class="panel active" id="panel-main">
+
+  <!-- 演算法選擇 -->
+  <div style="font-size:12px;color:var(--text-dim);margin-bottom:8px;">選擇排序演算法：</div>
+  <div class="algo-btns">
+    <button class="algo-btn bubble active" id="btn-bubble" onclick="setAlgo('bubble')">🔴 Bubble Sort</button>
+    <button class="algo-btn selection" id="btn-selection" onclick="setAlgo('selection')">🟡 Selection Sort</button>
+    <button class="algo-btn insertion" id="btn-insertion" onclick="setAlgo('insertion')">🟢 Insertion Sort</button>
+    <button class="algo-btn merge" id="btn-merge" onclick="setAlgo('merge')">🔵 Merge Sort</button>
+    <button class="algo-btn quick" id="btn-quick" onclick="setAlgo('quick')">🟣 Quick Sort</button>
+  </div>
+
+  <!-- 陣列設定 -->
+  <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:center;margin:10px 0;">
+    <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-dim);">
+      大小
+      <select id="arr-size" style="background:var(--surface);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:8px;font-size:12px;">
+        <option value="16">16</option>
+        <option value="24" selected>24</option>
+        <option value="32">32</option>
+        <option value="48">48</option>
+      </select>
+    </div>
+    <button class="btn btn-sm" onclick="genArray('random')">🎲 隨機</button>
+    <button class="btn btn-sm" onclick="genArray('nearly')">📈 幾乎排好</button>
+    <button class="btn btn-sm" onclick="genArray('reverse')">📉 逆序（最差）</button>
+    <button class="btn btn-sm" onclick="genArray('same')">➡️ 相同值</button>
+  </div>
+
+  <!-- 畫布 -->
+  <div class="sort-canvas-wrap">
+    <canvas id="sort-canvas"></canvas>
+  </div>
+
+  <!-- 統計 -->
+  <div class="stats-row">
+    <div class="stat-box">
+      <div class="stat-val" id="stat-cmp" style="color:var(--accent2);">0</div>
+      <div class="stat-lbl">比較次數</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-val" id="stat-swap" style="color:var(--accent4);">0</div>
+      <div class="stat-lbl">交換次數</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-val" id="stat-time" style="color:var(--accent);">O(?)</div>
+      <div class="stat-lbl">時間複雜度</div>
+    </div>
+  </div>
+
+  <!-- 說明 -->
+  <div class="explain-box" id="explain-box">選擇演算法後點「開始排序」觀看動畫。</div>
+
+  <!-- 速度 + 控制 -->
+  <div class="speed-row">
+    <span class="speed-lbl">速度</span>
+    <input type="range" id="sort-speed" min="1" max="5" value="3" style="width:120px;">
+    <span class="speed-lbl" id="speed-label">中</span>
+  </div>
+  <div class="btn-row">
+    <button class="btn btn-primary" id="run-btn" onclick="sortRun()">▶ 開始排序</button>
+    <button class="btn btn-sm" onclick="sortStop()">⏹ 停止</button>
+    <button class="btn btn-sm" onclick="genArray('random')">↺ 重新洗牌</button>
+  </div>
+
+  <!-- 複雜度對比表 -->
+  <div style="margin-top:16px;">
+    <div style="font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-dim);margin-bottom:8px;font-family:'Orbitron',monospace;">複雜度比較</div>
+    <div style="overflow-x:auto;">
+      <table class="compare-table" id="compare-table">
+        <thead>
+          <tr>
+            <th>演算法</th>
+            <th>最好</th>
+            <th>平均</th>
+            <th>最壞</th>
+            <th>空間</th>
+            <th>穩定</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr id="row-bubble"><td>🔴 Bubble Sort</td><td>O(n)</td><td>O(n²)</td><td>O(n²)</td><td>O(1)</td><td>✅</td></tr>
+          <tr id="row-selection"><td>🟡 Selection Sort</td><td>O(n²)</td><td>O(n²)</td><td>O(n²)</td><td>O(1)</td><td>❌</td></tr>
+          <tr id="row-insertion"><td>🟢 Insertion Sort</td><td>O(n)</td><td>O(n²)</td><td>O(n²)</td><td>O(1)</td><td>✅</td></tr>
+          <tr id="row-merge"><td>🔵 Merge Sort</td><td>O(n log n)</td><td>O(n log n)</td><td>O(n log n)</td><td>O(n)</td><td>✅</td></tr>
+          <tr id="row-quick"><td>🟣 Quick Sort</td><td>O(n log n)</td><td>O(n log n)</td><td>O(n²)</td><td>O(log n)</td><td>❌</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<!-- 演算法解析連結 -->
+<div style="text-align:center;margin:24px 0 8px;">
+  <a href="sorting-algo.html"
+    style="display:inline-flex;align-items:center;gap:10px;padding:14px 28px;
+      background:var(--surface);border:1px solid var(--border);border-radius:12px;
+      text-decoration:none;color:var(--text);font-size:14px;transition:all 0.2s;letter-spacing:0.03em;"
+    onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'"
+    onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text)'">
+    🧠 <strong>看演算法解析</strong> &nbsp;— 五種排序深度解析 · 複雜度推導 · 何時用哪個
+  </a>
+</div>
+
+</div>
+
+<script src="../shared/firebase.js"></script>
+<script src="../shared/ui.js"></script>
+<script>
+const ALGO_COLORS={bubble:'#ff4081',selection:'#ffd740',insertion:'#69ff47',merge:'#00e5ff',quick:'#ea80fc'};
+const ALGO_COMPLEXITY={
+  bubble:'O(n²)',selection:'O(n²)',insertion:'O(n²)',merge:'O(n log n)',quick:'O(n log n)'
+};
+const ALGO_DESC={
+  bubble:'Bubble Sort：相鄰元素兩兩比較，大的往右冒泡。每輪確定一個最大值的位置。',
+  selection:'Selection Sort：每輪從未排序部分選出最小值，放到正確位置。',
+  insertion:'Insertion Sort：像打撲克牌，把新牌插入已排好的位置。幾乎排好時非常快。',
+  merge:'Merge Sort：分治法，拆成兩半各自排好再合併。穩定的 O(n log n)。',
+  quick:'Quick Sort：選 pivot，把比它小的放左邊，大的放右邊，再遞迴。平均最快。'
+};
+
+let arr=[],n=24,algo='bubble',running=false,cmp=0,swap=0;
+let steps=[],stepIdx=0,animTimer=null;
+
+function setAlgo(a){
+  algo=a;
+  document.querySelectorAll('.algo-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('btn-'+a).classList.add('active');
+  document.querySelectorAll('#compare-table tbody tr').forEach(r=>r.classList.remove('highlight'));
+  document.getElementById('row-'+a).classList.add('highlight');
+  document.getElementById('stat-time').textContent=ALGO_COMPLEXITY[a];
+  document.getElementById('stat-time').style.color=ALGO_COLORS[a];
+  document.getElementById('explain-box').textContent=ALGO_DESC[a];
+  document.getElementById('explain-box').style.borderLeftColor=ALGO_COLORS[a];
+  sortStop();drawBars();
+}
+
+function genArray(type){
+  sortStop();
+  n=+document.getElementById('arr-size').value;
+  if(type==='random'){arr=Array.from({length:n},()=>Math.floor(Math.random()*90)+10);}
+  else if(type==='nearly'){
+    arr=Array.from({length:n},(_,i)=>Math.round((i+1)*90/n)+Math.floor(Math.random()*8)-4);
+    arr=arr.map(v=>Math.max(5,Math.min(99,v)));
+  }
+  else if(type==='reverse'){arr=Array.from({length:n},(_,i)=>Math.round(99-(i*88/n)));}
+  else if(type==='same'){arr=Array(n).fill(50);}
+  cmp=0;swap=0;steps=[];stepIdx=0;
+  updateStats();drawBars();
+  document.getElementById('explain-box').textContent=ALGO_DESC[algo];
+}
+
+function updateStats(){
+  document.getElementById('stat-cmp').textContent=cmp;
+  document.getElementById('stat-swap').textContent=swap;
+}
+
+// ── 產生排序步驟 ────────────────────────────────────────
+function generateSteps(){
+  const a=[...arr];const s=[];let c=0,sw=0;
+
+  if(algo==='bubble'){
+    for(let i=0;i<a.length;i++){
+      for(let j=0;j<a.length-i-1;j++){
+        c++;s.push({type:'compare',i:j,j:j+1,arr:[...a],cmp:c,swap:sw});
+        if(a[j]>a[j+1]){[a[j],a[j+1]]=[a[j+1],a[j]];sw++;s.push({type:'swap',i:j,j:j+1,arr:[...a],cmp:c,swap:sw});}
+      }
+      s.push({type:'sorted',idx:a.length-i-1,arr:[...a],cmp:c,swap:sw});
+    }
+  }
+  else if(algo==='selection'){
+    for(let i=0;i<a.length;i++){
+      let minIdx=i;
+      for(let j=i+1;j<a.length;j++){c++;s.push({type:'compare',i:minIdx,j,arr:[...a],cmp:c,swap:sw});if(a[j]<a[minIdx])minIdx=j;}
+      if(minIdx!==i){[a[i],a[minIdx]]=[a[minIdx],a[i]];sw++;s.push({type:'swap',i,j:minIdx,arr:[...a],cmp:c,swap:sw});}
+      s.push({type:'sorted',idx:i,arr:[...a],cmp:c,swap:sw});
+    }
+  }
+  else if(algo==='insertion'){
+    s.push({type:'sorted',idx:0,arr:[...a],cmp:c,swap:sw});
+    for(let i=1;i<a.length;i++){
+      let j=i;
+      while(j>0){c++;s.push({type:'compare',i:j-1,j,arr:[...a],cmp:c,swap:sw});
+        if(a[j-1]>a[j]){[a[j-1],a[j]]=[a[j],a[j-1]];sw++;s.push({type:'swap',i:j-1,j,arr:[...a],cmp:c,swap:sw});j--;}
+        else break;
+      }
+      s.push({type:'sorted',idx:i,arr:[...a],cmp:c,swap:sw});
+    }
+  }
+  else if(algo==='merge'){
+    function mergeSort(arr,lo,hi){
+      if(lo>=hi)return;
+      const mid=Math.floor((lo+hi)/2);
+      mergeSort(arr,lo,mid);mergeSort(arr,mid+1,hi);
+      const left=arr.slice(lo,mid+1),right=arr.slice(mid+1,hi+1);
+      let i=0,j=0,k=lo;
+      while(i<left.length&&j<right.length){
+        c++;s.push({type:'compare',i:lo+i,j:mid+1+j,arr:[...arr],cmp:c,swap:sw});
+        if(left[i]<=right[j]){arr[k++]=left[i++];}else{arr[k++]=right[j++];sw++;}
+        s.push({type:'merge',lo,hi,arr:[...arr],cmp:c,swap:sw});
+      }
+      while(i<left.length){arr[k++]=left[i++];s.push({type:'merge',lo,hi,arr:[...arr],cmp:c,swap:sw});}
+      while(j<right.length){arr[k++]=right[j++];s.push({type:'merge',lo,hi,arr:[...arr],cmp:c,swap:sw});}
+      if(lo===0&&hi===arr.length-1)s.push({type:'done',arr:[...arr],cmp:c,swap:sw});
+    }
+    mergeSort(a,0,a.length-1);
+  }
+  else if(algo==='quick'){
+    function quickSort(arr,lo,hi){
+      if(lo>=hi){if(lo===hi)s.push({type:'sorted',idx:lo,arr:[...arr],cmp:c,swap:sw});return;}
+      const pivot=arr[hi];let i=lo-1;
+      s.push({type:'pivot',idx:hi,arr:[...arr],cmp:c,swap:sw});
+      for(let j=lo;j<hi;j++){
+        c++;s.push({type:'compare',i:j,j:hi,arr:[...arr],cmp:c,swap:sw});
+        if(arr[j]<=pivot){i++;[arr[i],arr[j]]=[arr[j],arr[i]];sw++;s.push({type:'swap',i,j,arr:[...arr],cmp:c,swap:sw});}
+      }
+      [arr[i+1],arr[hi]]=[arr[hi],arr[i+1]];sw++;
+      const pi=i+1;s.push({type:'sorted',idx:pi,arr:[...arr],cmp:c,swap:sw});
+      quickSort(arr,lo,pi-1);quickSort(arr,pi+1,hi);
+    }
+    quickSort(a,0,a.length-1);
+    s.push({type:'done',arr:[...a],cmp:c,swap:sw});
+  }
+  return s;
+}
+
+async function sortRun(){
+  if(running)return;
+  running=true;
+  document.getElementById('run-btn').disabled=true;
+  cmp=0;swap=0;steps=generateSteps();stepIdx=0;
+  const speedMap={1:120,2:60,3:25,4:8,5:1};
+  const delay=speedMap[+document.getElementById('sort-speed').value]||25;
+
+  let lastHighlight={};
+  for(let i=0;i<steps.length&&running;i++){
+    const step=steps[i];
+    cmp=step.cmp;swap=step.swap;updateStats();
+    arr=[...step.arr];
+
+    let highlight={};
+    if(step.type==='compare'){highlight={[step.i]:'compare',[step.j]:'compare2'};}
+    else if(step.type==='swap'){highlight={[step.i]:'swap',[step.j]:'swap'};}
+    else if(step.type==='sorted'){highlight={[step.idx]:'sorted'};}
+    else if(step.type==='pivot'){highlight={[step.idx]:'pivot'};}
+    else if(step.type==='merge'){
+      for(let k=step.lo;k<=step.hi;k++)highlight[k]='merge';
+    }
+
+    // 合併前次 sorted 標記
+    if(step.type!=='done')Object.keys(lastHighlight).forEach(k=>{if(lastHighlight[k]==='sorted')highlight[k]='sorted';});
+
+    const explainMap={
+      compare:`比較 ${arr[step.i]} 和 ${arr[step.j]}`,
+      swap:`交換 ${arr[step.i]} 和 ${arr[step.j]}`,
+      sorted:`${arr[step.idx]} 已到正確位置 ✅`,
+      pivot:`選 Pivot = ${arr[step.idx]}`,
+      merge:'合併中…',
+      done:'排序完成！'
+    };
+    if(explainMap[step.type])document.getElementById('explain-box').textContent=explainMap[step.type];
+
+    drawBars(highlight);
+    lastHighlight=highlight;
+    if(delay>0)await sleep(delay);
+  }
+  if(running){
+    drawBars({});
+    document.getElementById('explain-box').textContent=
+      `✅ 排序完成！比較 ${cmp} 次，交換 ${swap} 次。`;
+    if(algo==='merge'||algo==='quick')launchConfetti();
+  }
+  running=false;
+  document.getElementById('run-btn').disabled=false;
+}
+
+function sortStop(){
+  running=false;
+  document.getElementById('run-btn').disabled=false;
+}
+
+function drawBars(highlight={}){
+  const canvas=document.getElementById('sort-canvas');
+  const ctx=canvas.getContext('2d');
+  const W=canvas.width,H=canvas.height;
+  ctx.clearRect(0,0,W,H);
+  if(!arr.length)return;
+  const barW=Math.max(2,Math.floor((W-4)/arr.length));
+  const gap=Math.max(1,Math.floor(barW*0.15));
+  const bw=barW-gap;
+  const color=ALGO_COLORS[algo];
+  arr.forEach((v,i)=>{
+    const bh=Math.round((v/100)*(H-20));
+    const x=2+i*barW;const y=H-bh;
+    const hl=highlight[i];
+    if(hl==='compare')ctx.fillStyle='#ffd740';
+    else if(hl==='compare2')ctx.fillStyle='#ff9800';
+    else if(hl==='swap')ctx.fillStyle='#ff4081';
+    else if(hl==='sorted')ctx.fillStyle='#69ff47';
+    else if(hl==='pivot')ctx.fillStyle='#ea80fc';
+    else if(hl==='merge')ctx.fillStyle='#00e5ff88';
+    else ctx.fillStyle=color+'99';
+    ctx.fillRect(x,y,bw,bh);
+    // 數值標籤（只在 n<=24 時顯示）
+    if(arr.length<=24&&bw>=10){
+      ctx.fillStyle='rgba(255,255,255,0.7)';ctx.font=`${Math.min(10,bw-2)}px monospace`;
+      ctx.textAlign='center';ctx.textBaseline='bottom';
+      ctx.fillText(v,x+bw/2,H-2);
+    }
+  });
+}
+
+function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
+
+document.getElementById('sort-speed').oninput=function(){
+  const labels={1:'很慢',2:'慢',3:'中',4:'快',5:'極快'};
+  document.getElementById('speed-label').textContent=labels[this.value];
+};
+
+function resizeCanvas(){
+  const canvas=document.getElementById('sort-canvas');
+  const maxW=Math.min(window.innerWidth-48,520);
+  canvas.width=maxW;canvas.height=Math.round(maxW*0.5);
+  drawBars();
+}
+window.addEventListener('resize',resizeCanvas);
+resizeCanvas();
+setAlgo('bubble');
+genArray('random');
+</script>
+</body>
+</html>
