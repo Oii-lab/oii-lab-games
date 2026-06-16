@@ -382,6 +382,7 @@ function updateStats(){
   const n=bstCount(root),h=bstHeight(root);
   document.getElementById('node-count').textContent=n;
   document.getElementById('tree-height').textContent=h;
+  resizeCanvas();
   const ci=document.getElementById('complexity-hint');
   const cv=document.getElementById('complexity-val');
   if(n>0){
@@ -453,7 +454,10 @@ function drawBST(){
 function resizeCanvas(){
   const canvas=document.getElementById('bst-canvas');
   const maxW=Math.min(window.innerWidth-48,520);
-  canvas.width=maxW;canvas.height=Math.round(maxW*0.62);
+  const h=bstHeight(root);
+  const minH=Math.round(maxW*0.62);
+  const neededH=h>5?Math.min(h*52+40,620):minH;
+  canvas.width=maxW;canvas.height=Math.max(minH,neededH);
   drawBST();
 }
 window.addEventListener('resize',resizeCanvas);
