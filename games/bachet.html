@@ -279,13 +279,21 @@ async function playAgain(){
   // 雙人模式：reset 同一個房間
   if(!CUR.roomCode){goHome();return;}
   const newFirstPlayer=resolveFirst('random');
+  const newRound=(s.round||0)+1;
+  // 把所有遊戲參數也一起寫回去，讓雙方都能正確讀取
   await updateRoom(CUR.roomCode,{
     moves:[],
     firstPlayer:newFirstPlayer,
-    round:(s.round||0)+1,
+    round:newRound,
+    stones:s.stones,
+    maxTake:s.maxTake,
     gameOver:false
   });
-  // 雙方都會透過 polling 偵測到 round 變化並重開
+  // 自己也重開（不等 polling）
+  stopPolling();
+  const newS={...s,firstPlayer:newFirstPlayer,round:newRound};
+  CUR.lastSettings=newS;
+  _bachetStart(newS);
 }
 
 const B={stones:0,maxTake:3,currentPlayer:1,p1Name:'玩家',p2Name:'電腦',mode:null,myPlayer:1,cpuDiff:'hard',roomCode:null,lastSeen:0,gameOver:false};
@@ -316,7 +324,12 @@ function _bachetStart(s){
       const newRound=room.round||0;
       if(newRound>B.currentRound){
         stopPolling();
-        const newS={...CUR.lastSettings,firstPlayer:room.firstPlayer,moves:[],round:newRound};
+        // 從 room 讀取最新參數，確保雙方一致
+        const newS={...CUR.lastSettings,
+          firstPlayer:room.firstPlayer,
+          stones:room.stones||CUR.lastSettings.stones,
+          maxTake:room.maxTake||CUR.lastSettings.maxTake,
+          moves:[],round:newRound};
         CUR.lastSettings=newS;
         _bachetStart(newS);return;
       }
@@ -394,7 +407,11 @@ function bApplyMove(player,n,animate){
       const newRound=room.round||0;
       if(newRound>B.currentRound){
         stopPolling();
-        const newS={...CUR.lastSettings,firstPlayer:room.firstPlayer,moves:[],round:newRound};
+        const newS={...CUR.lastSettings,
+          firstPlayer:room.firstPlayer,
+          stones:room.stones||CUR.lastSettings.stones,
+          maxTake:room.maxTake||CUR.lastSettings.maxTake,
+          moves:[],round:newRound};
         CUR.lastSettings=newS;_bachetStart(newS);return;
       }
       const mv=Object.values(room.moves||{});
