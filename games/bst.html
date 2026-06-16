@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="../favicon.png">
+<title>BST 操作 — 演算法互動遊戲集</title>
+<link rel="stylesheet" href="../shared/style.css">
+<style>
+  .bst-wrap{display:flex;justify-content:center;margin:12px 0;overflow-x:auto;}
+  canvas#bst-canvas{border:1px solid var(--border);border-radius:12px;background:#0a0a12;display:block;}
+
+  .op-tabs{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:12px 0;}
+  .op-tab{padding:8px 16px;border-radius:8px;border:2px solid var(--border);background:var(--surface);
+    color:var(--text-dim);font-size:12px;font-weight:700;cursor:pointer;transition:all 0.2s;font-family:'Orbitron',monospace;}
+  .op-tab:hover{border-color:var(--accent);}
+  .op-tab.active{border-color:var(--accent);color:var(--accent);background:rgba(0,229,255,0.08);}
+
+  .input-row{display:flex;gap:8px;align-items:center;justify-content:center;margin:10px 0;flex-wrap:wrap;}
+  .num-input{background:var(--surface);border:2px solid var(--border);color:var(--text);
+    padding:10px 14px;border-radius:10px;font-size:16px;font-family:'Orbitron',monospace;
+    width:100px;text-align:center;transition:border-color 0.2s;}
+  .num-input:focus{outline:none;border-color:var(--accent);}
+
+  .explain-box{background:var(--surface);border:1px solid var(--border);border-radius:10px;
+    padding:12px 16px;font-size:13px;color:var(--text-dim);min-height:44px;margin:8px 0;line-height:1.6;}
+
+  .preset-row{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin:8px 0;}
+  .preset-chip{padding:5px 12px;border-radius:20px;border:1px solid var(--border);background:var(--surface);
+    font-size:11px;color:var(--text-dim);cursor:pointer;transition:all 0.2s;font-family:'Fira Code',monospace;}
+  .preset-chip:hover{border-color:var(--accent);color:var(--accent);}
+
+  .inorder-display{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0;min-height:32px;}
+  .inorder-chip{display:inline-flex;align-items:center;justify-content:center;
+    width:30px;height:30px;border-radius:6px;font-size:12px;font-weight:700;
+    background:rgba(0,229,255,0.1);border:1px solid var(--accent);color:var(--accent);
+    font-family:'Orbitron',monospace;animation:popIn 0.2s ease;}
+  @keyframes popIn{from{transform:scale(0.5);opacity:0}to{transform:scale(1);opacity:1}}
+</style>
+</head>
+<body>
+<canvas id="confetti-canvas"></canvas>
+<div class="container">
+
+<header>
+  <div class="title">
+    <img src="../assets/icons/BST.png" style="height:50px;vertical-align:middle;margin-right:8px;" onerror="this.style.display='none'">
+    BST 操作
+  </div>
+  <div class="subtitle">二元搜尋樹 &nbsp;·&nbsp; Insert · Search · Delete · Traversal</div>
+</header>
+
+<div style="text-align:center;margin-bottom:20px">
+  <a href="../index.html" style="font-size:12px;color:var(--text-dim);text-decoration:none;letter-spacing:0.1em;text-transform:uppercase;padding:8px 14px;border:1px solid var(--border);border-radius:8px;transition:all 0.2s;display:inline-block;"
+    onmouseover="this.style.color='var(--accent)';this.style.borderColor='var(--accent)'"
+    onmouseout="this.style.color='var(--text-dim)';this.style.borderColor='var(--border)'">← 返回選單</a>
+</div>
+
+<div class="rules-block">
+  <div class="rules-title">📖 BST 性質</div>
+  <div class="rules-body">
+    <div class="rules-item move">
+      <div class="ri-label">規則</div>
+      <div class="ri-text">每個節點的<strong>左子樹</strong>都比它小，<strong>右子樹</strong>都比它大</div>
+    </div>
+    <div class="rules-item win">
+      <div class="ri-label">搜尋</div>
+      <div class="ri-text">每次比較後只走一個方向，<strong>O(log n)</strong> 找到目標</div>
+    </div>
+    <div class="rules-item tip">
+      <div class="ri-label">挑戰</div>
+      <div class="ri-text">試試不同的插入順序，觀察樹的形狀有什麼不同 👇</div>
+    </div>
+  </div>
+</div>
+
+<div class="panel active" id="panel-main">
+
+  <!-- 操作切換 -->
+  <div class="op-tabs">
+    <button class="op-tab active" id="tab-insert" onclick="setOp('insert')">➕ 插入</button>
+    <button class="op-tab" id="tab-search" onclick="setOp('search')">🔍 搜尋</button>
+    <button class="op-tab" id="tab-delete" onclick="setOp('delete')">🗑️ 刪除</button>
+    <button class="op-tab" id="tab-traverse" onclick="setOp('traverse')">📋 中序走訪</button>
+  </div>
+
+  <!-- 輸入區 -->
+  <div class="input-row" id="input-area">
+    <input type="number" class="num-input" id="num-input" min="1" max="99" placeholder="數字" onkeydown="if(event.key==='Enter')doOp()">
+    <button class="btn btn-primary" onclick="doOp()" id="op-btn">插入</button>
+    <button class="btn btn-sm" onclick="bstClear()">清空</button>
+  </div>
+
+  <!-- 中序走訪按鈕 -->
+  <div id="traverse-area" style="display:none;text-align:center;">
+    <button class="btn btn-primary" onclick="doTraverse()">▶ 執行中序走訪</button>
+    <button class="btn btn-sm" onclick="bstClear()">清空樹</button>
+  </div>
+
+  <!-- 快速預設 -->
+  <div style="font-size:11px;color:var(--text-dim);text-align:center;margin-top:4px;">快速插入：</div>
+  <div class="preset-row">
+    <span class="preset-chip" onclick="loadPreset([5,3,7,1,4,6,8])">平衡樹 [5,3,7,1,4,6,8]</span>
+    <span class="preset-chip" onclick="loadPreset([1,2,3,4,5,6,7])">最差情況（遞增）</span>
+    <span class="preset-chip" onclick="loadPreset([4,2,6,1,3,5,7])">完整二元樹</span>
+    <span class="preset-chip" onclick="loadPreset(Array.from({length:8},()=>Math.floor(Math.random()*50)+1))">🎲 隨機</span>
+  </div>
+
+  <!-- BST 畫布 -->
+  <div class="bst-wrap">
+    <canvas id="bst-canvas" width="480" height="320"></canvas>
+  </div>
+
+  <!-- 說明 -->
+  <div class="explain-box" id="explain-box">選擇操作後輸入數字，或點擊快速預設建立樹。</div>
+
+  <!-- 中序結果 -->
+  <div id="inorder-area" style="display:none;">
+    <div style="font-size:11px;color:var(--text-dim);margin-bottom:6px;">中序走訪結果（由小到大）：</div>
+    <div class="inorder-display" id="inorder-display"></div>
+  </div>
+
+  <!-- 節點資訊 -->
+  <div style="font-size:11px;color:var(--text-dim);text-align:center;margin-top:8px;">
+    樹中節點：<span id="node-count" style="color:var(--accent);font-family:'Orbitron',monospace;font-weight:700;">0</span>
+    &nbsp;｜&nbsp; 樹高：<span id="tree-height" style="color:var(--accent4);font-family:'Orbitron',monospace;font-weight:700;">0</span>
+  </div>
+
+</div>
+
+<!-- 演算法解析連結 -->
+<div style="text-align:center;margin:24px 0 8px;">
+  <a href="bst-algo.html"
+    style="display:inline-flex;align-items:center;gap:10px;padding:14px 28px;
+      background:var(--surface);border:1px solid var(--border);border-radius:12px;
+      text-decoration:none;color:var(--text);font-size:14px;transition:all 0.2s;letter-spacing:0.03em;"
+    onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'"
+    onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text)'">
+    🧠 <strong>看演算法解析</strong> &nbsp;— 插入 · 搜尋 · 刪除三種情況 · O(log n) vs O(n)
+  </a>
+</div>
+
+</div>
+
+<script src="../shared/firebase.js"></script>
+<script src="../shared/ui.js"></script>
+<script>
+// ── BST 資料結構 ──────────────────────────────────────
+class BSTNode{constructor(val){this.val=val;this.left=null;this.right=null;}}
+
+let root=null;
+let highlightNodes=new Map(); // node val -> color
+let animTimer=null;
+let currentOp='insert';
+
+function bstInsert(node,val){
+  if(!node)return new BSTNode(val);
+  if(val<node.val)node.left=bstInsert(node.left,val);
+  else if(val>node.val)node.right=bstInsert(node.right,val);
+  return node;
+}
+
+function bstSearch(node,val,path=[]){
+  if(!node)return null;
+  path.push(node.val);
+  if(val===node.val)return path;
+  if(val<node.val)return bstSearch(node.left,val,path);
+  return bstSearch(node.right,val,path);
+}
+
+function bstMin(node){while(node.left)node=node.left;return node;}
+
+function bstDelete(node,val,deleted={val:null}){
+  if(!node)return null;
+  if(val<node.val){node.left=bstDelete(node.left,val,deleted);}
+  else if(val>node.val){node.right=bstDelete(node.right,val,deleted);}
+  else{
+    deleted.val=node.val;
+    if(!node.left)return node.right;
+    if(!node.right)return node.left;
+    const successor=bstMin(node.right);
+    node.val=successor.val;
+    node.right=bstDelete(node.right,successor.val,{});
+  }
+  return node;
+}
+
+function bstInorder(node,result=[]){
+  if(!node)return result;
+  bstInorder(node.left,result);
+  result.push(node.val);
+  bstInorder(node.right,result);
+  return result;
+}
+
+function bstHeight(node){
+  if(!node)return 0;
+  return 1+Math.max(bstHeight(node.left),bstHeight(node.right));
+}
+
+function bstCount(node){
+  if(!node)return 0;
+  return 1+bstCount(node.left)+bstCount(node.right);
+}
+
+// ── 操作切換 ──────────────────────────────────────────
+function setOp(op){
+  currentOp=op;
+  ['insert','search','delete','traverse'].forEach(t=>{
+    document.getElementById('tab-'+t).classList.toggle('active',t===op);
+  });
+  document.getElementById('input-area').style.display=op==='traverse'?'none':'flex';
+  document.getElementById('traverse-area').style.display=op==='traverse'?'':'none';
+  document.getElementById('inorder-area').style.display='none';
+  const btnText={insert:'插入',search:'搜尋',delete:'刪除'};
+  if(op!=='traverse')document.getElementById('op-btn').textContent=btnText[op];
+  highlightNodes.clear();
+  drawBST();
+  const hints={
+    insert:'輸入一個數字插入到 BST 中。',
+    search:'輸入一個數字，看搜尋路徑的動畫。',
+    delete:'輸入一個數字刪除它（注意三種情況：葉節點、單子節點、雙子節點）。',
+    traverse:'點執行，看中序走訪動畫（結果一定是由小到大）。',
+  };
+  document.getElementById('explain-box').textContent=hints[op];
+}
+
+function doOp(){
+  const val=parseInt(document.getElementById('num-input').value);
+  if(isNaN(val)||val<1||val>999){
+    document.getElementById('explain-box').textContent='⚠️ 請輸入 1~999 的整數';return;
+  }
+  document.getElementById('num-input').value='';
+  if(currentOp==='insert')opInsert(val);
+  else if(currentOp==='search')opSearch(val);
+  else if(currentOp==='delete')opDelete(val);
+}
+
+function opInsert(val){
+  if(bstSearch(root,val)){
+    document.getElementById('explain-box').textContent=`⚠️ ${val} 已存在於樹中，BST 不允許重複值。`;return;
+  }
+  // 動畫：顯示走訪路徑
+  const path=[];
+  function tracePath(node,v){
+    if(!node)return;
+    path.push({val:node.val,dir:v<node.val?'left':'right'});
+    if(v<node.val)tracePath(node.left,v);
+    else tracePath(node.right,v);
+  }
+  tracePath(root,val);
+  root=bstInsert(root,val);
+  updateStats();
+
+  // 動畫顯示路徑
+  highlightNodes.clear();
+  let i=0;
+  clearInterval(animTimer);
+  function step(){
+    if(i<path.length){
+      highlightNodes.set(path[i].val,'#ffd740');
+      const dir=path[i].dir;
+      document.getElementById('explain-box').textContent=
+        `${path[i].val} ${val<path[i].val?'> '+val+' 往左走':'< '+val+' 往右走'}`;
+      drawBST();i++;animTimer=setTimeout(step,500);
+    }else{
+      highlightNodes.clear();
+      highlightNodes.set(val,'#69ff47');
+      drawBST();
+      document.getElementById('explain-box').textContent=
+        `✅ ${val} 插入成功！${path.length===0?'成為根節點。':`走了 ${path.length} 步後插入。`}`;
+      animTimer=setTimeout(()=>{highlightNodes.clear();drawBST();},1500);
+    }
+  }
+  step();
+}
+
+function opSearch(val){
+  const path=bstSearch(root,val);
+  if(!path){
+    document.getElementById('explain-box').textContent=`❌ ${val} 不在樹中。`;return;
+  }
+  highlightNodes.clear();
+  let i=0;
+  clearInterval(animTimer);
+  function step(){
+    if(i<path.length){
+      const isTarget=path[i]===val;
+      highlightNodes.set(path[i],isTarget?'#69ff47':'#ffd740');
+      document.getElementById('explain-box').textContent=
+        i===0?`從根節點 ${path[i]} 開始比較`:
+        isTarget?`✅ 找到 ${val}！共走了 ${i+1} 步。`:
+        `${path[i]} ${val<path[i]?'> '+val+' 往左走':'< '+val+' 往右走'}`;
+      drawBST();i++;
+      if(i<path.length)animTimer=setTimeout(step,600);
+    }
+  }
+  step();
+}
+
+function opDelete(val){
+  if(!bstSearch(root,val)){
+    document.getElementById('explain-box').textContent=`❌ ${val} 不在樹中，無法刪除。`;return;
+  }
+  // 判斷刪除類型
+  function findNode(node,v){
+    if(!node)return null;
+    if(v===node.val)return node;
+    if(v<node.val)return findNode(node.left,v);
+    return findNode(node.right,v);
+  }
+  const target=findNode(root,val);
+  let caseDesc='';
+  if(!target.left&&!target.right)caseDesc='葉節點（無子節點），直接移除。';
+  else if(!target.left||!target.right)caseDesc='單子節點，用子節點取代它。';
+  else{
+    const succ=bstMin(target.right);
+    caseDesc=`雙子節點，用右子樹最小值（${succ.val}）取代，再刪除 ${succ.val}。`;
+  }
+  highlightNodes.set(val,'#ff4081');
+  drawBST();
+  document.getElementById('explain-box').textContent=`刪除 ${val}：${caseDesc}`;
+  animTimer=setTimeout(()=>{
+    root=bstDelete(root,val,{});
+    highlightNodes.clear();
+    updateStats();drawBST();
+    document.getElementById('explain-box').textContent=`✅ ${val} 已刪除。${caseDesc}`;
+  },900);
+}
+
+async function doTraverse(){
+  if(!root){document.getElementById('explain-box').textContent='樹是空的，請先插入節點。';return;}
+  document.getElementById('inorder-area').style.display='';
+  document.getElementById('inorder-display').innerHTML='';
+  highlightNodes.clear();
+  const result=[];
+  async function inorder(node){
+    if(!node)return;
+    await inorder(node.left);
+    await new Promise(r=>{
+      highlightNodes.set(node.val,'#ea80fc');
+      drawBST();
+      const chip=document.createElement('span');chip.className='inorder-chip';
+      chip.textContent=node.val;
+      document.getElementById('inorder-display').appendChild(chip);
+      result.push(node.val);
+      document.getElementById('explain-box').textContent=
+        `走訪節點 ${node.val}（中序：左→根→右），目前：[${result.join(', ')}]`;
+      setTimeout(()=>{highlightNodes.delete(node.val);r();},400);
+    });
+    await inorder(node.right);
+  }
+  await inorder(root);
+  drawBST();
+  document.getElementById('explain-box').textContent=
+    `✅ 中序走訪完成！結果：[${result.join(', ')}]（由小到大排序）`;
+}
+
+function loadPreset(vals){
+  clearInterval(animTimer);
+  root=null;highlightNodes.clear();
+  // 去重
+  const unique=[...new Set(vals)];
+  unique.forEach(v=>{ root=bstInsert(root,v); });
+  updateStats();drawBST();
+  document.getElementById('explain-box').textContent=
+    `插入 [${unique.join(', ')}]，樹高 ${bstHeight(root)}。${
+      unique.join(',')==='1,2,3,4,5,6,7'?'注意：遞增插入導致樹退化成鏈結串列，搜尋變成 O(n)！':''
+    }`;
+  document.getElementById('inorder-area').style.display='none';
+}
+
+function bstClear(){
+  clearInterval(animTimer);root=null;highlightNodes.clear();
+  updateStats();drawBST();
+  document.getElementById('explain-box').textContent='樹已清空。';
+  document.getElementById('inorder-area').style.display='none';
+}
+
+function updateStats(){
+  document.getElementById('node-count').textContent=bstCount(root);
+  document.getElementById('tree-height').textContent=bstHeight(root);
+}
+
+// ── 繪圖 ──────────────────────────────────────────────
+function drawBST(){
+  const canvas=document.getElementById('bst-canvas');
+  const ctx=canvas.getContext('2d');
+  const W=canvas.width,H=canvas.height;
+  ctx.clearRect(0,0,W,H);
+
+  if(!root){
+    ctx.fillStyle='#3a3a5e';ctx.font='14px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText('（空樹）',W/2,H/2);return;
+  }
+
+  // 計算節點位置
+  const positions=new Map();
+  const h=bstHeight(root);
+  const nodeR=Math.min(20,Math.floor((W*0.8)/(Math.pow(2,Math.min(h,5))*2)));
+
+  function calcPos(node,depth,left,right){
+    if(!node)return;
+    const x=(left+right)/2,y=40+depth*Math.min(55,Math.floor((H-60)/Math.max(h,1)));
+    positions.set(node.val,{x,y});
+    calcPos(node.left,depth+1,left,(left+right)/2);
+    calcPos(node.right,depth+1,(left+right)/2,right);
+  }
+  calcPos(root,0,0,W);
+
+  // 畫邊
+  function drawEdges(node){
+    if(!node)return;
+    const p=positions.get(node.val);
+    if(node.left){const c=positions.get(node.left.val);ctx.strokeStyle='#2a2a4e';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(c.x,c.y);ctx.stroke();}
+    if(node.right){const c=positions.get(node.right.val);ctx.strokeStyle='#2a2a4e';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(c.x,c.y);ctx.stroke();}
+    drawEdges(node.left);drawEdges(node.right);
+  }
+  drawEdges(root);
+
+  // 畫節點
+  function drawNodes(node){
+    if(!node)return;
+    const{x,y}=positions.get(node.val);
+    const hl=highlightNodes.get(node.val);
+    ctx.beginPath();ctx.arc(x,y,nodeR,0,Math.PI*2);
+    if(hl){ctx.fillStyle=hl+'33';ctx.strokeStyle=hl;ctx.lineWidth=3;}
+    else{ctx.fillStyle='#1e1e3e';ctx.strokeStyle='#4a4a7e';ctx.lineWidth=2;}
+    ctx.fill();ctx.stroke();
+    ctx.fillStyle=hl||'#aaaacc';
+    ctx.font=`bold ${nodeR>16?13:11}px 'Orbitron',monospace`;
+    ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText(node.val,x,y);
+    drawNodes(node.left);drawNodes(node.right);
+  }
+  drawNodes(root);
+}
+
+// 響應式畫布
+function resizeCanvas(){
+  const canvas=document.getElementById('bst-canvas');
+  const maxW=Math.min(window.innerWidth-48,520);
+  canvas.width=maxW;canvas.height=Math.round(maxW*0.65);
+  drawBST();
+}
+window.addEventListener('resize',resizeCanvas);
+resizeCanvas();
+setOp('insert');
+</script>
+</body>
+</html>

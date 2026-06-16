@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="../favicon.png">
+<title>BST 演算法解析 — 演算法互動遊戲集</title>
+<link rel="stylesheet" href="../shared/style.css">
+</head>
+<body>
+<div class="container">
+
+<header>
+  <div class="title">🧠 BST 演算法解析</div>
+  <div class="subtitle">插入 · 搜尋 · 刪除三種情況 · O(log n) vs O(n)</div>
+</header>
+
+<div style="text-align:center;margin-bottom:20px;display:flex;justify-content:center;gap:12px;flex-wrap:wrap;">
+  <a href="bst.html" style="font-size:12px;color:var(--text-dim);text-decoration:none;letter-spacing:0.1em;text-transform:uppercase;padding:8px 14px;border:1px solid var(--border);border-radius:8px;transition:all 0.2s;display:inline-block;"
+    onmouseover="this.style.color='var(--accent)';this.style.borderColor='var(--accent)'"
+    onmouseout="this.style.color='var(--text-dim)';this.style.borderColor='var(--border)'">🌳 回遊戲</a>
+  <a href="../index.html" style="font-size:12px;color:var(--text-dim);text-decoration:none;letter-spacing:0.1em;text-transform:uppercase;padding:8px 14px;border:1px solid var(--border);border-radius:8px;transition:all 0.2s;display:inline-block;"
+    onmouseover="this.style.color='var(--accent)';this.style.borderColor='var(--accent)'"
+    onmouseout="this.style.color='var(--text-dim)';this.style.borderColor='var(--border)'">← 返回選單</a>
+</div>
+
+<!-- 目錄 -->
+<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:28px;">
+  <div style="font-size:11px;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-dim);margin-bottom:12px;">本頁內容</div>
+  <div style="display:flex;flex-direction:column;gap:8px;">
+    <a href="#step1" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Step 1 · BST 定義與性質</a>
+    <a href="#step2" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Step 2 · 插入與搜尋</a>
+    <a href="#step3" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Step 3 · 刪除：三種情況</a>
+    <a href="#step4" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Step 4 · 中序走訪 = 排序</a>
+    <a href="#step5" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Step 5 · 最壞情況與平衡樹</a>
+    <a href="#leetcode" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">LeetCode 相關題目</a>
+  </div>
+</div>
+
+<!-- Step 1 -->
+<div id="step1" class="algo-section">
+  <div class="acc-step-label">Step 1 · BST 定義與性質</div>
+  <div class="acc-p">
+    二元搜尋樹（Binary Search Tree）是一種特殊的二元樹：<br><br>
+    對每個節點 N：<br>
+    ・左子樹的所有值 &lt; N 的值<br>
+    ・右子樹的所有值 &gt; N 的值<br>
+    ・左右子樹也各自是 BST<br><br>
+    這個性質讓搜尋可以每次排除一半的可能，達到 <strong>O(log n)</strong>。
+  </div>
+  <div class="acc-insight">
+    <span class="ins-label">💡 和二元搜尋的關係</span>
+    BST 的結構就是把「二元搜尋」的過程固定在樹的形狀裡。<br>
+    在陣列上做二元搜尋 O(log n)，在 BST 上搜尋也是 O(log n)——但 BST 還支援動態插入和刪除。
+  </div>
+</div>
+
+<!-- Step 2 -->
+<div id="step2" class="algo-section">
+  <div class="acc-step-label">Step 2 · 插入與搜尋</div>
+  <div class="acc-p">
+    插入和搜尋的邏輯完全一樣：比較後往左或往右走。
+  </div>
+  <div class="acc-code">
+    <span class="lang-tag">Python</span>
+    <pre><span class="kw">class</span> <span class="fn">BSTNode</span>:
+    <span class="kw">def</span> <span class="fn">__init__</span>(self, val):
+        self.val = val
+        self.left = self.right = None
+
+<span class="kw">def</span> <span class="fn">insert</span>(node, val):
+    <span class="kw">if not</span> node: <span class="kw">return</span> <span class="fn">BSTNode</span>(val)  <span class="cmt"># 找到空位，插入</span>
+    <span class="kw">if</span> val < node.val:
+        node.left = <span class="fn">insert</span>(node.left, val)   <span class="cmt"># 往左</span>
+    <span class="kw">elif</span> val > node.val:
+        node.right = <span class="fn">insert</span>(node.right, val)  <span class="cmt"># 往右</span>
+    <span class="cmt"># val == node.val: 不插入（BST 不重複）</span>
+    <span class="kw">return</span> node
+
+<span class="kw">def</span> <span class="fn">search</span>(node, val):
+    <span class="kw">if not</span> node: <span class="kw">return</span> False          <span class="cmt"># 找不到</span>
+    <span class="kw">if</span> val == node.val: <span class="kw">return</span> True    <span class="cmt"># 找到！</span>
+    <span class="kw">if</span> val < node.val: <span class="kw">return</span> <span class="fn">search</span>(node.left, val)
+    <span class="kw">return</span> <span class="fn">search</span>(node.right, val)
+
+<span class="cmt"># 時間複雜度：O(h)，h = 樹高</span>
+<span class="cmt"># 平衡時 h = log n → O(log n)</span>
+<span class="cmt"># 最壞時 h = n   → O(n)</span></pre>
+  </div>
+</div>
+
+<!-- Step 3 -->
+<div id="step3" class="algo-section">
+  <div class="acc-step-label">Step 3 · 刪除：三種情況</div>
+  <div class="acc-p">
+    刪除是 BST 最複雜的操作，分三種情況：
+  </div>
+  <div style="display:flex;flex-direction:column;gap:12px;margin:16px 0;">
+    <div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:16px;">
+      <div style="font-weight:700;color:var(--accent);margin-bottom:6px;">情況一：葉節點（無子節點）</div>
+      <div style="font-size:13px;color:var(--text-dim);">直接移除，不影響其他節點。</div>
+      <div style="font-family:'Fira Code',monospace;font-size:12px;color:var(--text-dim);margin-top:8px;">
+        刪除 4：<br>
+        &nbsp;&nbsp;&nbsp;5&nbsp;&nbsp;&nbsp;→&nbsp;&nbsp;&nbsp;5<br>
+        &nbsp;&nbsp;/&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;/<br>
+        &nbsp;&nbsp;3&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;3<br>
+        &nbsp;&nbsp;&nbsp;\&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;4&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;（移除）
+      </div>
+    </div>
+    <div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:16px;">
+      <div style="font-weight:700;color:var(--accent4);margin-bottom:6px;">情況二：單子節點</div>
+      <div style="font-size:13px;color:var(--text-dim);">用唯一的子節點取代被刪除的節點。</div>
+      <div style="font-family:'Fira Code',monospace;font-size:12px;color:var(--text-dim);margin-top:8px;">
+        刪除 3：<br>
+        &nbsp;&nbsp;&nbsp;5&nbsp;&nbsp;&nbsp;→&nbsp;&nbsp;&nbsp;5<br>
+        &nbsp;&nbsp;/&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;/<br>
+        &nbsp;&nbsp;3&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;4<br>
+        &nbsp;&nbsp;&nbsp;\<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;4
+      </div>
+    </div>
+    <div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:16px;">
+      <div style="font-weight:700;color:var(--accent2);margin-bottom:6px;">情況三：雙子節點（最複雜）</div>
+      <div style="font-size:13px;color:var(--text-dim);">找右子樹的最小值（中序後繼），用它的值取代，然後刪除那個最小值節點。</div>
+    </div>
+  </div>
+  <div class="acc-code">
+    <span class="lang-tag">Python</span>
+    <pre><span class="kw">def</span> <span class="fn">delete</span>(node, val):
+    <span class="kw">if not</span> node: <span class="kw">return</span> None
+    <span class="kw">if</span> val < node.val:
+        node.left = <span class="fn">delete</span>(node.left, val)
+    <span class="kw">elif</span> val > node.val:
+        node.right = <span class="fn">delete</span>(node.right, val)
+    <span class="kw">else</span>:  <span class="cmt"># 找到了，判斷哪種情況</span>
+        <span class="kw">if not</span> node.left: <span class="kw">return</span> node.right   <span class="cmt"># 情況一或二</span>
+        <span class="kw">if not</span> node.right: <span class="kw">return</span> node.left   <span class="cmt"># 情況二</span>
+        <span class="cmt"># 情況三：找右子樹最小值（中序後繼）</span>
+        successor = node.right
+        <span class="kw">while</span> successor.left:
+            successor = successor.left
+        node.val = successor.val              <span class="cmt"># 用後繼值取代</span>
+        node.right = <span class="fn">delete</span>(node.right, successor.val)
+    <span class="kw">return</span> node</pre>
+  </div>
+</div>
+
+<!-- Step 4 -->
+<div id="step4" class="algo-section">
+  <div class="acc-step-label">Step 4 · 中序走訪 = 排序</div>
+  <div class="acc-p">
+    BST 的中序走訪（左→根→右）結果永遠是由小到大排序的！<br>
+    這是 BST 性質的直接推論。
+  </div>
+  <div class="acc-code">
+    <span class="lang-tag">Python</span>
+    <pre><span class="kw">def</span> <span class="fn">inorder</span>(node, result=[]):
+    <span class="kw">if not</span> node: <span class="kw">return</span>
+    <span class="fn">inorder</span>(node.left, result)   <span class="cmt"># 先走左子樹（小的）</span>
+    result.append(node.val)       <span class="cmt"># 記錄根節點</span>
+    <span class="fn">inorder</span>(node.right, result)  <span class="cmt"># 再走右子樹（大的）</span>
+    <span class="kw">return</span> result
+
+<span class="cmt"># 例：插入 [5,3,7,1,4,6,8] 後</span>
+<span class="cmt"># inorder → [1, 3, 4, 5, 6, 7, 8]（已排序！）</span>
+
+<span class="cmt"># 時間複雜度：O(n)（每個節點走訪一次）</span>
+<span class="cmt"># 空間複雜度：O(h)（遞迴深度）</span></pre>
+  </div>
+  <div class="acc-insight">
+    <span class="ins-label">🔗 Tree Sort</span>
+    把 n 個數字全部插入 BST，再做中序走訪，就完成了排序。<br>
+    平均複雜度 O(n log n)，和 Merge Sort 一樣——但常數較大，實際用途有限。
+  </div>
+</div>
+
+<!-- Step 5 -->
+<div id="step5" class="algo-section">
+  <div class="acc-step-label">Step 5 · 最壞情況與平衡樹</div>
+  <div class="acc-p">
+    BST 的致命弱點：<strong>插入順序決定樹形</strong>。
+  </div>
+  <div style="overflow-x:auto;margin:16px 0;">
+    <table style="width:100%;border-collapse:collapse;font-size:13px;">
+      <thead>
+        <tr style="border-bottom:1px solid var(--border);">
+          <th style="padding:10px;text-align:left;color:var(--text-dim);font-weight:500;">插入順序</th>
+          <th style="padding:10px;text-align:center;color:var(--text-dim);font-weight:500;">樹高</th>
+          <th style="padding:10px;text-align:center;color:var(--text-dim);font-weight:500;">搜尋複雜度</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:10px;">[4,2,6,1,3,5,7]（平衡）</td>
+          <td style="padding:10px;text-align:center;color:var(--accent);">3</td>
+          <td style="padding:10px;text-align:center;color:var(--accent);">O(log n)</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:10px;">[1,2,3,4,5,6,7]（遞增）</td>
+          <td style="padding:10px;text-align:center;color:var(--accent2);">7</td>
+          <td style="padding:10px;text-align:center;color:var(--accent2);">O(n) 😱</td>
+        </tr>
+        <tr>
+          <td style="padding:10px;">隨機順序</td>
+          <td style="padding:10px;text-align:center;">≈ log n</td>
+          <td style="padding:10px;text-align:center;">O(log n) 平均</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="acc-insight">
+    <span class="ins-label">🌳 解法：平衡 BST</span>
+    為了保證 O(log n)，需要在插入/刪除後自動平衡：<br>
+    ・<strong>AVL Tree</strong>：嚴格平衡，每次操作後旋轉調整<br>
+    ・<strong>Red-Black Tree</strong>：近似平衡，C++ STL 的 map/set 就是用它<br>
+    ・<strong>B-Tree</strong>：多路平衡，資料庫索引常用
+  </div>
+</div>
+
+<!-- LeetCode -->
+<div id="leetcode" class="algo-section">
+  <div class="acc-step-label">LeetCode 相關題目</div>
+  <div style="display:flex;flex-direction:column;gap:10px;margin-top:12px;">
+    <a href="https://leetcode.com/problems/search-in-a-binary-search-tree/" target="_blank" class="lc-card">
+      <span class="lc-num">#700</span><span class="lc-title">Search in a BST</span>
+      <span class="lc-tag easy">Easy</span>
+      <span class="lc-desc">BST 搜尋基礎題</span>
+    </a>
+    <a href="https://leetcode.com/problems/insert-into-a-binary-search-tree/" target="_blank" class="lc-card">
+      <span class="lc-num">#701</span><span class="lc-title">Insert into a BST</span>
+      <span class="lc-tag medium">Medium</span>
+      <span class="lc-desc">BST 插入，和搜尋邏輯一樣</span>
+    </a>
+    <a href="https://leetcode.com/problems/delete-node-in-a-bst/" target="_blank" class="lc-card">
+      <span class="lc-num">#450</span><span class="lc-title">Delete Node in a BST</span>
+      <span class="lc-tag medium">Medium</span>
+      <span class="lc-desc">刪除三種情況的完整實作</span>
+    </a>
+    <a href="https://leetcode.com/problems/validate-binary-search-tree/" target="_blank" class="lc-card">
+      <span class="lc-num">#98</span><span class="lc-title">Validate Binary Search Tree</span>
+      <span class="lc-tag medium">Medium</span>
+      <span class="lc-desc">驗證是否為合法 BST，考驗對定義的理解</span>
+    </a>
+    <a href="https://leetcode.com/problems/kth-smallest-element-in-a-bst/" target="_blank" class="lc-card">
+      <span class="lc-num">#230</span><span class="lc-title">Kth Smallest Element in a BST</span>
+      <span class="lc-tag medium">Medium</span>
+      <span class="lc-desc">中序走訪的應用，找第 k 小的元素</span>
+    </a>
+    <a href="https://leetcode.com/problems/convert-sorted-array-to-binary-search-tree/" target="_blank" class="lc-card">
+      <span class="lc-num">#108</span><span class="lc-title">Convert Sorted Array to BST</span>
+      <span class="lc-tag easy">Easy</span>
+      <span class="lc-desc">從排序陣列建立平衡 BST</span>
+    </a>
+  </div>
+</div>
+
+<!-- 導航 -->
+<div style="display:flex;justify-content:center;gap:12px;margin:32px 0 8px;flex-wrap:wrap;">
+  <a href="maze-algo.html" style="display:inline-flex;align-items:center;gap:8px;padding:12px 20px;background:var(--surface);border:1px solid var(--border);border-radius:12px;text-decoration:none;color:var(--text);font-size:13px;transition:all 0.2s;"
+    onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'"
+    onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text)'">← 🔵 BFS/DFS 解析</a>
+  <a href="../index.html" style="display:inline-flex;align-items:center;gap:8px;padding:12px 20px;background:var(--surface);border:1px solid var(--border);border-radius:12px;text-decoration:none;color:var(--text);font-size:13px;transition:all 0.2s;"
+    onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'"
+    onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text)'">回選單 →</a>
+</div>
+
+</div>
+
+<style>
+.algo-section{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:24px;margin-bottom:20px;}
+.lc-card{display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--bg);border:1px solid var(--border);border-radius:10px;text-decoration:none;color:var(--text);transition:border-color 0.2s;flex-wrap:wrap;}
+.lc-card:hover{border-color:var(--accent);}
+.lc-num{font-family:'Orbitron',monospace;font-size:11px;color:var(--text-dim);min-width:44px;}
+.lc-title{font-weight:600;font-size:14px;flex:1;}
+.lc-tag{font-size:10px;padding:2px 8px;border-radius:20px;font-weight:700;letter-spacing:0.05em;}
+.lc-tag.easy{background:rgba(0,200,100,0.15);color:#00c864;}
+.lc-tag.medium{background:rgba(255,180,0,0.15);color:#ffb400;}
+.lc-tag.hard{background:rgba(255,60,60,0.15);color:#ff3c3c;}
+.lc-desc{font-size:12px;color:var(--text-dim);width:100%;margin-top:2px;}
+.acc-step-label{font-family:'Orbitron',monospace;font-size:11px;letter-spacing:0.15em;text-transform:uppercase;color:var(--accent);margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid var(--border);}
+</style>
+</body>
+</html>
