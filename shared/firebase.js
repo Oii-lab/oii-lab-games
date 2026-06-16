@@ -15,7 +15,10 @@ function initFirebase() {
       console.warn('Firebase SDK 未載入，使用 localStorage 模式');
       return false;
     }
-    firebase.initializeApp(FIREBASE_CONFIG);
+    // 避免重複 initializeApp
+    if (!firebase.apps.length) {
+      firebase.initializeApp(FIREBASE_CONFIG);
+    }
     db = firebase.database();
     firebaseReady = true;
     return true;
@@ -25,7 +28,7 @@ function initFirebase() {
   }
 }
 
-// ---- 統一的房間讀寫介面（自動切換 Firebase / localStorage） ----
+// ---- 統一的房間讀寫介面 ----
 
 async function getRoom(code) {
   if (firebaseReady && db) {
@@ -86,26 +89,48 @@ const ROOMS_KEY = 'mathgames_rooms_v2';
 function _lsGetRooms() { try { return JSON.parse(localStorage.getItem(ROOMS_KEY) || '{}'); } catch { return {}; } }
 function _lsSaveRooms(r) { localStorage.setItem(ROOMS_KEY, JSON.stringify(r)); }
 
-// ---- Room polling：支援 Firebase realtime listener ----
+// ---- Room polling：完整清除舊 listener ----
 let globalPollInterval = null;
+let globalFirebaseRef = null;
 let globalFirebaseUnsubscribe = null;
 
 function stopPolling() {
-  if (globalPollInterval) { clearInterval(globalPollInterval); globalPollInterval = null; }
-  if (globalFirebaseUnsubscribe) { globalFirebaseUnsubscribe(); globalFirebaseUnsubscribe = null; }
+  // 清除 interval
+  if (globalPollInterval) {
+    clearInterval(globalPollInterval);
+    globalPollInterval = null;
+  }
+  // 完整移除 Firebase listener（用 ref.off() 而非 unsubscribe）
+  if (globalFirebaseRef) {
+    try { globalFirebaseRef.off('value'); } catch(e) {}
+    globalFirebaseRef = null;
+  }
+  if (globalFirebaseUnsubscribe) {
+    try { globalFirebaseUnsubscribe(); } catch(e) {}
+    globalFirebaseUnsubscribe = null;
+  }
 }
 
 function startRoomPolling(roomCode, cb) {
+  // 一定要先停掉舊的，避免多個 listener 同時存在
   stopPolling();
+
   if (firebaseReady && db) {
     const roomRef = db.ref(`rooms/${roomCode}`);
+    globalFirebaseRef = roomRef;
+
     roomRef.on('value', (snap) => {
+      // 如果這個 ref 已經被停掉了，不處理
+      if (globalFirebaseRef !== roomRef) return;
       if (!snap || !snap.exists()) { stopPolling(); showDisconnect(); return; }
       const room = snap.val();
       if (room.closed) { stopPolling(); showDisconnect(); return; }
       cb(room);
     });
-    globalFirebaseUnsubscribe = () => roomRef.off('value');
+
+    globalFirebaseUnsubscribe = () => {
+      try { roomRef.off('value'); } catch(e) {}
+    };
   } else {
     globalPollInterval = setInterval(async () => {
       const room = await getRoom(roomCode);
@@ -128,6 +153,7 @@ async function uniqueCode() {
 
 async function cleanupRoom(code) {
   if (!code) return;
+  stopPolling(); // 清除 listener 再刪房間
   await deleteRoom(code);
 }
 
@@ -141,7 +167,9 @@ async function registerHostDisconnect(code) {
   const rooms = _lsGetRooms();
   const now = Date.now();
   let changed = false;
-  Object.keys(rooms).forEach(k => { if (now - rooms[k].created > 3600000) { delete rooms[k]; changed = true; } });
+  Object.keys(rooms).forEach(k => {
+    if (now - (rooms[k].created || 0) > 3600000) { delete rooms[k]; changed = true; }
+  });
   if (changed) _lsSaveRooms(rooms);
 })();
 
