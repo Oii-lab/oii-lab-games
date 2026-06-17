@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="../favicon.png">
+<title>Dijkstra 演算法解析 — 演算法互動遊戲集</title>
+<link rel="stylesheet" href="../shared/style.css">
+</head>
+<body>
+<div class="container">
+
+<header>
+  <div class="title">🧠 Dijkstra 演算法解析</div>
+  <div class="subtitle">最短路徑 · Priority Queue · Relaxation · 複雜度分析</div>
+</header>
+
+<div style="text-align:center;margin-bottom:20px;display:flex;justify-content:center;gap:12px;flex-wrap:wrap;">
+  <a href="dijkstra.html" style="font-size:12px;color:var(--text-dim);text-decoration:none;letter-spacing:0.1em;text-transform:uppercase;padding:8px 14px;border:1px solid var(--border);border-radius:8px;transition:all 0.2s;display:inline-block;"
+    onmouseover="this.style.color='var(--accent)';this.style.borderColor='var(--accent)'"
+    onmouseout="this.style.color='var(--text-dim)';this.style.borderColor='var(--border)'">🟡 回遊戲</a>
+  <a href="../index.html" style="font-size:12px;color:var(--text-dim);text-decoration:none;letter-spacing:0.1em;text-transform:uppercase;padding:8px 14px;border:1px solid var(--border);border-radius:8px;transition:all 0.2s;display:inline-block;"
+    onmouseover="this.style.color='var(--accent)';this.style.borderColor='var(--accent)'"
+    onmouseout="this.style.color='var(--text-dim)';this.style.borderColor='var(--border)'">← 返回選單</a>
+</div>
+
+<!-- 目錄 -->
+<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:28px;">
+  <div style="font-size:11px;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-dim);margin-bottom:12px;">本頁內容</div>
+  <div style="display:flex;flex-direction:column;gap:8px;">
+    <a href="#step1" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Step 1 · 為什麼 BFS 在有權重的圖上不行？</a>
+    <a href="#step2" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Step 2 · Dijkstra 核心：Relaxation（鬆弛）</a>
+    <a href="#step3" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Step 3 · 完整程式碼</a>
+    <a href="#step4" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Step 4 · 複雜度分析</a>
+    <a href="#step5" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Step 5 · 限制與延伸：負邊權、Bellman-Ford</a>
+    <a href="#leetcode" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">LeetCode 相關題目</a>
+  </div>
+</div>
+
+<!-- Step 1 -->
+<div id="step1" class="algo-section">
+  <div class="acc-step-label">Step 1 · 為什麼 BFS 在有權重的圖上不行？</div>
+  <div class="acc-p">
+    BFS 找的是「跳數最少」的路徑，當每條邊的權重相同時，跳數最少 = 距離最短。<br>
+    但當邊有不同權重時，跳數少的路不一定距離短。
+  </div>
+  <div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:16px;margin:12px 0;">
+    <div style="font-size:13px;color:var(--text-dim);margin-bottom:8px;">反例：S → T</div>
+    <div style="font-family:'Fira Code',monospace;font-size:13px;line-height:2;">
+      路徑一：S →<span style="color:#00e5ff;"> A </span>→ T &nbsp; 跳數 2，距離 <strong style="color:#00e5ff;">1+1=2</strong><br>
+      路徑二：S →<span style="color:#ffd740;"> B </span>→ T &nbsp; 跳數 2，距離 <strong style="color:#ff4081;">3+3=6</strong><br>
+      路徑三：S → T &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 跳數 1，距離 <strong style="color:#ff4081;">10</strong>
+    </div>
+    <div style="font-size:12px;color:var(--text-dim);margin-top:8px;">BFS 選「跳數1」的 S→T，但距離最短是「跳數2」的 S→A→T。</div>
+  </div>
+  <div class="acc-insight">
+    <span class="ins-label">💡 結論</span>
+    BFS 適合無權重圖或所有邊權重相同的圖。<br>
+    有不同權重時，需要 Dijkstra。
+  </div>
+</div>
+
+<!-- Step 2 -->
+<div id="step2" class="algo-section">
+  <div class="acc-step-label">Step 2 · Dijkstra 核心：Relaxation（鬆弛）</div>
+  <div class="acc-p">
+    Dijkstra 的核心操作叫 <strong>Relaxation（鬆弛）</strong>：<br><br>
+    對於邊 (u, v, w)，如果 dist[u] + w &lt; dist[v]，就更新 dist[v]。<br>
+    意思是：「透過 u 到達 v，比目前已知的路徑更短」。
+  </div>
+  <div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:16px;margin:12px 0;">
+    <div style="font-size:11px;color:var(--text-dim);margin-bottom:8px;">Dijkstra 的執行流程：</div>
+    <div style="display:flex;flex-direction:column;gap:8px;font-size:13px;">
+      <div style="display:flex;gap:10px;align-items:flex-start;">
+        <span style="background:var(--accent);color:#000;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:11px;flex-shrink:0;">1</span>
+        <span>初始化：起點距離設為 0，其餘設為 ∞，全部加入 Priority Queue</span>
+      </div>
+      <div style="display:flex;gap:10px;align-items:flex-start;">
+        <span style="background:var(--accent);color:#000;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:11px;flex-shrink:0;">2</span>
+        <span>從 PQ 取出距離最小的節點 u（Greedy 選擇）</span>
+      </div>
+      <div style="display:flex;gap:10px;align-items:flex-start;">
+        <span style="background:var(--accent);color:#000;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:11px;flex-shrink:0;">3</span>
+        <span>對 u 的所有鄰居 v 做 Relaxation：若 dist[u]+w &lt; dist[v]，更新 dist[v]</span>
+      </div>
+      <div style="display:flex;gap:10px;align-items:flex-start;">
+        <span style="background:var(--accent);color:#000;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:11px;flex-shrink:0;">4</span>
+        <span>重複步驟 2-3，直到 PQ 為空</span>
+      </div>
+    </div>
+  </div>
+  <div class="acc-insight">
+    <span class="ins-label">🔑 Greedy 正確性</span>
+    每次從 PQ 取出距離最小的節點時，這個距離已經是最終最短距離，不可能再被縮短。<br>
+    這是因為所有邊權重都是非負數——如果有負邊，Dijkstra 就不保證正確。
+  </div>
+</div>
+
+<!-- Step 3 -->
+<div id="step3" class="algo-section">
+  <div class="acc-step-label">Step 3 · 完整程式碼</div>
+  <div class="acc-code">
+    <span class="lang-tag">Python</span>
+    <pre><span class="kw">import</span> heapq
+
+<span class="kw">def</span> <span class="fn">dijkstra</span>(graph, start):
+    <span class="cmt"># graph: {node: [(neighbor, weight), ...]}</span>
+    dist = {node: <span class="fn">float</span>(<span class="str">'inf'</span>) <span class="kw">for</span> node <span class="kw">in</span> graph}
+    dist[start] = <span class="num">0</span>
+    prev = {node: None <span class="kw">for</span> node <span class="kw">in</span> graph}
+
+    <span class="cmt"># Priority Queue: (distance, node)</span>
+    pq = [(<span class="num">0</span>, start)]
+
+    <span class="kw">while</span> pq:
+        d, u = heapq.heappop(pq)  <span class="cmt"># 取出距離最小的</span>
+
+        <span class="kw">if</span> d > dist[u]:  <span class="cmt"># 過期的條目，跳過</span>
+            <span class="kw">continue</span>
+
+        <span class="kw">for</span> v, w <span class="kw">in</span> graph[u]:
+            <span class="kw">if</span> dist[u] + w < dist[v]:  <span class="cmt"># Relaxation</span>
+                dist[v] = dist[u] + w
+                prev[v] = u
+                heapq.heappush(pq, (dist[v], v))
+
+    <span class="kw">return</span> dist, prev
+
+<span class="cmt"># 還原路徑</span>
+<span class="kw">def</span> <span class="fn">get_path</span>(prev, start, end):
+    path = []
+    cur = end
+    <span class="kw">while</span> cur <span class="kw">is not</span> None:
+        path.append(cur)
+        cur = prev[cur]
+    <span class="kw">return</span> path[::-<span class="num">1</span>]  <span class="cmt"># 反轉</span></pre>
+  </div>
+  <div class="acc-insight">
+    <span class="ins-label">💡 過期條目的處理</span>
+    Python 的 heapq 不支援修改已在 heap 裡的元素，所以當 dist[v] 更新時，舊的 (old_dist, v) 還留在 heap 裡。<br>
+    取出時用 <code>if d > dist[u]: continue</code> 跳過這些過期條目，這是最常見的實作方式。
+  </div>
+</div>
+
+<!-- Step 4 -->
+<div id="step4" class="algo-section">
+  <div class="acc-step-label">Step 4 · 複雜度分析</div>
+  <div style="overflow-x:auto;margin:16px 0;">
+    <table style="width:100%;border-collapse:collapse;font-size:13px;">
+      <thead>
+        <tr style="border-bottom:1px solid var(--border);">
+          <th style="padding:10px;text-align:left;color:var(--text-dim);font-weight:500;">實作方式</th>
+          <th style="padding:10px;text-align:center;color:var(--text-dim);font-weight:500;">時間複雜度</th>
+          <th style="padding:10px;text-align:center;color:var(--text-dim);font-weight:500;">適合場景</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:10px;">陣列（線性掃描最小值）</td>
+          <td style="padding:10px;text-align:center;color:var(--accent2);">O(V²)</td>
+          <td style="padding:10px;text-align:center;font-size:12px;">稠密圖（邊多）</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:10px;">Binary Heap（heapq）</td>
+          <td style="padding:10px;text-align:center;color:var(--accent4);">O((V+E) log V)</td>
+          <td style="padding:10px;text-align:center;font-size:12px;">稀疏圖（一般情況）</td>
+        </tr>
+        <tr>
+          <td style="padding:10px;">Fibonacci Heap</td>
+          <td style="padding:10px;text-align:center;color:var(--accent);">O(E + V log V)</td>
+          <td style="padding:10px;text-align:center;font-size:12px;">理論最優，實作複雜少用</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="acc-insight">
+    <span class="ins-label">💡 實務上</span>
+    競程和面試幾乎都用 Binary Heap，即 <code>heapq</code>，複雜度 O((V+E) log V) 就夠用。<br>
+    V = 節點數，E = 邊數，log V 來自 heap 的 push/pop 操作。
+  </div>
+</div>
+
+<!-- Step 5 -->
+<div id="step5" class="algo-section">
+  <div class="acc-step-label">Step 5 · 限制與延伸：負邊權、Bellman-Ford</div>
+  <div class="acc-p">
+    Dijkstra 的致命限制：<strong>不能有負邊權</strong>。
+  </div>
+  <div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:14px;margin:12px 0;font-size:13px;color:var(--text-dim);">
+    若有負邊，取出節點後仍可能被縮短距離，Greedy 正確性不成立。<br>
+    例：A→B=5, A→C=3, C→B=-4，Dijkstra 先取 B（距離5），但正確答案是 A→C→B=3-4=-1。
+  </div>
+  <div style="overflow-x:auto;margin:16px 0;">
+    <table style="width:100%;border-collapse:collapse;font-size:13px;">
+      <thead>
+        <tr style="border-bottom:1px solid var(--border);">
+          <th style="padding:10px;text-align:left;color:var(--text-dim);font-weight:500;">演算法</th>
+          <th style="padding:10px;text-align:center;color:var(--text-dim);font-weight:500;">負邊</th>
+          <th style="padding:10px;text-align:center;color:var(--text-dim);font-weight:500;">複雜度</th>
+          <th style="padding:10px;text-align:center;color:var(--text-dim);font-weight:500;">備註</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:10px;color:#ffd740;">Dijkstra</td>
+          <td style="padding:10px;text-align:center;color:var(--accent2);">❌ 不行</td>
+          <td style="padding:10px;text-align:center;">O((V+E) log V)</td>
+          <td style="padding:10px;font-size:12px;color:var(--text-dim);">最常用</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:10px;">Bellman-Ford</td>
+          <td style="padding:10px;text-align:center;color:var(--accent3);">✅ 可以</td>
+          <td style="padding:10px;text-align:center;color:var(--accent2);">O(VE)</td>
+          <td style="padding:10px;font-size:12px;color:var(--text-dim);">可偵測負環</td>
+        </tr>
+        <tr>
+          <td style="padding:10px;">Floyd-Warshall</td>
+          <td style="padding:10px;text-align:center;color:var(--accent3);">✅ 可以</td>
+          <td style="padding:10px;text-align:center;color:var(--accent2);">O(V³)</td>
+          <td style="padding:10px;font-size:12px;color:var(--text-dim);">所有點對最短路徑</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- LeetCode -->
+<div id="leetcode" class="algo-section">
+  <div class="acc-step-label">LeetCode 相關題目</div>
+  <div style="display:flex;flex-direction:column;gap:10px;margin-top:12px;">
+    <a href="https://leetcode.com/problems/network-delay-time/" target="_blank" class="lc-card">
+      <span class="lc-num">#743</span><span class="lc-title">Network Delay Time</span>
+      <span class="lc-tag medium">Medium</span>
+      <span class="lc-desc">Dijkstra 基礎題，找從起點到所有節點的最長最短路徑</span>
+    </a>
+    <a href="https://leetcode.com/problems/path-with-minimum-effort/" target="_blank" class="lc-card">
+      <span class="lc-num">#1631</span><span class="lc-title">Path With Minimum Effort</span>
+      <span class="lc-tag medium">Medium</span>
+      <span class="lc-desc">Dijkstra 的變形，最小化路徑上的最大差值</span>
+    </a>
+    <a href="https://leetcode.com/problems/cheapest-flights-within-k-stops/" target="_blank" class="lc-card">
+      <span class="lc-num">#787</span><span class="lc-title">Cheapest Flights Within K Stops</span>
+      <span class="lc-tag medium">Medium</span>
+      <span class="lc-desc">加了跳數限制的 Dijkstra，需要在 state 裡加入跳數</span>
+    </a>
+    <a href="https://leetcode.com/problems/find-the-city-with-the-smallest-number-of-neighbors-at-a-threshold-distance/" target="_blank" class="lc-card">
+      <span class="lc-num">#1334</span><span class="lc-title">Find the City With the Smallest Number of Neighbors</span>
+      <span class="lc-tag medium">Medium</span>
+      <span class="lc-desc">多源 Dijkstra 或 Floyd-Warshall</span>
+    </a>
+    <a href="https://leetcode.com/problems/swim-in-rising-water/" target="_blank" class="lc-card">
+      <span class="lc-num">#778</span><span class="lc-title">Swim in Rising Water</span>
+      <span class="lc-tag hard">Hard</span>
+      <span class="lc-desc">最小化路徑最大值，Dijkstra 或 Binary Search + BFS</span>
+    </a>
+  </div>
+</div>
+
+<!-- 導航 -->
+<div style="display:flex;justify-content:center;gap:12px;margin:32px 0 8px;flex-wrap:wrap;">
+  <a href="maze-algo.html" style="display:inline-flex;align-items:center;gap:8px;padding:12px 20px;background:var(--surface);border:1px solid var(--border);border-radius:12px;text-decoration:none;color:var(--text);font-size:13px;transition:all 0.2s;"
+    onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'"
+    onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text)'">← 🔵 BFS/DFS 解析</a>
+  <a href="bst-algo.html" style="display:inline-flex;align-items:center;gap:8px;padding:12px 20px;background:var(--surface);border:1px solid var(--border);border-radius:12px;text-decoration:none;color:var(--text);font-size:13px;transition:all 0.2s;"
+    onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'"
+    onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text)'">🌳 BST 解析 →</a>
+</div>
+
+</div>
+
+<style>
+.algo-section{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:24px;margin-bottom:20px;}
+.lc-card{display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--bg);border:1px solid var(--border);border-radius:10px;text-decoration:none;color:var(--text);transition:border-color 0.2s;flex-wrap:wrap;}
+.lc-card:hover{border-color:var(--accent);}
+.lc-num{font-family:'Orbitron',monospace;font-size:11px;color:var(--text-dim);min-width:44px;}
+.lc-title{font-weight:600;font-size:14px;flex:1;}
+.lc-tag{font-size:10px;padding:2px 8px;border-radius:20px;font-weight:700;letter-spacing:0.05em;}
+.lc-tag.easy{background:rgba(0,200,100,0.15);color:#00c864;}
+.lc-tag.medium{background:rgba(255,180,0,0.15);color:#ffb400;}
+.lc-tag.hard{background:rgba(255,60,60,0.15);color:#ff3c3c;}
+.lc-desc{font-size:12px;color:var(--text-dim);width:100%;margin-top:2px;}
+.acc-step-label{font-family:'Orbitron',monospace;font-size:11px;letter-spacing:0.15em;text-transform:uppercase;color:var(--accent);margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid var(--border);}
+</style>
+</body>
+</html>
