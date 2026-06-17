@@ -171,7 +171,7 @@ const PRESETS={
   city:{
     nodes:['台北','桃園','新竹','台中','台南','高雄'],
     edges:[['台北','桃園',40],['台北','新竹',80],['桃園','新竹',50],['新竹','台中',100],['台中','台南',170],['台南','高雄',50],['台中','高雄',200],['桃園','台中',180]],
-    layout:{'台北':{x:300,y:40},'桃園':{x:200,y:100},'新竹':{x:160,y:170},'台中':{x:180,y:250},'台南':{x:260,y:320},'高雄':{x:340,y:380}}
+    layout:{'台北':{x:340,y:50},'桃園':{x:220,y:130},'新竹':{x:180,y:210},'台中':{x:200,y:300},'台南':{x:300,y:370},'高雄':{x:390,y:430}}
   },
   trap:{
     // BFS 陷阱：BFS 找跳數最少，但路徑不是距離最短
@@ -489,8 +489,19 @@ function resizeCanvas(){
   const canvas=document.getElementById('graph-canvas');
   const maxW=Math.min(window.innerWidth-48,520);
   // 城市地圖需要更高
-  const h=G.nodes.includes('高雄')?420:300;
+  const h=G.nodes.includes('高雄')?480:300;
   canvas.width=maxW;canvas.height=h;
+  // 重新計算城市地圖 layout 以適應畫布寬度
+  if(G.nodes.includes('高雄')){
+    const scaleX=maxW/520;
+    PRESETS.city.layout['台北'].x=Math.round(340*scaleX);
+    PRESETS.city.layout['桃園'].x=Math.round(220*scaleX);
+    PRESETS.city.layout['新竹'].x=Math.round(180*scaleX);
+    PRESETS.city.layout['台中'].x=Math.round(200*scaleX);
+    PRESETS.city.layout['台南'].x=Math.round(300*scaleX);
+    PRESETS.city.layout['高雄'].x=Math.round(390*scaleX);
+    G.layout=PRESETS.city.layout;
+  }
   drawGraph();
 }
 window.addEventListener('resize',resizeCanvas);
