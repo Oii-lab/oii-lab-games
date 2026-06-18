@@ -413,16 +413,24 @@ function drawGraph(step){
     else{ctx.strokeStyle='#2a2a3e';ctx.lineWidth=2;}
     ctx.stroke();
 
-    // 權重標籤
-    const mx=(pa.x+pb.x)/2,my=(pa.y+pb.y)/2;
-    const label=iD?w:'';
+    // 權重標籤（只有 Dijkstra 才顯示）
     if(iD){
-      ctx.fillStyle='#0a0a12';
-      ctx.fillRect(mx-12,my-9,24,18);
-      ctx.fillStyle=isUpdated?'#ff4081':isVisitedEdge?mainColor:'#5a5a7e';
-      ctx.font='bold 11px Orbitron,monospace';
+      const mx=(pa.x+pb.x)/2,my=(pa.y+pb.y)/2;
+      const label=String(w);
+      const lw=ctx.measureText(label).width+10;
+      // 背景
+      ctx.fillStyle=isUpdated?'rgba(255,64,129,0.9)':isVisitedEdge?'rgba(30,30,60,0.92)':'rgba(20,20,40,0.88)';
+      ctx.beginPath();
+      ctx.roundRect(mx-lw/2,my-9,lw,18,4);
+      ctx.fill();
+      // 邊框
+      ctx.strokeStyle=isUpdated?'#ff4081':isVisitedEdge?mainColor+'88':'#3a3a5e';
+      ctx.lineWidth=1;ctx.stroke();
+      // 文字
+      ctx.fillStyle=isUpdated?'#fff':isVisitedEdge?mainColor:'#aaaacc';
+      ctx.font='bold 12px monospace';
       ctx.textAlign='center';ctx.textBaseline='middle';
-      ctx.fillText(w,mx,my);
+      ctx.fillText(label,mx,my);
     }
   });
 
@@ -448,16 +456,20 @@ function drawGraph(step){
     ctx.textAlign='center';ctx.textBaseline='middle';
     ctx.fillText(n,x,y);
 
-    // 距離標籤
+    // 距離標籤（節點右上方）
     const d=VIS.dist[n];
     if(d!==undefined){
-      const label=d===Infinity?'∞':d;
-      ctx.fillStyle='#0a0a12';
-      ctx.beginPath();ctx.arc(x+16,y-16,11,0,Math.PI*2);ctx.fill();
-      ctx.fillStyle=isVisited?mainColor:inPQ?'#ffd740':'#5a5a8e';
-      ctx.font=`bold ${String(label).length>2?8:10}px monospace`;
+      const label=d===Infinity?'∞':String(d);
+      const lw=Math.max(ctx.measureText(label).width+8,20);
+      const lx=x+nodeR-2,ly=y-nodeR+2;
+      ctx.fillStyle=isCurrent?'rgba(255,64,129,0.9)':isVisited?'rgba(0,60,40,0.9)':inPQ?'rgba(60,50,0,0.9)':'rgba(20,20,40,0.88)';
+      ctx.beginPath();ctx.roundRect(lx-lw/2,ly-9,lw,18,4);ctx.fill();
+      ctx.strokeStyle=isCurrent?'#ff4081':isVisited?mainColor:inPQ?'#ffd740':'#3a3a5e';
+      ctx.lineWidth=1;ctx.stroke();
+      ctx.fillStyle=isCurrent?'#fff':isVisited?mainColor:inPQ?'#ffd740':'#7a7aaa';
+      ctx.font=`bold ${label.length>2?9:11}px monospace`;
       ctx.textAlign='center';ctx.textBaseline='middle';
-      ctx.fillText(label,x+16,y-16);
+      ctx.fillText(label,lx,ly);
     }
   });
 }
@@ -488,19 +500,25 @@ function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
 function resizeCanvas(){
   const canvas=document.getElementById('graph-canvas');
   const maxW=Math.min(window.innerWidth-48,520);
-  // 城市地圖需要更高
-  const h=G.nodes.includes('高雄')?480:300;
-  canvas.width=maxW;canvas.height=h;
-  // 重新計算城市地圖 layout 以適應畫布寬度
-  if(G.nodes.includes('高雄')){
-    const scaleX=maxW/520;
-    PRESETS.city.layout['台北'].x=Math.round(340*scaleX);
-    PRESETS.city.layout['桃園'].x=Math.round(220*scaleX);
-    PRESETS.city.layout['新竹'].x=Math.round(180*scaleX);
-    PRESETS.city.layout['台中'].x=Math.round(200*scaleX);
-    PRESETS.city.layout['台南'].x=Math.round(300*scaleX);
-    PRESETS.city.layout['高雄'].x=Math.round(390*scaleX);
-    G.layout=PRESETS.city.layout;
+  // 根據 layout 自動計算需要的高度
+  if(G.nodes.length>0){
+    const maxY=Math.max(...G.nodes.map(n=>G.layout[n]?G.layout[n].y:0));
+    const maxX=Math.max(...G.nodes.map(n=>G.layout[n]?G.layout[n].x:0));
+    // 如果圖形比畫布寬，等比縮放所有座標
+    if(maxX>maxW-60){
+      const scale=(maxW-60)/maxX;
+      G.nodes.forEach(n=>{
+        if(G.layout[n]){
+          G.layout[n].x=Math.round(G.layout[n].x*scale);
+          G.layout[n].y=Math.round(G.layout[n].y*scale);
+        }
+      });
+    }
+    const newMaxY=Math.max(...G.nodes.map(n=>G.layout[n]?G.layout[n].y:0));
+    canvas.width=maxW;
+    canvas.height=Math.min(Math.max(newMaxY+60,280),600);
+  }else{
+    canvas.width=maxW;canvas.height=300;
   }
   drawGraph();
 }
