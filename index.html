@@ -44,6 +44,11 @@
     background:var(--border); color:var(--text-dim); border-radius:6px; padding:2px 6px;
     letter-spacing:0.08em; text-transform:uppercase;
   }
+  .game-card .badge-start {
+    position:absolute; top:10px; right:10px; font-size:8px; font-weight:700;
+    background:rgba(0,229,255,0.15); color:var(--accent); border:1px solid var(--accent);
+    border-radius:6px; padding:2px 6px; letter-spacing:0.08em; text-transform:uppercase;
+  }
 
   .c-cyan:hover  { border-color:var(--accent); }  .c-cyan::before  { background:var(--accent); }
   .c-pink:hover  { border-color:var(--accent2); } .c-pink::before  { background:var(--accent2); }
@@ -130,6 +135,13 @@
 <div class="category-section">
   <div class="category-title">動態規劃 &nbsp;Dynamic Programming</div>
   <div class="game-grid">
+    <a href="games/dp.html" class="game-card c-cyan">
+      <span class="icon">⚡</span>
+      <div class="card-title">DP 入門</div>
+      <div class="card-desc">從遞迴到填表<br>Fibonacci 視覺化</div>
+      <div class="card-algo">Memo vs Tabulation</div>
+      <div class="badge-start">先看這裡</div>
+    </a>
     <a href="games/coin-row.html" class="game-card c-yellow">
       <span class="icon"><img src="assets/icons/CoinRow.png" style="width:80px;height:80px;object-fit:contain;"></span>
       <div class="card-title">Coin Row</div>
