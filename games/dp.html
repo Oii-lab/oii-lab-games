@@ -25,7 +25,7 @@
   .viz-tab.active{background:var(--accent);color:#000;}
 
   /* Recursive tree */
-  .tree-scroll-wrap{overflow:auto;border-radius:12px;background:var(--bg);border:1px solid var(--border);}
+  .tree-canvas-wrap{border-radius:12px;background:var(--bg);border:1px solid var(--border);overflow:hidden;}
   #tree-canvas{display:block;}
 
   /* DP Table */
@@ -139,7 +139,7 @@
     <div style="font-size:13px;color:var(--text-dim);margin-bottom:12px;">
       紅色節點 = 重複計算的子問題。N 越大，重複越誇張。
     </div>
-    <div class="tree-scroll-wrap">
+    <div class="tree-canvas-wrap">
       <canvas id="tree-canvas" height="320"></canvas>
     </div>
     <div class="step-info" id="tree-info">點「播放」開始動畫，觀察哪些節點被重複計算。</div>
@@ -266,20 +266,29 @@ let treeTimer = null;
 let treeStep = 0;
 let treeOrder = [];
 
-function buildTree(n, x, y, level, xMin, xMax, parentId) {
+// Auto-scaled tree: assigns x positions by counting leaf slots
+// Each leaf gets width=1 unit; internal nodes centered over children
+function countLeaves(n) {
+  if (n <= 1) return 1;
+  return countLeaves(n - 1) + countLeaves(n - 2);
+}
+
+// Build tree with normalized x in [0,1] range, then scale to canvas
+function buildTreeNorm(n, xLeft, xRight, y, levelH, parentId) {
+  const xMid = (xLeft + xRight) / 2;
   const id = treeNodes.length;
-  treeNodes.push({ id, n, x, y, state: 'pending', parentId });
+  treeNodes.push({ id, n, xNorm: xMid, yNorm: y, state: 'pending' });
   if (parentId !== null) treeEdges.push({ from: parentId, to: id });
   if (n <= 1) return id;
-  const mid = (xMin + xMax) / 2;
-  buildTree(n - 1, (xMin + mid) / 2, y + 70, level + 1, xMin, mid, id);
-  buildTree(n - 2, (mid + xMax) / 2, y + 70, level + 1, mid, xMax, id);
+  const leftLeaves = countLeaves(n - 1);
+  const totalLeaves = leftLeaves + countLeaves(n - 2);
+  const split = xLeft + (xRight - xLeft) * (leftLeaves / totalLeaves);
+  buildTreeNorm(n - 1, xLeft, split, y + levelH, levelH, id);
+  buildTreeNorm(n - 2, split, xRight, y + levelH, levelH, id);
   return id;
 }
 
 function buildTreeOrder(nodeId) {
-  // DFS post-order
-  const node = treeNodes[nodeId];
   const children = treeEdges.filter(e => e.from === nodeId).map(e => e.to);
   for (const c of children) buildTreeOrder(c);
   treeOrder.push(nodeId);
@@ -300,19 +309,24 @@ function treePlay() {
   if (treeTimer) { clearInterval(treeTimer); treeTimer = null; document.getElementById('btn-tree-play').textContent = '▶ 播放'; return; }
 
   const canvas = document.getElementById('tree-canvas');
-  // Calculate required canvas size based on tree structure
-  const nodeRadius = 18;
-  const levelHeight = 70;
-  const minNodeSpacing = 44;
-  // Estimate width needed: 2^(N/2) nodes at bottom level
-  const bottomNodes = Math.pow(2, N);
-  const requiredWidth = Math.max(canvas.parentElement.offsetWidth, bottomNodes * minNodeSpacing);
-  const requiredHeight = (N + 1) * levelHeight + nodeRadius * 2 + 20;
-  canvas.width = requiredWidth;
-  canvas.height = requiredHeight;
+  const W = canvas.parentElement.offsetWidth || 600;
+  const H = Math.max(320, Math.min(480, window.innerHeight * 0.52));
+  canvas.width = W;
+  canvas.height = H;
+
+  // Scale: node radius shrinks with N so tree always fits
+  const nodeRadius = Math.max(8, Math.min(18, W / (Math.pow(2, N) * 1.1)));
+  const levelH = (H - nodeRadius * 2 - 16) / N;
 
   treeNodes = []; treeEdges = []; treeOrder = []; treeStep = 0;
-  buildTree(N, canvas.width / 2, nodeRadius + 10, 0, 0, canvas.width, null);
+  const padding = nodeRadius;
+  buildTreeNorm(N, 0, 1, 0, 1 / N, null);
+  // Scale xNorm/yNorm to canvas coords
+  for (const node of treeNodes) {
+    node.x = padding + node.xNorm * (W - padding * 2);
+    node.y = nodeRadius + 8 + node.yNorm * N * levelH;
+    node.r = nodeRadius;
+  }
   buildTreeOrder(0);
 
   // Mark duplicates
@@ -357,10 +371,11 @@ function drawTree(canvas) {
   for (const edge of treeEdges) {
     const from = treeNodes[edge.from];
     const to = treeNodes[edge.to];
+    if (from.state === 'pending' || to.state === 'pending') continue;
     ctx.beginPath();
     ctx.moveTo(from.x, from.y);
     ctx.lineTo(to.x, to.y);
-    ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+    ctx.strokeStyle = 'rgba(255,255,255,0.12)';
     ctx.lineWidth = 1;
     ctx.stroke();
   }
@@ -368,20 +383,25 @@ function drawTree(canvas) {
   // Draw nodes
   for (const node of treeNodes) {
     if (node.state === 'pending') continue;
-    let color, textColor;
-    if (node.state === 'duplicate') { color = 'rgba(255,64,129,0.8)'; textColor = '#fff'; }
-    else { color = 'rgba(0,229,255,0.7)'; textColor = '#000'; }
+    const r = node.r;
+    let fillColor, strokeColor, textColor;
+    if (node.state === 'duplicate') {
+      fillColor = 'rgba(255,64,129,0.85)'; strokeColor = '#ff4081'; textColor = '#fff';
+    } else {
+      fillColor = 'rgba(0,229,255,0.75)'; strokeColor = '#00e5ff'; textColor = '#000';
+    }
 
     ctx.beginPath();
-    ctx.arc(node.x, node.y, 18, 0, Math.PI * 2);
-    ctx.fillStyle = color;
+    ctx.arc(node.x, node.y, r, 0, Math.PI * 2);
+    ctx.fillStyle = fillColor;
     ctx.fill();
-    ctx.strokeStyle = node.state === 'duplicate' ? '#ff4081' : '#00e5ff';
-    ctx.lineWidth = 2;
+    ctx.strokeStyle = strokeColor;
+    ctx.lineWidth = Math.max(1, r * 0.12);
     ctx.stroke();
 
     ctx.fillStyle = textColor;
-    ctx.font = 'bold 11px Orbitron, monospace';
+    const fs = Math.max(7, Math.min(11, r * 0.72));
+    ctx.font = `bold ${fs}px Orbitron, monospace`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(`F${node.n}`, node.x, node.y);
