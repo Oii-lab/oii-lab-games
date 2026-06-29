@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="../favicon.png">
+<title>Dynamic Programming 演算法解析 — 演算法互動遊戲集</title>
+<link rel="stylesheet" href="../shared/style.css">
+</head>
+<body>
+<div class="container">
+
+<header>
+  <div class="title">🧠 Dynamic Programming 解析</div>
+  <div class="subtitle">什麼是 DP · Memoization vs Tabulation · 兩個核心條件</div>
+</header>
+
+<div style="text-align:center;margin-bottom:20px;display:flex;justify-content:center;gap:12px;flex-wrap:wrap;">
+  <a href="dp.html" style="font-size:12px;color:var(--text-dim);text-decoration:none;letter-spacing:0.1em;text-transform:uppercase;padding:8px 14px;border:1px solid var(--border);border-radius:8px;transition:all 0.2s;display:inline-block;"
+    onmouseover="this.style.color='var(--accent)';this.style.borderColor='var(--accent)'"
+    onmouseout="this.style.color='var(--text-dim)';this.style.borderColor='var(--border)'">⚡ 回視覺化</a>
+  <a href="../index.html" style="font-size:12px;color:var(--text-dim);text-decoration:none;letter-spacing:0.1em;text-transform:uppercase;padding:8px 14px;border:1px solid var(--border);border-radius:8px;transition:all 0.2s;display:inline-block;"
+    onmouseover="this.style.color='var(--accent)';this.style.borderColor='var(--accent)'"
+    onmouseout="this.style.color='var(--text-dim)';this.style.borderColor='var(--border)'">← 返回選單</a>
+</div>
+
+<!-- 目錄 -->
+<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:28px;">
+  <div style="font-size:11px;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-dim);margin-bottom:12px;">本頁內容</div>
+  <div style="display:flex;flex-direction:column;gap:8px;">
+    <a href="#step1" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Step 1 · 問題的根源：重疊子問題</a>
+    <a href="#step2" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Step 2 · Top-down：Memoization（記憶化搜尋）</a>
+    <a href="#step3" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Step 3 · Bottom-up：Tabulation（填表法）</a>
+    <a href="#step4" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Step 4 · 兩個核心條件</a>
+    <a href="#step5" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Step 5 · 複雜度對比</a>
+    <a href="#applications" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">這個平台的 DP 應用</a>
+    <a href="#leetcode" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">LeetCode 相關題目</a>
+  </div>
+</div>
+
+<!-- Step 1 -->
+<div id="step1" class="algo-section">
+  <div class="acc-step-label">Step 1 · 問題的根源：重疊子問題</div>
+  <div class="acc-p">
+    計算 Fibonacci 數列第 N 項，最直覺的寫法是遞迴：
+  </div>
+  <div class="acc-code">
+    <span class="lang-tag">Python</span>
+    <pre><span class="kw">def</span> <span class="fn">fib</span>(n):
+    <span class="kw">if</span> n <= <span class="num">1</span>: <span class="kw">return</span> n
+    <span class="kw">return</span> <span class="fn">fib</span>(n-<span class="num">1</span>) + <span class="fn">fib</span>(n-<span class="num">2</span>)</pre>
+  </div>
+  <div class="acc-p">
+    這段程式碼乾淨、直觀，但有一個致命問題。計算 fib(5) 時：
+  </div>
+  <div style="background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:20px;margin:16px 0;font-size:13px;font-family:'Fira Code',monospace;line-height:2.2;">
+    fib(5)<br>
+    ├── fib(4)<br>
+    │&nbsp;&nbsp;&nbsp;├── fib(3) &nbsp;<span style="color:var(--accent2);">← 計算1</span><br>
+    │&nbsp;&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;├── fib(2) &nbsp;<span style="color:var(--accent2);">← 計算1</span><br>
+    │&nbsp;&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;└── fib(1)<br>
+    │&nbsp;&nbsp;&nbsp;└── fib(2) &nbsp;<span style="color:var(--accent2);">← 計算2（重複！）</span><br>
+    └── fib(3) &nbsp;<span style="color:var(--accent2);">← 計算2（重複！）</span><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;├── fib(2) &nbsp;<span style="color:var(--accent2);">← 計算3（重複！）</span><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;└── fib(1)
+  </div>
+  <div class="acc-insight">
+    <span class="ins-label">💡 關鍵洞察</span>
+    fib(3) 被計算了 2 次，fib(2) 被計算了 3 次。<br>
+    N 每增加 1，計算量大約翻倍，總共需要 <strong>O(2ⁿ) 次</strong>呼叫。<br>
+    N=40 時，呼叫次數超過 20 億次——而答案只是一個數字。
+  </div>
+</div>
+
+<!-- Step 2 -->
+<div id="step2" class="algo-section">
+  <div class="acc-step-label">Step 2 · Top-down：Memoization（記憶化搜尋）</div>
+  <div class="acc-p">
+    解法很直接：<strong>算過就記下來，下次直接查表</strong>。<br>
+    這就是 Memoization（記憶化），DP 的 Top-down 形式。
+  </div>
+  <div class="acc-code">
+    <span class="lang-tag">Python</span>
+    <pre><span class="kw">def</span> <span class="fn">fib_memo</span>(n, memo={}):
+    <span class="kw">if</span> n <= <span class="num">1</span>: <span class="kw">return</span> n
+    <span class="kw">if</span> n <span class="kw">in</span> memo: <span class="kw">return</span> memo[n]   <span class="cmt"># 查表！</span>
+    
+    memo[n] = <span class="fn">fib_memo</span>(n-<span class="num">1</span>, memo) + <span class="fn">fib_memo</span>(n-<span class="num">2</span>, memo)
+    <span class="kw">return</span> memo[n]  <span class="cmt"># 存表！</span>
+
+<span class="cmt"># 每個 fib(k) 只計算一次，共 n 次</span>
+<span class="cmt"># 時間複雜度：O(n)，空間複雜度：O(n)</span></pre>
+  </div>
+  <div class="acc-p">
+    現在 fib(3) 第一次算完就存入 memo，第二次遇到直接回傳，不再重複遞迴。<br>
+    從 O(2ⁿ) 降到 <strong>O(n)</strong>。
+  </div>
+  <div class="acc-insight">
+    <span class="ins-label">🔑 Top-down 特色</span>
+    保留原本的遞迴結構，只加一個快取（字典/陣列）。<br>
+    「需要哪個子問題才算哪個」——只計算真正被用到的子問題。
+  </div>
+</div>
+
+<!-- Step 3 -->
+<div id="step3" class="algo-section">
+  <div class="acc-step-label">Step 3 · Bottom-up：Tabulation（填表法）</div>
+  <div class="acc-p">
+    另一種方式：<strong>不用遞迴，直接從小問題開始填表到大問題</strong>。<br>
+    這是 Tabulation（填表法），DP 的 Bottom-up 形式。
+  </div>
+  <div class="acc-code">
+    <span class="lang-tag">Python</span>
+    <pre><span class="kw">def</span> <span class="fn">fib_dp</span>(n):
+    <span class="kw">if</span> n <= <span class="num">1</span>: <span class="kw">return</span> n
+    
+    dp = [<span class="num">0</span>] * (n + <span class="num">1</span>)
+    dp[<span class="num">0</span>] = <span class="num">0</span>   <span class="cmt"># 基底條件</span>
+    dp[<span class="num">1</span>] = <span class="num">1</span>   <span class="cmt"># 基底條件</span>
+    
+    <span class="kw">for</span> i <span class="kw">in</span> <span class="fn">range</span>(<span class="num">2</span>, n + <span class="num">1</span>):
+        dp[i] = dp[i-<span class="num">1</span>] + dp[i-<span class="num">2</span>]  <span class="cmt"># 轉移方程</span>
+    
+    <span class="kw">return</span> dp[n]
+
+<span class="cmt"># 填表順序：dp[0] → dp[1] → ... → dp[n]</span>
+<span class="cmt"># 時間複雜度：O(n)，空間複雜度：O(n)（可壓縮到 O(1)）</span></pre>
+  </div>
+  <div style="overflow-x:auto;margin:16px 0;">
+    <table style="border-collapse:collapse;font-size:13px;min-width:100%;">
+      <thead>
+        <tr style="border-bottom:1px solid var(--border);">
+          <th style="padding:10px;color:var(--text-dim);font-weight:500;">n</th>
+          <th style="padding:10px;color:var(--text-dim);font-weight:500;">0</th>
+          <th style="padding:10px;color:var(--text-dim);font-weight:500;">1</th>
+          <th style="padding:10px;color:var(--text-dim);font-weight:500;">2</th>
+          <th style="padding:10px;color:var(--text-dim);font-weight:500;">3</th>
+          <th style="padding:10px;color:var(--text-dim);font-weight:500;">4</th>
+          <th style="padding:10px;color:var(--text-dim);font-weight:500;">5</th>
+          <th style="padding:10px;color:var(--text-dim);font-weight:500;">6</th>
+          <th style="padding:10px;color:var(--text-dim);font-weight:500;">7</th>
+          <th style="padding:10px;color:var(--text-dim);font-weight:500;">8</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="padding:10px;color:var(--text-dim);">F(n)</td>
+          <td style="padding:10px;font-weight:700;color:var(--accent);text-align:center;">0</td>
+          <td style="padding:10px;font-weight:700;color:var(--accent);text-align:center;">1</td>
+          <td style="padding:10px;font-weight:700;color:var(--accent);text-align:center;">1</td>
+          <td style="padding:10px;font-weight:700;color:var(--accent);text-align:center;">2</td>
+          <td style="padding:10px;font-weight:700;color:var(--accent);text-align:center;">3</td>
+          <td style="padding:10px;font-weight:700;color:var(--accent);text-align:center;">5</td>
+          <td style="padding:10px;font-weight:700;color:var(--accent);text-align:center;">8</td>
+          <td style="padding:10px;font-weight:700;color:var(--accent);text-align:center;">13</td>
+          <td style="padding:10px;font-weight:700;color:var(--accent);text-align:center;">21</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="acc-insight">
+    <span class="ins-label">🔑 Bottom-up 特色</span>
+    沒有遞迴，沒有 stack overflow 風險。<br>
+    「從基底條件開始，按順序填到目標」——所有子問題都填完。<br>
+    Fibonacci 的 Bottom-up 甚至可以壓縮空間到 <strong>O(1)</strong>，只保留前兩個值。
+  </div>
+</div>
+
+<!-- Step 4 -->
+<div id="step4" class="algo-section">
+  <div class="acc-step-label">Step 4 · 兩個核心條件</div>
+  <div class="acc-p">
+    一個問題能用 DP 解，需要同時滿足兩個條件：
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:12px;margin:16px 0;">
+    <div style="background:var(--bg);border:1px solid var(--accent);border-radius:12px;padding:20px;">
+      <div style="font-family:'Orbitron',monospace;font-size:10px;letter-spacing:0.15em;color:var(--accent);margin-bottom:10px;">條件 1 · 重疊子問題 Overlapping Subproblems</div>
+      <div style="font-size:13px;line-height:1.8;">
+        大問題可以拆成小問題，而且這些小問題<strong>會被重複遇到</strong>。<br>
+        Fibonacci：fib(n) 依賴 fib(n-1) 和 fib(n-2)，兩者還會共用更小的子問題。<br>
+        <span style="color:var(--text-dim);">反例：Merge Sort 的子問題不重疊，不需要 DP。</span>
+      </div>
+    </div>
+    <div style="background:var(--bg);border:1px solid var(--accent);border-radius:12px;padding:20px;">
+      <div style="font-family:'Orbitron',monospace;font-size:10px;letter-spacing:0.15em;color:var(--accent);margin-bottom:10px;">條件 2 · 最優子結構 Optimal Substructure</div>
+      <div style="font-size:13px;line-height:1.8;">
+        大問題的最優解，可以由子問題的最優解組合而來。<br>
+        Coin Row：若 coins[i..j] 的最優解是取左端，那麼其剩餘部分 coins[i+1..j] 也必須是最優的。<br>
+        <span style="color:var(--text-dim);">反例：「最長不重複路徑」不滿足最優子結構，因為避免重複節點的全域約束打破了局部最優。</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="acc-insight">
+    <span class="ins-label">💡 設計 DP 的步驟</span>
+    1. <strong>定義狀態</strong>：dp[i] 或 dp[i][j] 代表什麼？<br>
+    2. <strong>找轉移方程</strong>：大狀態如何由小狀態推導？<br>
+    3. <strong>確定基底條件</strong>：最小的子問題答案是什麼？<br>
+    4. <strong>確定填表順序</strong>：確保算大問題時小問題已算完。
+  </div>
+</div>
+
+<!-- Step 5 -->
+<div id="step5" class="algo-section">
+  <div class="acc-step-label">Step 5 · 複雜度對比</div>
+  <div class="acc-code">
+    <span class="lang-tag">Python</span>
+    <pre><span class="cmt"># 空間優化版 Bottom-up：O(1) 空間</span>
+<span class="kw">def</span> <span class="fn">fib_optimized</span>(n):
+    <span class="kw">if</span> n <= <span class="num">1</span>: <span class="kw">return</span> n
+    a, b = <span class="num">0</span>, <span class="num">1</span>
+    <span class="kw">for</span> _ <span class="kw">in</span> <span class="fn">range</span>(<span class="num">2</span>, n + <span class="num">1</span>):
+        a, b = b, a + b
+    <span class="kw">return</span> b
+
+<span class="cmt"># 只保留前兩個值，空間從 O(n) 降到 O(1)</span></pre>
+  </div>
+  <div style="overflow-x:auto;margin:16px 0;">
+    <table style="width:100%;border-collapse:collapse;font-size:13px;">
+      <thead>
+        <tr style="border-bottom:1px solid var(--border);">
+          <th style="padding:10px;text-align:left;color:var(--text-dim);font-weight:500;">方法</th>
+          <th style="padding:10px;text-align:left;color:var(--text-dim);font-weight:500;">時間</th>
+          <th style="padding:10px;text-align:left;color:var(--text-dim);font-weight:500;">空間</th>
+          <th style="padding:10px;text-align:left;color:var(--text-dim);font-weight:500;">N=40 呼叫次數</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:10px;">暴力遞迴</td>
+          <td style="padding:10px;">O(2ⁿ)</td>
+          <td style="padding:10px;">O(n)</td>
+          <td style="padding:10px;color:var(--accent2);">約 3.3 億</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:10px;">Memoization</td>
+          <td style="padding:10px;">O(n)</td>
+          <td style="padding:10px;">O(n)</td>
+          <td style="padding:10px;color:var(--accent);">41</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:10px;">Tabulation</td>
+          <td style="padding:10px;">O(n)</td>
+          <td style="padding:10px;">O(n)</td>
+          <td style="padding:10px;color:var(--accent);">41</td>
+        </tr>
+        <tr>
+          <td style="padding:10px;">空間優化 DP</td>
+          <td style="padding:10px;">O(n)</td>
+          <td style="padding:10px;color:var(--accent);font-weight:700;">O(1)</td>
+          <td style="padding:10px;color:var(--accent);">41</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="acc-insight">
+    <span class="ins-label">🔄 Memoization vs Tabulation 怎麼選？</span>
+    <strong>Memoization</strong>（Top-down）：寫起來像原本的遞迴，只多一個快取。適合「不是所有子問題都需要算」的情況。<br><br>
+    <strong>Tabulation</strong>（Bottom-up）：沒有遞迴 overhead，不怕 stack overflow。空間優化較容易。大多數競程選手偏好這種寫法。
+  </div>
+</div>
+
+<!-- Applications -->
+<div id="applications" class="algo-section">
+  <div class="acc-step-label">這個平台的 DP 應用</div>
+  <div class="acc-p">
+    Fibonacci 只是 DP 的入門。以下三個遊戲展示了 DP 在不同情境下的應用：
+  </div>
+  <div style="display:flex;flex-direction:column;gap:12px;margin-top:16px;">
+    <a href="coin-row.html" class="lc-card">
+      <span style="font-size:22px;min-width:32px;">🪙</span>
+      <div style="flex:1">
+        <div style="font-weight:700;font-size:14px;margin-bottom:4px;">Coin Row — 區間 DP</div>
+        <div style="font-size:12px;color:var(--text-dim);">
+          狀態：dp[i][j] = 當前玩家在 coins[i..j] 能拿的最大分<br>
+          轉移：取左 or 取右，對手也最優，所以用 min<br>
+          難點：兩層迴圈（區間長度 × 起點），必須從短到長填
+        </div>
+      </div>
+      <span style="color:var(--text-dim);">→</span>
+    </a>
+    <a href="knapsack.html" class="lc-card">
+      <span style="font-size:22px;min-width:32px;">🎒</span>
+      <div style="flex:1">
+        <div style="font-weight:700;font-size:14px;margin-bottom:4px;">背包問題 — 0/1 Knapsack DP</div>
+        <div style="font-size:12px;color:var(--text-dim);">
+          狀態：dp[i][w] = 前 i 個物品、容量 w 的最大價值<br>
+          轉移：物品 i 放或不放<br>
+          難點：二維 DP 表，需回溯最優解
+        </div>
+      </div>
+      <span style="color:var(--text-dim);">→</span>
+    </a>
+    <a href="interval-scheduling.html" class="lc-card">
+      <span style="font-size:22px;min-width:32px;">📅</span>
+      <div style="flex:1">
+        <div style="font-weight:700;font-size:14px;margin-bottom:4px;">區間排程 — 貪心 vs 加權 DP</div>
+        <div style="font-size:12px;color:var(--text-dim);">
+          非加權版：貪心（最早結束）就夠了<br>
+          加權版：dp[i] = 前 i 個活動按結束時間排序的最大權重<br>
+          關鍵：二分搜找相容活動
+        </div>
+      </div>
+      <span style="color:var(--text-dim);">→</span>
+    </a>
+  </div>
+</div>
+
+<!-- LeetCode -->
+<div id="leetcode" class="algo-section">
+  <div class="acc-step-label">LeetCode 相關題目</div>
+  <div style="display:flex;flex-direction:column;gap:10px;margin-top:12px;">
+    <a href="https://leetcode.com/problems/climbing-stairs/" target="_blank" class="lc-card">
+      <span class="lc-num">#70</span><span class="lc-title">Climbing Stairs</span>
+      <span class="lc-tag easy">Easy</span>
+      <span class="lc-desc">Fibonacci 的直接應用，最好的 DP 第一題</span>
+    </a>
+    <a href="https://leetcode.com/problems/house-robber/" target="_blank" class="lc-card">
+      <span class="lc-num">#198</span><span class="lc-title">House Robber</span>
+      <span class="lc-tag medium">Medium</span>
+      <span class="lc-desc">相鄰不能取，轉移方程和 Fibonacci 相似</span>
+    </a>
+    <a href="https://leetcode.com/problems/longest-common-subsequence/" target="_blank" class="lc-card">
+      <span class="lc-num">#1143</span><span class="lc-title">Longest Common Subsequence</span>
+      <span class="lc-tag medium">Medium</span>
+      <span class="lc-desc">二維 DP，dp[i][j] 的經典示範</span>
+    </a>
+    <a href="https://leetcode.com/problems/coin-change/" target="_blank" class="lc-card">
+      <span class="lc-num">#322</span><span class="lc-title">Coin Change</span>
+      <span class="lc-tag medium">Medium</span>
+      <span class="lc-desc">無界背包問題，dp[amount] 的填表思路</span>
+    </a>
+    <a href="https://leetcode.com/problems/word-break/" target="_blank" class="lc-card">
+      <span class="lc-num">#139</span><span class="lc-title">Word Break</span>
+      <span class="lc-tag medium">Medium</span>
+      <span class="lc-desc">字串 DP，子問題是字首是否可拆分</span>
+    </a>
+    <a href="https://leetcode.com/problems/edit-distance/" target="_blank" class="lc-card">
+      <span class="lc-num">#72</span><span class="lc-title">Edit Distance</span>
+      <span class="lc-tag hard">Hard</span>
+      <span class="lc-desc">二維 DP 的高峰，三種操作對應三種轉移</span>
+    </a>
+  </div>
+</div>
+
+<!-- 導航 -->
+<div style="display:flex;justify-content:center;gap:12px;margin:32px 0 8px;flex-wrap:wrap;">
+  <a href="coin-row-algo.html" style="display:inline-flex;align-items:center;gap:8px;padding:12px 20px;background:var(--surface);border:1px solid var(--border);border-radius:12px;text-decoration:none;color:var(--text);font-size:13px;transition:all 0.2s;"
+    onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'"
+    onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text)'">🪙 Coin Row 解析 →</a>
+  <a href="knapsack-algo.html" style="display:inline-flex;align-items:center;gap:8px;padding:12px 20px;background:var(--surface);border:1px solid var(--border);border-radius:12px;text-decoration:none;color:var(--text);font-size:13px;transition:all 0.2s;"
+    onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'"
+    onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text)'">🎒 背包解析 →</a>
+</div>
+
+</div>
+
+<style>
+.algo-section{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:24px;margin-bottom:20px;}
+.lc-card{display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--bg);border:1px solid var(--border);border-radius:10px;text-decoration:none;color:var(--text);transition:border-color 0.2s;flex-wrap:wrap;}
+.lc-card:hover{border-color:var(--accent);}
+.lc-num{font-family:'Orbitron',monospace;font-size:11px;color:var(--text-dim);min-width:44px;}
+.lc-title{font-weight:600;font-size:14px;flex:1;}
+.lc-tag{font-size:10px;padding:2px 8px;border-radius:20px;font-weight:700;letter-spacing:0.05em;}
+.lc-tag.easy{background:rgba(0,200,100,0.15);color:#00c864;}
+.lc-tag.medium{background:rgba(255,180,0,0.15);color:#ffb400;}
+.lc-tag.hard{background:rgba(255,60,60,0.15);color:#ff3c3c;}
+.lc-desc{font-size:12px;color:var(--text-dim);width:100%;margin-top:2px;}
+.acc-step-label{font-family:'Orbitron',monospace;font-size:11px;letter-spacing:0.15em;text-transform:uppercase;color:var(--accent);margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid var(--border);}
+</style>
+
+</div>
+</body>
+</html>
