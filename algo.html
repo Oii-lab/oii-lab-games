@@ -15,6 +15,9 @@
   .algo-entry .entry-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;}
   .entry-tag{font-size:9px;padding:2px 7px;border-radius:4px;font-family:'Fira Code',monospace;background:var(--surface2);border:1px solid var(--border);color:var(--text-dim);}
   .section-label{font-family:'Orbitron',monospace;font-size:10px;letter-spacing:0.2em;text-transform:uppercase;color:var(--text-dim);margin:24px 0 10px;padding-bottom:8px;border-bottom:1px solid var(--border);}
+  .algo-entry.featured{border-color:rgba(0,229,255,0.3);background:linear-gradient(135deg,var(--surface),rgba(0,229,255,0.04));}
+  .algo-entry.featured:hover{border-color:var(--accent);}
+  .featured-badge{font-size:9px;padding:2px 7px;border-radius:4px;background:rgba(0,229,255,0.15);border:1px solid var(--accent);color:var(--accent);font-family:'Fira Code',monospace;letter-spacing:0.05em;}
 </style>
 </head>
 <body>
@@ -133,6 +136,20 @@
 
 <div class="section-label" style="margin-top:32px;">動態規劃 · Dynamic Programming</div>
 <div class="algo-index-grid">
+  <a href="games/dp-algo.html" class="algo-entry featured">
+    <span class="entry-icon">⚡</span>
+    <div style="flex:1">
+      <div class="entry-title" style="display:flex;align-items:center;gap:8px;">DP 入門 <span class="featured-badge">先看這裡</span></div>
+      <div style="font-size:12px;color:var(--text-dim);margin-top:2px;">重疊子問題是什麼 · Memoization vs Tabulation · 兩個核心條件</div>
+      <div class="entry-tags">
+        <span class="entry-tag">Overlapping Subproblems</span>
+        <span class="entry-tag">Optimal Substructure</span>
+        <span class="entry-tag">Memoization</span>
+        <span class="entry-tag">Tabulation</span>
+      </div>
+    </div>
+    <span style="color:var(--text-dim);font-size:18px;">→</span>
+  </a>
   <a href="games/coin-row-algo.html" class="algo-entry">
     <span class="entry-icon"><img src="assets/icons/CoinRow.png" style="width:60px;height:60px;object-fit:contain;"></span>
     <div style="flex:1">
