@@ -25,7 +25,8 @@
   .viz-tab.active{background:var(--accent);color:#000;}
 
   /* Recursive tree */
-  #tree-canvas{width:100%;border-radius:12px;background:var(--bg);border:1px solid var(--border);}
+  .tree-scroll-wrap{overflow:auto;border-radius:12px;background:var(--bg);border:1px solid var(--border);}
+  #tree-canvas{display:block;}
 
   /* DP Table */
   .dp-table-wrap{overflow-x:auto;margin:12px 0;}
@@ -138,7 +139,9 @@
     <div style="font-size:13px;color:var(--text-dim);margin-bottom:12px;">
       紅色節點 = 重複計算的子問題。N 越大，重複越誇張。
     </div>
-    <canvas id="tree-canvas" height="320"></canvas>
+    <div class="tree-scroll-wrap">
+      <canvas id="tree-canvas" height="320"></canvas>
+    </div>
     <div class="step-info" id="tree-info">點「播放」開始動畫，觀察哪些節點被重複計算。</div>
     <div class="speed-row">
       <span>速度</span>
@@ -297,10 +300,19 @@ function treePlay() {
   if (treeTimer) { clearInterval(treeTimer); treeTimer = null; document.getElementById('btn-tree-play').textContent = '▶ 播放'; return; }
 
   const canvas = document.getElementById('tree-canvas');
-  canvas.width = canvas.offsetWidth;
+  // Calculate required canvas size based on tree structure
+  const nodeRadius = 18;
+  const levelHeight = 70;
+  const minNodeSpacing = 44;
+  // Estimate width needed: 2^(N/2) nodes at bottom level
+  const bottomNodes = Math.pow(2, N);
+  const requiredWidth = Math.max(canvas.parentElement.offsetWidth, bottomNodes * minNodeSpacing);
+  const requiredHeight = (N + 1) * levelHeight + nodeRadius * 2 + 20;
+  canvas.width = requiredWidth;
+  canvas.height = requiredHeight;
 
   treeNodes = []; treeEdges = []; treeOrder = []; treeStep = 0;
-  buildTree(N, canvas.width / 2, 40, 0, 0, canvas.width, null);
+  buildTree(N, canvas.width / 2, nodeRadius + 10, 0, 0, canvas.width, null);
   buildTreeOrder(0);
 
   // Mark duplicates
