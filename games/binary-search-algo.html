@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="../favicon.png">
+<title>Binary Search 演算法解析 — 演算法互動遊戲集</title>
+<link rel="stylesheet" href="../shared/style.css">
+</head>
+<body>
+<div class="container">
+
+<header>
+  <div class="title">🧠 Binary Search 解析</div>
+  <div class="subtitle">邊界條件為什麼難 · O(log n) 證明 · 變形題模板</div>
+</header>
+
+<div style="text-align:center;margin-bottom:20px;display:flex;justify-content:center;gap:12px;flex-wrap:wrap;">
+  <a href="binary-search.html" style="font-size:12px;color:var(--text-dim);text-decoration:none;letter-spacing:0.1em;text-transform:uppercase;padding:8px 14px;border:1px solid var(--border);border-radius:8px;transition:all 0.2s;display:inline-block;"
+    onmouseover="this.style.color='var(--accent)';this.style.borderColor='var(--accent)'"
+    onmouseout="this.style.color='var(--text-dim)';this.style.borderColor='var(--border)'">🔍 回視覺化</a>
+  <a href="../index.html" style="font-size:12px;color:var(--text-dim);text-decoration:none;letter-spacing:0.1em;text-transform:uppercase;padding:8px 14px;border:1px solid var(--border);border-radius:8px;transition:all 0.2s;display:inline-block;"
+    onmouseover="this.style.color='var(--accent)';this.style.borderColor='var(--accent)'"
+    onmouseout="this.style.color='var(--text-dim)';this.style.borderColor='var(--border)'">← 返回選單</a>
+</div>
+
+<!-- 目錄 -->
+<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:28px;">
+  <div style="font-size:11px;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-dim);margin-bottom:12px;">本頁內容</div>
+  <div style="display:flex;flex-direction:column;gap:8px;">
+    <a href="#step1" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Step 1 · 為什麼必須排序</a>
+    <a href="#step2" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Step 2 · 標準模板：左閉右閉</a>
+    <a href="#step3" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Step 3 · 邊界條件：最容易出 bug 的地方</a>
+    <a href="#step4" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Step 4 · O(log n) 怎麼來的</a>
+    <a href="#step5" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Step 5 · 變形題：找左邊界、找右邊界</a>
+    <a href="#leetcode" style="color:var(--text);text-decoration:none;font-size:14px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">LeetCode 相關題目</a>
+  </div>
+</div>
+
+<!-- Step 1 -->
+<div id="step1" class="algo-section">
+  <div class="acc-step-label">Step 1 · 為什麼必須排序</div>
+  <div class="acc-p">
+    Binary Search 的核心假設：看到 <code>arr[mid]</code> 之後，能<strong>排除一半的搜尋範圍</strong>。<br><br>
+    這只在排序陣列中成立：
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:16px 0;">
+    <div style="background:var(--bg);border:1px solid var(--accent);border-radius:10px;padding:16px;font-size:13px;">
+      <div style="color:var(--accent);font-family:'Orbitron',monospace;font-size:10px;letter-spacing:0.1em;margin-bottom:8px;">已排序</div>
+      arr[mid] &lt; target<br>
+      → target <strong>一定在右半</strong><br>
+      → 可以安全砍掉左半 ✅
+    </div>
+    <div style="background:var(--bg);border:1px solid var(--accent2);border-radius:10px;padding:16px;font-size:13px;">
+      <div style="color:var(--accent2);font-family:'Orbitron',monospace;font-size:10px;letter-spacing:0.1em;margin-bottom:8px;">未排序</div>
+      arr[mid] &lt; target<br>
+      → target 可能在任何地方<br>
+      → 不能砍掉任何一半 ❌
+    </div>
+  </div>
+  <div class="acc-insight">
+    <span class="ins-label">💡 關鍵洞察</span>
+    排序讓每次比較都有「方向性」。沒有方向性，就只能線性掃描。<br>
+    這也是為什麼排序 O(n log n) + 二元搜尋 O(log n) 比線性搜尋 O(n) 更值得：一次排序，多次搜尋。
+  </div>
+</div>
+
+<!-- Step 2 -->
+<div id="step2" class="algo-section">
+  <div class="acc-step-label">Step 2 · 標準模板：左閉右閉 [lo, hi]</div>
+  <div class="acc-p">
+    Binary Search 有幾種寫法，最容易理解的是<strong>左閉右閉</strong>區間：<code>[lo, hi]</code> 代表搜尋範圍包含兩端。
+  </div>
+  <div class="acc-code">
+    <span class="lang-tag">Python</span>
+    <pre><span class="kw">def</span> <span class="fn">binary_search</span>(arr: list, target: int) -> int:
+    <span class="cmt">"""回傳 target 的 index，找不到回傳 -1"""</span>
+    lo, hi = <span class="num">0</span>, <span class="fn">len</span>(arr) - <span class="num">1</span>   <span class="cmt"># [lo, hi] 都包含</span>
+
+    <span class="kw">while</span> lo <= hi:              <span class="cmt"># 等號：lo==hi 時還有一個元素要檢查</span>
+        mid = (lo + hi) // <span class="num">2</span>
+
+        <span class="kw">if</span> arr[mid] == target:
+            <span class="kw">return</span> mid           <span class="cmt"># 找到！</span>
+        <span class="kw">elif</span> arr[mid] < target:
+            lo = mid + <span class="num">1</span>          <span class="cmt"># 往右找（mid 已確認不是，所以 +1）</span>
+        <span class="kw">else</span>:
+            hi = mid - <span class="num">1</span>          <span class="cmt"># 往左找（mid 已確認不是，所以 -1）</span>
+
+    <span class="kw">return</span> -<span class="num">1</span>                   <span class="cmt"># lo > hi，搜尋範圍空了，找不到</span></pre>
+  </div>
+  <div class="acc-p">每一行的選擇都有原因：</div>
+  <div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:16px;margin:12px 0;font-size:13px;line-height:2;">
+    <code style="color:var(--accent);">hi = len(arr) - 1</code> → 右端是最後一個合法 index，區間 [0, n-1]<br>
+    <code style="color:var(--accent);">while lo &lt;= hi</code> → lo == hi 還有一個元素，不能漏掉<br>
+    <code style="color:var(--accent);">lo = mid + 1</code> → arr[mid] 已確認不是 target，不用再看<br>
+    <code style="color:var(--accent);">hi = mid - 1</code> → 同理，arr[mid] 已排除
+  </div>
+</div>
+
+<!-- Step 3 -->
+<div id="step3" class="algo-section">
+  <div class="acc-step-label">Step 3 · 邊界條件：最容易出 bug 的地方</div>
+  <div class="acc-p">
+    Binary Search 概念簡單，但寫錯的人非常多。常見錯誤：
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:14px;margin:16px 0;">
+    <div style="background:var(--bg);border:1px solid var(--accent2);border-radius:10px;padding:16px;">
+      <div style="color:var(--accent2);font-family:'Orbitron',monospace;font-size:10px;letter-spacing:0.1em;margin-bottom:10px;">❌ 錯誤 1 · while lo &lt; hi</div>
+      <div style="font-size:13px;line-height:1.8;">
+        用 <code>&lt;</code> 而非 <code>&lt;=</code>：當 lo == hi 時提早結束，可能漏掉最後一個元素。<br>
+        例：陣列只剩 [7]，lo=hi=3，直接跳出，回傳 -1，但 7 其實就在那裡。
+      </div>
+    </div>
+    <div style="background:var(--bg);border:1px solid var(--accent2);border-radius:10px;padding:16px;">
+      <div style="color:var(--accent2);font-family:'Orbitron',monospace;font-size:10px;letter-spacing:0.1em;margin-bottom:10px;">❌ 錯誤 2 · lo = mid 或 hi = mid</div>
+      <div style="font-size:13px;line-height:1.8;">
+        不寫 <code>mid ± 1</code>：arr[mid] 已確認不是 target 還把它留在範圍內，可能無限迴圈。<br>
+        例：lo=3, hi=4, mid=3。arr[3] 不是 target，若 lo=mid=3，下次還是 mid=3，永遠跑不完。
+      </div>
+    </div>
+    <div style="background:var(--bg);border:1px solid var(--accent2);border-radius:10px;padding:16px;">
+      <div style="color:var(--accent2);font-family:'Orbitron',monospace;font-size:10px;letter-spacing:0.1em;margin-bottom:10px;">❌ 錯誤 3 · mid = (lo + hi) / 2 整數溢位（C/Java）</div>
+      <div style="font-size:13px;line-height:1.8;">
+        Python 整數不溢位，但 C/Java 中 lo+hi 可能超過 int 上限。<br>
+        安全寫法：<code>mid = lo + (hi - lo) // 2</code>
+      </div>
+    </div>
+  </div>
+
+  <div class="acc-insight">
+    <span class="ins-label">✅ 記憶口訣</span>
+    「hi 初始化到最後一個合法 index（n-1）→ 用 &lt;= → 更新時 ±1」<br>
+    三件事配套，缺一就出 bug。
+  </div>
+</div>
+
+<!-- Step 4 -->
+<div id="step4" class="algo-section">
+  <div class="acc-step-label">Step 4 · O(log n) 怎麼來的</div>
+  <div class="acc-p">
+    每次迴圈，搜尋範圍從 n 縮小到 n/2：
+  </div>
+  <div style="overflow-x:auto;margin:16px 0;">
+    <table style="border-collapse:collapse;font-size:13px;min-width:100%;">
+      <thead>
+        <tr style="border-bottom:1px solid var(--border);">
+          <th style="padding:10px;color:var(--text-dim);font-weight:500;text-align:left;">步數</th>
+          <th style="padding:10px;color:var(--text-dim);font-weight:500;">剩餘搜尋範圍</th>
+          <th style="padding:10px;color:var(--text-dim);font-weight:500;">n=1024 時</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:10px;">開始</td><td style="padding:10px;text-align:center;">n</td><td style="padding:10px;text-align:center;">1024</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:10px;">第 1 步</td><td style="padding:10px;text-align:center;">n/2</td><td style="padding:10px;text-align:center;">512</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:10px;">第 2 步</td><td style="padding:10px;text-align:center;">n/4</td><td style="padding:10px;text-align:center;">256</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:10px;">第 k 步</td><td style="padding:10px;text-align:center;">n/2ᵏ</td><td style="padding:10px;text-align:center;">1024/2ᵏ</td>
+        </tr>
+        <tr>
+          <td style="padding:10px;color:var(--accent);font-weight:700;">最多 10 步</td>
+          <td style="padding:10px;text-align:center;color:var(--accent);">1</td>
+          <td style="padding:10px;text-align:center;color:var(--accent);">1</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="acc-p">
+    當範圍縮到 1 時停止：n/2ᵏ = 1 → 2ᵏ = n → <strong>k = log₂n</strong><br><br>
+    n=1,000,000,000（10億）時，Binary Search 最多只需 <strong>30 步</strong>。
+  </div>
+  <div class="acc-insight">
+    <span class="ins-label">📊 對比</span>
+    線性搜尋：最壞 n 步。n=10 億 → 10 億步。<br>
+    Binary Search：最壞 log₂n 步。n=10 億 → 30 步。<br>
+    差距是 10 億 / 30 ≈ <strong>3300 萬倍</strong>。
+  </div>
+</div>
+
+<!-- Step 5 -->
+<div id="step5" class="algo-section">
+  <div class="acc-step-label">Step 5 · 變形題：找左邊界、找右邊界</div>
+  <div class="acc-p">
+    陣列中可能有重複元素，題目可能要求找<strong>第一個</strong>或<strong>最後一個</strong>出現的位置。
+  </div>
+  <div class="acc-code">
+    <span class="lang-tag">Python</span>
+    <pre><span class="cmt"># 找左邊界：第一個 >= target 的位置（lower_bound）</span>
+<span class="kw">def</span> <span class="fn">lower_bound</span>(arr, target):
+    lo, hi = <span class="num">0</span>, <span class="fn">len</span>(arr)   <span class="cmt"># hi = n（左閉右開 [lo, hi)）</span>
+    <span class="kw">while</span> lo < hi:           <span class="cmt"># 注意：不含等號</span>
+        mid = (lo + hi) // <span class="num">2</span>
+        <span class="kw">if</span> arr[mid] < target:
+            lo = mid + <span class="num">1</span>
+        <span class="kw">else</span>:
+            hi = mid            <span class="cmt"># 不是 mid-1，因為 mid 可能就是答案</span>
+    <span class="kw">return</span> lo               <span class="cmt"># lo 就是第一個 >= target 的位置</span>
+
+<span class="cmt"># 找右邊界：最後一個 <= target 的位置（upper_bound - 1）</span>
+<span class="kw">def</span> <span class="fn">upper_bound</span>(arr, target):
+    lo, hi = <span class="num">0</span>, <span class="fn">len</span>(arr)
+    <span class="kw">while</span> lo < hi:
+        mid = (lo + hi) // <span class="num">2</span>
+        <span class="kw">if</span> arr[mid] <= target:
+            lo = mid + <span class="num">1</span>
+        <span class="kw">else</span>:
+            hi = mid
+    <span class="kw">return</span> lo - <span class="num">1</span>           <span class="cmt"># 最後一個 <= target 的 index</span></pre>
+  </div>
+  <div class="acc-p" style="margin-top:16px;">
+    <strong>「Answer is Binary Search」</strong><br>
+    更強的應用：當答案具有單調性（答案越大，條件越容易/越難滿足），就能對答案本身做 Binary Search。<br><br>
+    例：「找最小的速度，使得 k 小時內能讀完所有書」<br>
+    → 速度越大越容易完成 → 對速度做 Binary Search → O(n log(max_speed))
+  </div>
+  <div class="acc-insight">
+    <span class="ins-label">🔑 判斷能否 Binary Search</span>
+    能對答案做 Binary Search 的條件：存在一個臨界值，使得「小於臨界值的答案都不行，大於等於臨界值的都行」（或反過來）。這種單調性就是 Binary Search 的切入點。
+  </div>
+</div>
+
+<!-- LeetCode -->
+<div id="leetcode" class="algo-section">
+  <div class="acc-step-label">LeetCode 相關題目</div>
+  <div style="display:flex;flex-direction:column;gap:10px;margin-top:12px;">
+    <a href="https://leetcode.com/problems/binary-search/" target="_blank" class="lc-card">
+      <span class="lc-num">#704</span><span class="lc-title">Binary Search</span>
+      <span class="lc-tag easy">Easy</span>
+      <span class="lc-desc">最標準的模板題，必寫</span>
+    </a>
+    <a href="https://leetcode.com/problems/search-insert-position/" target="_blank" class="lc-card">
+      <span class="lc-num">#35</span><span class="lc-title">Search Insert Position</span>
+      <span class="lc-tag easy">Easy</span>
+      <span class="lc-desc">lower_bound 的直接應用</span>
+    </a>
+    <a href="https://leetcode.com/problems/find-first-and-last-position-of-element-in-sorted-array/" target="_blank" class="lc-card">
+      <span class="lc-num">#34</span><span class="lc-title">Find First and Last Position</span>
+      <span class="lc-tag medium">Medium</span>
+      <span class="lc-desc">同時用 lower_bound 和 upper_bound</span>
+    </a>
+    <a href="https://leetcode.com/problems/search-in-rotated-sorted-array/" target="_blank" class="lc-card">
+      <span class="lc-num">#33</span><span class="lc-title">Search in Rotated Sorted Array</span>
+      <span class="lc-tag medium">Medium</span>
+      <span class="lc-desc">排序陣列被旋轉，Binary Search 變形</span>
+    </a>
+    <a href="https://leetcode.com/problems/koko-eating-bananas/" target="_blank" class="lc-card">
+      <span class="lc-num">#875</span><span class="lc-title">Koko Eating Bananas</span>
+      <span class="lc-tag medium">Medium</span>
+      <span class="lc-desc">對答案做 Binary Search 的入門題</span>
+    </a>
+    <a href="https://leetcode.com/problems/median-of-two-sorted-arrays/" target="_blank" class="lc-card">
+      <span class="lc-num">#4</span><span class="lc-title">Median of Two Sorted Arrays</span>
+      <span class="lc-tag hard">Hard</span>
+      <span class="lc-desc">Binary Search 的頂峰，分割線思維</span>
+    </a>
+  </div>
+</div>
+
+<!-- 導航 -->
+<div style="display:flex;justify-content:center;gap:12px;margin:32px 0 8px;flex-wrap:wrap;">
+  <a href="sorting-algo.html" style="display:inline-flex;align-items:center;gap:8px;padding:12px 20px;background:var(--surface);border:1px solid var(--border);border-radius:12px;text-decoration:none;color:var(--text);font-size:13px;transition:all 0.2s;"
+    onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'"
+    onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text)'">← 排序解析</a>
+  <a href="../index.html" style="display:inline-flex;align-items:center;gap:8px;padding:12px 20px;background:var(--surface);border:1px solid var(--border);border-radius:12px;text-decoration:none;color:var(--text);font-size:13px;transition:all 0.2s;"
+    onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'"
+    onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text)'">回選單 →</a>
+</div>
+
+</div>
+
+<style>
+.algo-section{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:24px;margin-bottom:20px;}
+.lc-card{display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--bg);border:1px solid var(--border);border-radius:10px;text-decoration:none;color:var(--text);transition:border-color 0.2s;flex-wrap:wrap;}
+.lc-card:hover{border-color:var(--accent);}
+.lc-num{font-family:'Orbitron',monospace;font-size:11px;color:var(--text-dim);min-width:44px;}
+.lc-title{font-weight:600;font-size:14px;flex:1;}
+.lc-tag{font-size:10px;padding:2px 8px;border-radius:20px;font-weight:700;letter-spacing:0.05em;}
+.lc-tag.easy{background:rgba(0,200,100,0.15);color:#00c864;}
+.lc-tag.medium{background:rgba(255,180,0,0.15);color:#ffb400;}
+.lc-tag.hard{background:rgba(255,60,60,0.15);color:#ff3c3c;}
+.lc-desc{font-size:12px;color:var(--text-dim);width:100%;margin-top:2px;}
+.acc-step-label{font-family:'Orbitron',monospace;font-size:11px;letter-spacing:0.15em;text-transform:uppercase;color:var(--accent);margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid var(--border);}
+</style>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="../favicon.png">
+<title>Binary Search — 演算法互動遊戲集</title>
+<link rel="stylesheet" href="../shared/style.css">
+<style>
+  /* Array display */
+  .array-wrap{overflow-x:auto;padding:12px 0;}
+  .array-row{display:flex;gap:6px;align-items:flex-end;min-width:max-content;padding:4px 2px;}
+  .arr-cell{display:flex;flex-direction:column;align-items:center;gap:4px;}
+  .arr-idx{font-size:9px;color:var(--text-dim);font-family:'Fira Code',monospace;}
+  .arr-box{
+    width:44px;height:44px;border-radius:8px;display:flex;align-items:center;justify-content:center;
+    font-family:'Orbitron',monospace;font-weight:900;font-size:14px;
+    border:2px solid var(--border);background:var(--surface);color:var(--text);
+    transition:all 0.35s;
+  }
+  .arr-box.eliminated{opacity:0.18;border-color:transparent;}
+  .arr-box.mid{background:rgba(0,229,255,0.2);border-color:var(--accent);color:var(--accent);box-shadow:0 0 16px rgba(0,229,255,0.3);transform:scale(1.12);}
+  .arr-box.found{background:rgba(0,200,100,0.2);border-color:#00c864;color:#00c864;box-shadow:0 0 16px rgba(0,200,100,0.4);transform:scale(1.18);}
+  .arr-box.range{background:var(--surface2);border-color:rgba(0,229,255,0.25);}
+  .arr-box.linear-current{background:rgba(255,180,0,0.2);border-color:var(--accent4);color:var(--accent4);transform:scale(1.1);}
+  .arr-box.linear-found{background:rgba(0,200,100,0.2);border-color:#00c864;color:#00c864;transform:scale(1.15);}
+  .arr-box.linear-done{opacity:0.22;}
+
+  /* Range bracket */
+  .arr-bracket{font-size:10px;color:var(--accent);font-family:'Fira Code',monospace;text-align:center;min-height:14px;}
+
+  /* Pointers row */
+  .pointer-row{display:flex;gap:6px;min-width:max-content;padding:0 2px;}
+  .ptr-cell{width:44px;text-align:center;font-size:9px;font-family:'Orbitron',monospace;font-weight:700;min-height:16px;}
+  .ptr-cell.ptr-lo{color:var(--accent);}
+  .ptr-cell.ptr-hi{color:var(--accent2);}
+  .ptr-cell.ptr-mid{color:var(--accent4);}
+
+  /* Step info */
+  .step-info{background:var(--surface);border-left:3px solid var(--accent);border-radius:0 8px 8px 0;padding:12px 16px;margin:12px 0;font-size:13px;color:var(--text);min-height:52px;line-height:1.7;}
+
+  /* Compare panel */
+  .compare-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:16px 0;}
+  .compare-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;}
+  .compare-card.bs{border-color:rgba(0,229,255,0.3);}
+  .compare-card.lin{border-color:rgba(255,180,0,0.3);}
+  .compare-title{font-family:'Orbitron',monospace;font-size:10px;letter-spacing:0.12em;margin-bottom:10px;color:var(--text-dim);}
+  .compare-title.bs{color:var(--accent);}
+  .compare-title.lin{color:var(--accent4);}
+  .compare-steps{font-family:'Orbitron',monospace;font-size:28px;font-weight:900;}
+  .compare-steps.bs{color:var(--accent);}
+  .compare-steps.lin{color:var(--accent4);}
+  .compare-label{font-size:11px;color:var(--text-dim);margin-top:4px;}
+
+  /* Input area */
+  .search-input-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:14px 0;}
+  .search-input{background:var(--surface);border:1px solid var(--border);color:var(--text);
+    padding:10px 14px;border-radius:8px;font-size:18px;font-family:'Orbitron',monospace;
+    font-weight:700;width:100px;text-align:center;transition:border-color 0.2s;}
+  .search-input:focus{outline:none;border-color:var(--accent);}
+
+  /* Speed */
+  .speed-row{display:flex;align-items:center;gap:10px;margin:10px 0;font-size:13px;color:var(--text-dim);}
+  .speed-row input[type=range]{flex:1;accent-color:var(--accent);}
+
+  .control-row{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0;}
+
+  /* Log */
+  .bs-log{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:12px 16px;
+    font-size:12px;font-family:'Fira Code',monospace;line-height:2;max-height:160px;overflow-y:auto;margin:12px 0;}
+  .log-bs{color:var(--accent);}
+  .log-lin{color:var(--accent4);}
+  .log-found{color:#00c864;font-weight:700;}
+  .log-miss{color:var(--accent2);}
+
+  @media(max-width:480px){
+    .arr-box{width:36px;height:36px;font-size:12px;}
+    .ptr-cell{width:36px;}
+    .compare-grid{grid-template-columns:1fr;}
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+<header>
+  <div class="title">🔍 Binary Search</div>
+  <div class="subtitle">二元搜尋 · O(log n) vs O(n) · 邊界條件</div>
+</header>
+
+<div style="text-align:center;margin-bottom:20px">
+  <a href="../index.html" style="font-size:12px;color:var(--text-dim);text-decoration:none;letter-spacing:0.1em;text-transform:uppercase;padding:8px 14px;border:1px solid var(--border);border-radius:8px;transition:all 0.2s;display:inline-block;"
+    onmouseover="this.style.color='var(--accent)';this.style.borderColor='var(--accent)'"
+    onmouseout="this.style.color='var(--text-dim)';this.style.borderColor='var(--border)'">← 返回選單</a>
+</div>
+
+<div class="rules-block">
+  <div class="rules-title">💡 核心概念</div>
+  <div class="rules-body">
+    <div class="rules-item move">
+      <div class="ri-label">前提</div>
+      <div class="ri-text">陣列必須<strong>已排序</strong>，才能每次砍掉一半搜尋範圍</div>
+    </div>
+    <div class="rules-item win">
+      <div class="ri-label">做法</div>
+      <div class="ri-text">每步看<strong>中間值</strong>：等於目標就找到；太小就往右找；太大就往左找</div>
+    </div>
+    <div class="rules-item tip">
+      <div class="ri-label">效率</div>
+      <div class="ri-text">n=1024 時，Binary Search 最多 10 步；線性搜尋最多 <strong>1024 步</strong></div>
+    </div>
+  </div>
+</div>
+
+<!-- 設定 -->
+<div class="panel active" id="panel-main">
+  <div class="panel-title">🔍 搜尋設定</div>
+
+  <!-- Array size -->
+  <div style="margin-bottom:14px;">
+    <label style="font-size:13px;color:var(--text-dim);">陣列大小</label>
+    <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
+      <button class="btn btn-sm size-btn active" onclick="setSize(16)" id="sz-16">16</button>
+      <button class="btn btn-sm size-btn" onclick="setSize(24)" id="sz-24">24</button>
+      <button class="btn btn-sm size-btn" onclick="setSize(32)" id="sz-32">32</button>
+    </div>
+  </div>
+
+  <!-- Target input -->
+  <div class="search-input-row">
+    <label style="font-size:13px;color:var(--text-dim);">搜尋目標</label>
+    <input class="search-input" id="target-input" type="number" value="42" min="1" max="200">
+    <button class="btn btn-outline btn-sm" onclick="randomTarget()">🎲 隨機</button>
+  </div>
+
+  <!-- Array display -->
+  <div style="font-size:11px;color:var(--text-dim);margin-bottom:6px;">已排序陣列：</div>
+  <div class="array-wrap">
+    <div class="pointer-row" id="ptr-row-bs"></div>
+    <div class="array-row" id="array-row"></div>
+    <div class="pointer-row" id="ptr-row-label" style="margin-top:4px;"></div>
+  </div>
+
+  <!-- Step info -->
+  <div class="step-info" id="step-info">設定目標值後，點「逐步搜尋」觀察 Binary Search 如何每步砍半。</div>
+
+  <!-- Steps counter -->
+  <div class="compare-grid">
+    <div class="compare-card bs">
+      <div class="compare-title bs">🔵 Binary Search</div>
+      <div class="compare-steps bs" id="bs-steps">0</div>
+      <div class="compare-label">步數 / 最多 <span id="bs-max">?</span> 步</div>
+    </div>
+    <div class="compare-card lin">
+      <div class="compare-title lin">🟡 線性搜尋</div>
+      <div class="compare-steps lin" id="lin-steps">0</div>
+      <div class="compare-label">步數 / 最多 <span id="lin-max">?</span> 步</div>
+    </div>
+  </div>
+
+  <!-- Speed -->
+  <div class="speed-row">
+    <span>速度</span>
+    <input type="range" id="anim-speed" min="1" max="5" value="3">
+    <span>快</span>
+  </div>
+
+  <!-- Controls -->
+  <div class="control-row">
+    <button class="btn btn-primary" id="btn-play" onclick="startSearch()">▶ 逐步搜尋</button>
+    <button class="btn btn-outline" onclick="resetSearch()">↺ 重置</button>
+    <button class="btn btn-sm" onclick="newArray()">🔀 新陣列</button>
+  </div>
+
+  <!-- Log -->
+  <div class="bs-log" id="bs-log"></div>
+</div>
+
+<!-- 演算法解析連結 -->
+<div style="text-align:center;margin:24px 0 8px;">
+  <a href="binary-search-algo.html"
+    style="display:inline-flex;align-items:center;gap:10px;padding:14px 28px;
+      background:var(--surface);border:1px solid var(--border);border-radius:12px;
+      text-decoration:none;color:var(--text);font-size:14px;transition:all 0.2s;letter-spacing:0.03em;"
+    onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'"
+    onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text)'">
+    🧠 <strong>看演算法解析</strong> &nbsp;— 邊界條件 · 變形題 · O(log n) 證明
+  </a>
+</div>
+
+</div>
+
+<script src="../shared/ui.js"></script>
+<script>
+// ─── State ───────────────────────────────────────────────
+let arr = [];
+let arrSize = 16;
+let target = 42;
+let animTimer = null;
+let bsSteps = 0;
+let linSteps = 0;
+
+// BS state
+let lo = 0, hi = 0, mid = -1;
+let bsDone = false, bsFound = false;
+
+// Linear state
+let linIdx = 0;
+let linDone = false, linFound = false;
+
+let phase = 'idle'; // idle | running | done
+
+// ─── Array generation ─────────────────────────────────────
+function genArray(n) {
+  const set = new Set();
+  while (set.size < n) set.add(Math.floor(Math.random() * 198) + 1);
+  return Array.from(set).sort((a, b) => a - b);
+}
+
+function setSize(n) {
+  arrSize = n;
+  document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(`sz-${n}`).classList.add('active');
+  newArray();
+}
+
+function newArray() {
+  arr = genArray(arrSize);
+  resetSearch();
+}
+
+function randomTarget() {
+  // 70% chance to pick from array, 30% chance for missing value
+  if (Math.random() < 0.7) {
+    target = arr[Math.floor(Math.random() * arr.length)];
+  } else {
+    target = Math.floor(Math.random() * 198) + 1;
+  }
+  document.getElementById('target-input').value = target;
+  resetSearch();
+}
+
+// ─── Render ──────────────────────────────────────────────
+function renderArray() {
+  const rowEl = document.getElementById('array-row');
+  const ptrBs = document.getElementById('ptr-row-bs');
+  const ptrLabel = document.getElementById('ptr-row-label');
+
+  rowEl.innerHTML = '';
+  ptrBs.innerHTML = '';
+  ptrLabel.innerHTML = '';
+
+  for (let i = 0; i < arr.length; i++) {
+    // Pointer row (top)
+    const pCell = document.createElement('div');
+    pCell.className = 'ptr-cell';
+    if (!bsDone) {
+      if (i === lo && i === hi) { pCell.textContent = 'L=R'; pCell.className += ' ptr-lo'; }
+      else if (i === lo) { pCell.textContent = 'L'; pCell.className += ' ptr-lo'; }
+      else if (i === hi) { pCell.textContent = 'R'; pCell.className += ' ptr-hi'; }
+      else if (i === mid && mid >= 0) { pCell.textContent = 'M'; pCell.className += ' ptr-mid'; }
+    }
+    ptrBs.appendChild(pCell);
+
+    // Box
+    const cell = document.createElement('div');
+    cell.className = 'arr-cell';
+
+    const idxEl = document.createElement('div');
+    idxEl.className = 'arr-idx';
+    idxEl.textContent = i;
+
+    const box = document.createElement('div');
+    box.className = 'arr-box';
+    box.textContent = arr[i];
+
+    if (phase !== 'idle') {
+      if (bsFound && i === mid) {
+        box.className = 'arr-box found';
+      } else if (!bsDone && i >= lo && i <= hi) {
+        if (i === mid && mid >= 0) box.className = 'arr-box mid';
+        else box.className = 'arr-box range';
+      } else if (!bsDone) {
+        box.className = 'arr-box eliminated';
+      } else if (bsDone && !bsFound) {
+        box.className = 'arr-box eliminated';
+      }
+
+      // Linear overlay (show on found)
+      if (linFound && i === linIdx - 1) box.className = 'arr-box linear-found';
+    }
+
+    cell.appendChild(idxEl);
+    cell.appendChild(box);
+    rowEl.appendChild(cell);
+
+    // Label row (bottom)
+    const lCell = document.createElement('div');
+    lCell.className = 'ptr-cell';
+    ptrLabel.appendChild(lCell);
+  }
+
+  // Update counters
+  document.getElementById('bs-steps').textContent = bsSteps;
+  document.getElementById('lin-steps').textContent = linSteps;
+  document.getElementById('bs-max').textContent = Math.ceil(Math.log2(arr.length + 1));
+  document.getElementById('lin-max').textContent = arr.length;
+}
+
+// ─── Reset ────────────────────────────────────────────────
+function resetSearch() {
+  if (animTimer) { clearInterval(animTimer); animTimer = null; }
+  target = parseInt(document.getElementById('target-input').value) || 42;
+  lo = 0; hi = arr.length - 1; mid = -1;
+  bsDone = false; bsFound = false; bsSteps = 0;
+  linIdx = 0; linDone = false; linFound = false; linSteps = 0;
+  phase = 'idle';
+  document.getElementById('step-info').textContent = '設定目標值後，點「逐步搜尋」觀察 Binary Search 如何每步砍半。';
+  document.getElementById('bs-log').innerHTML = '';
+  document.getElementById('btn-play').textContent = '▶ 逐步搜尋';
+  document.getElementById('btn-play').disabled = false;
+  renderArray();
+}
+
+function log(cls, msg) {
+  const el = document.getElementById('bs-log');
+  el.innerHTML += `<div class="${cls}">${msg}</div>`;
+  el.scrollTop = el.scrollHeight;
+}
+
+// ─── Search ───────────────────────────────────────────────
+function startSearch() {
+  if (animTimer) { clearInterval(animTimer); animTimer = null; document.getElementById('btn-play').textContent = '▶ 逐步搜尋'; return; }
+
+  target = parseInt(document.getElementById('target-input').value) || 42;
+  if (phase === 'done') { resetSearch(); return; }
+  if (phase === 'idle') {
+    phase = 'running';
+    log('log-bs', `目標：${target}，陣列大小：${arr.length}`);
+    log('log-bs', `Binary Search 開始 → lo=0, hi=${arr.length - 1}`);
+    log('log-lin', `線性搜尋開始 → 從 index 0 逐一比較`);
+  }
+
+  document.getElementById('btn-play').textContent = '⏸ 暫停';
+
+  const speedEl = document.getElementById('anim-speed');
+  function getDelay() { return Math.max(200, 900 - (parseInt(speedEl.value) - 1) * 175); }
+
+  animTimer = setInterval(() => {
+    let bsThisTick = false;
+    let linThisTick = false;
+
+    // Binary Search step
+    if (!bsDone) {
+      mid = Math.floor((lo + hi) / 2);
+      bsSteps++;
+      bsThisTick = true;
+
+      if (arr[mid] === target) {
+        bsFound = true; bsDone = true;
+        log('log-found', `✅ BS 第 ${bsSteps} 步：arr[${mid}]=${arr[mid]} = 目標！找到了。`);
+        document.getElementById('step-info').textContent = `✅ Binary Search 在第 ${bsSteps} 步找到 ${target}（index ${mid}）！`;
+      } else if (arr[mid] < target) {
+        log('log-bs', `BS 第 ${bsSteps} 步：arr[${mid}]=${arr[mid]} < ${target}，往右找 → lo=${mid + 1}`);
+        lo = mid + 1;
+        document.getElementById('step-info').textContent = `arr[${mid}]=${arr[mid]} < ${target}，目標在右半，lo 移到 ${mid + 1}`;
+      } else {
+        log('log-bs', `BS 第 ${bsSteps} 步：arr[${mid}]=${arr[mid]} > ${target}，往左找 → hi=${mid - 1}`);
+        hi = mid - 1;
+        document.getElementById('step-info').textContent = `arr[${mid}]=${arr[mid]} > ${target}，目標在左半，hi 移到 ${mid - 1}`;
+      }
+
+      if (!bsDone && lo > hi) {
+        bsDone = true;
+        log('log-miss', `❌ BS：lo(${lo}) > hi(${hi})，搜尋範圍為空，${target} 不在陣列中。`);
+        document.getElementById('step-info').textContent = `❌ lo > hi，搜尋範圍已空，${target} 不在陣列中。`;
+      }
+    }
+
+    // Linear Search step (同時進行，直到和BS步數追平或找到)
+    if (!linDone && linSteps <= bsSteps) {
+      if (linIdx < arr.length) {
+        linSteps++;
+        linThisTick = true;
+        if (arr[linIdx] === target) {
+          linFound = true; linDone = true;
+          log('log-lin', `🟡 線性 第 ${linSteps} 步：arr[${linIdx}]=${arr[linIdx]} = 目標！`);
+        }
+        linIdx++;
+      } else {
+        linDone = true;
+        if (!linFound) log('log-lin', `❌ 線性：掃完整個陣列，${target} 不在其中。`);
+      }
+    }
+
+    renderArray();
+
+    // End condition
+    if (bsDone && (linDone || linIdx >= arr.length)) {
+      clearInterval(animTimer); animTimer = null;
+      phase = 'done';
+      document.getElementById('btn-play').textContent = '↺ 重新搜尋';
+
+      const bsMax = Math.ceil(Math.log2(arr.length + 1));
+      if (!linDone) {
+        log('log-lin', `🟡 線性搜尋還需要 ${arr.length - linIdx} 步才能確認結果...`);
+      }
+      log('log-bs', `📊 結果：BS ${bsSteps} 步 vs 線性最多 ${arr.length} 步`);
+    }
+  }, getDelay());
+}
+
+// ─── Init ─────────────────────────────────────────────────
+arr = genArray(arrSize);
+document.getElementById('target-input').addEventListener('input', () => { if (phase === 'idle') renderArray(); });
+resetSearch();
+</script>
+</body>
+</html>
