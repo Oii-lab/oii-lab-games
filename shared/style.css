@@ -5,7 +5,27 @@
   --accent:#00e5ff; --accent2:#ff4081; --accent3:#69ff47; --accent4:#ffd740; --accent5:#ea80fc;
   --text:#e8e8f0; --text-dim:#6a6a8a;
   --glow:rgba(0,229,255,0.3);
+  --canvas-bg:#0a0a12;
 }
+:root[data-theme="light"] {
+  --bg:#f3f4fa; --surface:#ffffff; --surface2:#eceef6; --border:#d7dbe8;
+  --accent:#0089a8; --accent2:#d81b60; --accent3:#2e7d32; --accent4:#c77700; --accent5:#8e24aa;
+  --text:#181826; --text-dim:#5a5a72;
+  --glow:rgba(0,137,168,0.22);
+  --canvas-bg:#eceef6;
+}
+/* Canvas elements set their background inline per game; force it to follow the theme. */
+:root[data-theme="light"] canvas{background:var(--canvas-bg)!important;}
+
+/* Floating theme toggle, injected by shared/theme.js on every page */
+#theme-toggle-btn{
+  position:fixed;top:16px;right:16px;z-index:300;width:42px;height:42px;border-radius:50%;
+  border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:18px;
+  display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all 0.2s;
+  box-shadow:0 2px 10px rgba(0,0,0,0.25);
+}
+#theme-toggle-btn:hover{border-color:var(--accent);transform:translateY(-2px);}
+@media(max-width:600px){ #theme-toggle-btn{top:10px;right:10px;width:38px;height:38px;font-size:16px;} }
 *{box-sizing:border-box;margin:0;padding:0;}
 body{background:var(--bg);color:var(--text);font-family:'Noto Sans TC',sans-serif;min-height:100vh;overflow-x:hidden;}
 body::before{content:'';position:fixed;inset:0;
